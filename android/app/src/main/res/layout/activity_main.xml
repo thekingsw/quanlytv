@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="32dp"
+    android:background="#111111">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Khóa TV" android:textSize="44sp" android:textColor="#FFFFFF" android:textStyle="bold" />
+    <TextView android:id="@+id/tvStatus" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="ĐANG MỞ" android:textSize="36sp" android:textColor="#4CAF50" android:layout_marginTop="16dp" />
+    <TextView android:id="@+id/tvUsed" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="28sp" android:textColor="#FFFFFF" android:layout_marginTop="12dp" />
+    <TextView android:id="@+id/tvTimes" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#CCCCCC" android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/tvNews" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#CCCCCC" android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/tvWeb" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#90CAF9" android:layout_marginTop="12dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginTop="24dp">
+        <Button android:id="@+id/btnLock" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+            android:text="Khóa ngay" android:textSize="24sp" />
+        <Button android:id="@+id/btnUnlock" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+            android:text="Mở khóa" android:textSize="24sp" />
+        <Button android:id="@+id/btnNews" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+            android:text="Mở app thời sự" android:textSize="24sp" />
+        <Button android:id="@+id/btnSettings" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+            android:text="Cài đặt" android:textSize="24sp" />
+        <Button android:id="@+id/btnAccess" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1"
+            android:text="Bật Trợ năng" android:textSize="24sp" />
+    </LinearLayout>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Cho thêm giờ (cần nhập PIN):" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="24dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginTop="8dp">
+        <Button android:id="@+id/btnAdd5" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:text="+5 phút" android:textSize="24sp" />
+        <Button android:id="@+id/btnAdd10" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:text="+10 phút" android:textSize="24sp" />
+        <Button android:id="@+id/btnAdd15" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:text="+15 phút" android:textSize="24sp" />
+        <Button android:id="@+id/btnAdd20" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:text="+20 phút" android:textSize="24sp" />
+        <Button android:id="@+id/btnAdd30" android:layout_width="0dp" android:layout_height="72dp" android:layout_weight="1" android:text="+30 phút" android:textSize="24sp" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#111111">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="28dp">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Cài đặt Khóa TV" android:textSize="38sp" android:textColor="#FFFFFF" android:textStyle="bold" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Đổi mã PIN (mặc định 1234):" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <EditText android:id="@+id/etOldPin" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1"
+            android:hint="PIN cũ" android:inputType="numberPassword" android:textSize="24sp" android:textColor="#FFFFFF" android:textColorHint="#888888" />
+        <EditText android:id="@+id/etNewPin" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1"
+            android:hint="PIN mới" android:inputType="numberPassword" android:textSize="24sp" android:textColor="#FFFFFF" android:textColorHint="#888888" />
+        <Button android:id="@+id/btnChangePin" android:layout_width="wrap_content" android:layout_height="64dp" android:text="Đổi PIN" android:textSize="24sp" />
+    </LinearLayout>
+    <Button android:id="@+id/btnLimit" android:layout_width="match_parent" android:layout_height="72dp"
+        android:text="Giới hạn ngày" android:textSize="24sp" android:layout_marginTop="16dp" />
+    <TextView android:id="@+id/tvLimit" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="8dp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Khung giờ khóa (nút − / + thay đổi 30 phút):" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/tvLockStart" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:textSize="26sp" android:textColor="#FFFFFF" />
+        <Button android:id="@+id/btnLockStartMinus" android:layout_width="90dp" android:layout_height="64dp" android:text="−" android:textSize="28sp" />
+        <Button android:id="@+id/btnLockStartPlus" android:layout_width="90dp" android:layout_height="64dp" android:text="+" android:textSize="28sp" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/tvLockEnd" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:textSize="26sp" android:textColor="#FFFFFF" />
+        <Button android:id="@+id/btnLockEndMinus" android:layout_width="90dp" android:layout_height="64dp" android:text="−" android:textSize="28sp" />
+        <Button android:id="@+id/btnLockEndPlus" android:layout_width="90dp" android:layout_height="64dp" android:text="+" android:textSize="28sp" />
+    </LinearLayout>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Khung giờ thời sự (chỉ mở được app thời sự):" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/tvNewsStart" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:textSize="26sp" android:textColor="#FFFFFF" />
+        <Button android:id="@+id/btnNewsStartMinus" android:layout_width="90dp" android:layout_height="64dp" android:text="−" android:textSize="28sp" />
+        <Button android:id="@+id/btnNewsStartPlus" android:layout_width="90dp" android:layout_height="64dp" android:text="+" android:textSize="28sp" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/tvNewsEnd" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:textSize="26sp" android:textColor="#FFFFFF" />
+        <Button android:id="@+id/btnNewsEndMinus" android:layout_width="90dp" android:layout_height="64dp" android:text="−" android:textSize="28sp" />
+        <Button android:id="@+id/btnNewsEndPlus" android:layout_width="90dp" android:layout_height="64dp" android:text="+" android:textSize="28sp" />
+    </LinearLayout>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="App thời sự:" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="16dp" />
+    <Spinner android:id="@+id/spNews" android:layout_width="match_parent" android:layout_height="64dp" />
+    <TextView android:id="@+id/tvManual" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#FFFFFF" android:layout_marginTop="20dp" />
+    <Button android:id="@+id/btnManual" android:layout_width="match_parent" android:layout_height="72dp"
+        android:text="Bật / tắt khóa thủ công" android:textSize="24sp" android:layout_marginTop="8dp" />
+    <Button android:id="@+id/btnResetUsed" android:layout_width="match_parent" android:layout_height="72dp"
+        android:text="Reset số phút đã xem hôm nay" android:textSize="24sp" android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/tvAccess" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="26sp" android:textColor="#FFEB3B" android:layout_marginTop="20dp" />
+    <Button android:id="@+id/btnAccessSettings" android:layout_width="match_parent" android:layout_height="72dp"
+        android:text="Mở cài đặt Trợ năng của TV" android:textSize="24sp" android:layout_marginTop="8dp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Chống gỡ (tùy chọn, cần laptop cùng WiFi, xem HUONG_DAN.md): dùng ADB đặt app làm Device Owner. Nếu không làm bước này, trẻ vẫn có thể gỡ app từ Cài đặt &gt; Ứng dụng."
+        android:textSize="22sp" android:textColor="#CCCCCC" android:layout_marginTop="20dp" />
+    <Button android:id="@+id/btnBack" android:layout_width="match_parent" android:layout_height="72dp"
+        android:text="Quay lại" android:textSize="24sp" android:layout_marginTop="20dp" />
+</LinearLayout>
+</ScrollView>
