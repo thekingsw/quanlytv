@@ -17,9 +17,8 @@ import android.widget.Toast
 
 class SettingsActivity : Activity() {
     private lateinit var store: Store
-    private lateinit var tvLimit: TextView
-    private lateinit var tvLockStart: TextView
-    private lateinit var tvLockEnd: TextView
+    private lateinit var tvSchedules: TextView
+    private lateinit var tvDailyLimits: TextView
     private lateinit var tvNewsStart: TextView
     private lateinit var tvNewsEnd: TextView
     private lateinit var tvManual: TextView
@@ -28,7 +27,6 @@ class SettingsActivity : Activity() {
     private lateinit var tvBonus: TextView
     private lateinit var tvAppRules: TextView
     private lateinit var btnIconToggle: Button
-    private val limits = listOf(0, 30, 60, 90, 120, 180)
     private var newsPkgs = listOf<String>()
     private var newsLabels = listOf<String>()
 
@@ -36,9 +34,8 @@ class SettingsActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         store = Store(this)
-        tvLimit = findViewById(R.id.tvLimit)
-        tvLockStart = findViewById(R.id.tvLockStart)
-        tvLockEnd = findViewById(R.id.tvLockEnd)
+        tvSchedules = findViewById(R.id.tvSchedules)
+        tvDailyLimits = findViewById(R.id.tvDailyLimits)
         tvNewsStart = findViewById(R.id.tvNewsStart)
         tvNewsEnd = findViewById(R.id.tvNewsEnd)
         tvManual = findViewById(R.id.tvManual)
@@ -57,13 +54,12 @@ class SettingsActivity : Activity() {
                 else -> { store.pin = nw; Toast.makeText(this, "Đã đổi PIN", Toast.LENGTH_SHORT).show() }
             }
         }
-        findViewById<Button>(R.id.btnLimit).setOnClickListener {
-            val i = limits.indexOf(store.dailyLimitMin)
-            store.dailyLimitMin = limits[(i + 1) % limits.size]
-            refresh()
+        findViewById<Button>(R.id.btnSchedules).setOnClickListener {
+            startActivity(Intent(this, SchedulesActivity::class.java))
         }
-        bindTimeButtons(R.id.btnLockStartMinus, R.id.btnLockStartPlus, { store.lockStartMin }) { store.lockStartMin = it }
-        bindTimeButtons(R.id.btnLockEndMinus, R.id.btnLockEndPlus, { store.lockEndMin }) { store.lockEndMin = it }
+        findViewById<Button>(R.id.btnDailyLimits).setOnClickListener {
+            startActivity(Intent(this, DailyLimitsActivity::class.java))
+        }
         bindTimeButtons(R.id.btnNewsStartMinus, R.id.btnNewsStartPlus, { store.newsStartMin }) { store.newsStartMin = it }
         bindTimeButtons(R.id.btnNewsEndMinus, R.id.btnNewsEndPlus, { store.newsEndMin }) { store.newsEndMin = it }
 
@@ -143,9 +139,12 @@ class SettingsActivity : Activity() {
     }
 
     private fun refresh() {
-        tvLimit.text = if (store.dailyLimitMin == 0) "Giới hạn ngày: Tắt" else "Giới hạn ngày: ${store.dailyLimitMin} phút (đã xem ${store.usedTodayMin} phút)"
-        tvLockStart.text = "Bắt đầu khóa: ${store.fmt(store.lockStartMin)}"
-        tvLockEnd.text = "Kết thúc khóa: ${store.fmt(store.lockEndMin)}"
+        // v4: flexible schedules + per-weekday daily limits.
+        val scheds = store.lockSchedules()
+        tvSchedules.text = if (scheds.isEmpty()) "Chưa có lịch khóa nào — TV không bị khóa theo giờ."
+        else scheds.joinToString("\n") { store.scheduleSummary(it) }
+        tvDailyLimits.text = store.dailyLimitsSummary() +
+            "\n(Hôm nay đã xem ${store.usedTodayMin} phút, giới hạn ${store.limitText(store.limitForToday())}.)"
         tvNewsStart.text = "Bắt đầu thời sự: ${store.fmt(store.newsStartMin)}"
         tvNewsEnd.text = "Kết thúc thời sự: ${store.fmt(store.newsEndMin)}"
         tvManual.text = if (store.manualLocked) "Khóa thủ công: ĐANG KHÓA" else "Khóa thủ công: đang mở"

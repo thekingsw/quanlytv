@@ -111,7 +111,8 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val remStr = if (rem == Int.MAX_VALUE) -1 else rem
         val news = store.isInNewsSlot(now)
         val perApp = store.perAppToday().entries.joinToString(",") { "\"${it.key}\":${it.value}" }
-        val json = """{"locked":$locked,"usedTodayMin":${store.usedTodayMin},"dailyLimitMin":${store.dailyLimitMin},"remainingMin":$remStr,"newsSlot":$news,"ip":"${wifiIp()}","manualLocked":${store.manualLocked},"bonusMin":${store.bonusMin},"perAppToday":{$perApp}}"""
+        val todaySched = store.todayScheduleSummaries(now).joinToString(",") { "\"${esc(it)}\"" }
+        val json = """{"locked":$locked,"usedTodayMin":${store.usedTodayMin},"dailyLimitMin":${store.limitForToday()},"todayLimit":${store.limitForToday()},"todaySchedules":[$todaySched],"remainingMin":$remStr,"newsSlot":$news,"ip":"${wifiIp()}","manualLocked":${store.manualLocked},"bonusMin":${store.bonusMin},"perAppToday":{$perApp}}"""
         sendJson(out, 200, json)
     }
 
@@ -121,7 +122,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         store.resetUsedIfNewDay()
         val perApp = store.perAppToday().entries.joinToString(",") { "\"${it.key}\":${it.value}" }
         val days = store.historyDays().joinToString(",") { "{\"date\":\"${it.date}\",\"total\":${it.total}}" }
-        val json = """{"today":{"date":"${store.todayStr()}","total":${store.usedTodayMin},"perApp":{$perApp}},"days":[$days]}"""
+        val json = """{"today":{"date":"${store.todayStr()}","total":${store.usedTodayMin},"limit":${store.limitForToday()},"perApp":{$perApp}},"days":[$days]}"""
         sendJson(out, 200, json)
     }
 
@@ -187,6 +188,10 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val status = if (locked) "ĐANG KHÓA" else "ĐANG MỞ"
         val pillClass = if (locked) "pill locked" else "pill open"
         val newsTxt = if (store.newsPkg.isEmpty()) "chưa chọn app" else store.newsPkg
+        val limit = store.limitForToday()
+        val limitTxt = if (limit <= 0) "không giới hạn" else "$limit phút"
+        val todays = store.todayScheduleSummaries(now)
+        val schedTxt = if (todays.isEmpty()) "Hôm nay không có lịch khóa" else todays.joinToString("<br>")
         val bonusTxt = if (store.bonusMin > 0) "<p class=\"lbl\">Phút thưởng còn</p><p class=\"val\">${store.bonusMin} phút</p>" else ""
         // v3: report — today per app + last 7 days as simple bars.
         val today = store.perAppToday()
@@ -224,10 +229,11 @@ a{color:#90CAF9;font-size:20px}
 </style></head><body>
 <h1>Khóa TV</h1>
 <div class="card"><span class="$pillClass">$status</span>
-<p class="lbl">Đã xem hôm nay</p><p class="val">${store.usedTodayMin} / ${store.dailyLimitMin} phút</p>
+<p class="lbl">Đã xem hôm nay</p><p class="val">${store.usedTodayMin} / $limitTxt</p>
 <p class="lbl">Còn lại</p><p class="val">$remTxt</p>
 $bonusTxt
-<p class="lbl">Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)} &nbsp;|&nbsp; Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p></div>
+<p class="lbl">Lịch khóa hôm nay (chỉ xem, sửa trên TV)</p><p class="val" style="font-size:22px">$schedTxt</p>
+<p class="lbl">Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p></div>
 $msgHtml
 <div class="grid">
 <form method="post" action="/api/lock"><button class="red" type="submit">Khóa ngay</button></form>

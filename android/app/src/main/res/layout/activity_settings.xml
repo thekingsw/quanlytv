@@ -36,15 +36,36 @@
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Giới hạn ngày" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Lịch khóa theo ngày" style="@style/TvSection" android:layout_marginTop="20dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
         android:padding="16dp" android:layout_marginTop="12dp">
-        <TextView android:id="@+id/tvLimit"
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Mỗi lịch chọn ngày trong tuần và giờ khóa từ–đến, gộp nhiều lịch được. Khóa qua đêm (ví dụ 19:00 đến 10:00 sáng hôm sau) cũng được. Khung thời sự vẫn riêng, không nằm trong danh sách này."
+            style="@style/TvBody" android:textColor="@color/text_muted" />
+        <TextView android:id="@+id/tvSchedules"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp" />
-        <Button android:id="@+id/btnLimit" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Đổi giới hạn ngày"
+            android:text="" style="@style/TvBody" android:textSize="20sp"
+            android:layout_marginTop="12dp" />
+        <Button android:id="@+id/btnSchedules" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Quản lý lịch khóa"
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Giới hạn ngày theo ngày" style="@style/TvSection" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="16dp" android:layout_marginTop="12dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Mỗi ngày trong tuần một mức riêng, ví dụ ngày học 60 phút, cuối tuần 120 phút."
+            style="@style/TvBody" android:textColor="@color/text_muted" />
+        <TextView android:id="@+id/tvDailyLimits"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" style="@style/TvBody" android:textSize="20sp"
+            android:layout_marginTop="12dp" />
+        <Button android:id="@+id/btnDailyLimits" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Đặt giới hạn từng ngày"
             android:layout_marginTop="12dp" />
     </LinearLayout>
 
@@ -91,42 +112,6 @@
             <Button android:id="@+id/btnBonus30" style="@style/TvButton"
                 android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
                 android:text="Thưởng +30'" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khung giờ khóa" style="@style/TvSection" android:layout_marginTop="20dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Nút − / + thay đổi 30 phút" style="@style/TvBody"
-            android:textColor="@color/text_muted" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="12dp">
-            <TextView android:id="@+id/tvLockStart"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="20sp"
-                android:gravity="center_vertical" />
-            <Button android:id="@+id/btnLockStartMinus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="−" android:textSize="28sp"
-                android:layout_margin="4dp" />
-            <Button android:id="@+id/btnLockStartPlus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="+" android:textSize="28sp"
-                android:layout_margin="4dp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <TextView android:id="@+id/tvLockEnd"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="20sp"
-                android:gravity="center_vertical" />
-            <Button android:id="@+id/btnLockEndMinus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="−" android:textSize="28sp"
-                android:layout_margin="4dp" />
-            <Button android:id="@+id/btnLockEndPlus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="+" android:textSize="28sp"
-                android:layout_margin="4dp" />
         </LinearLayout>
     </LinearLayout>
 

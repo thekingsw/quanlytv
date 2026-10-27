@@ -1,6 +1,7 @@
 package vn.tvlock
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -14,17 +15,170 @@ class Store(private val ctx: Context) {
         get() = prefs.getString("pin", "1234") ?: "1234"
         set(v) = prefs.edit().putString("pin", v).apply()
 
-    var dailyLimitMin: Int
-        get() = prefs.getInt("dailyLimitMin", 90)
-        set(v) = prefs.edit().putInt("dailyLimitMin", v).apply()
+    // ---------- v4: flexible lock schedules ----------
+    // Days: 0 = Thứ 2 ... 6 = Chủ nhật. A schedule locks the TV on its days
+    // between startMin and endMin. startMin == endMin means "locked all day"
+    // on those days; startMin > endMin means overnight (e.g. 19:00 -> 10:00
+    // next day). Multiple schedules combine by union: any match locks.
+    data class LockSchedule(val id: String, val days: List<Int>, val startMin: Int, val endMin: Int)
 
-    var lockStartMin: Int
-        get() = prefs.getInt("lockStartMin", 1260)
-        set(v) = prefs.edit().putInt("lockStartMin", v).apply()
+    fun dayNames(): List<String> =
+        listOf("Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
 
-    var lockEndMin: Int
-        get() = prefs.getInt("lockEndMin", 420)
-        set(v) = prefs.edit().putInt("lockEndMin", v).apply()
+    /** Calendar.DAY_OF_WEEK (1=Sunday..7=Saturday) -> 0=Mon..6=Sun. */
+    fun dayIndexOf(cal: Calendar): Int = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
+
+    private fun lockSchedulesJson(): JSONArray {
+        // One-time migration from the old single lock window (v3): keep the
+        // user's current rule as one schedule covering all days.
+        if (!prefs.contains("lockSchedules")) {
+            val oldStart = prefs.getInt("lockStartMin", 1260)
+            val oldEnd = prefs.getInt("lockEndMin", 420)
+            val arr = JSONArray()
+            val o = JSONObject()
+            o.put("id", "migrated")
+            o.put("days", JSONArray(listOf(0, 1, 2, 3, 4, 5, 6)))
+            o.put("startMin", oldStart)
+            o.put("endMin", oldEnd)
+            arr.put(o)
+            prefs.edit().putString("lockSchedules", arr.toString())
+                .remove("lockStartMin").remove("lockEndMin").apply()
+            return arr
+        }
+        return try { JSONArray(prefs.getString("lockSchedules", "[]") ?: "[]") }
+        catch (_: Exception) { JSONArray() }
+    }
+
+    fun lockSchedules(): List<LockSchedule> {
+        val out = mutableListOf<LockSchedule>()
+        val arr = lockSchedulesJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val days = mutableListOf<Int>()
+            val dj = o.optJSONArray("days")
+            if (dj != null) for (j in 0 until dj.length()) days.add(dj.optInt(j))
+            out.add(LockSchedule(o.optString("id", "s$i"), days, o.optInt("startMin", 1260), o.optInt("endMin", 420)))
+        }
+        return out
+    }
+
+    fun saveLockSchedules(list: List<LockSchedule>) {
+        val arr = JSONArray()
+        for (s in list) {
+            val o = JSONObject()
+            o.put("id", s.id)
+            o.put("days", JSONArray(s.days))
+            o.put("startMin", s.startMin)
+            o.put("endMin", s.endMin)
+            arr.put(o)
+        }
+        prefs.edit().putString("lockSchedules", arr.toString()).apply()
+    }
+
+    fun upsertLockSchedule(s: LockSchedule) {
+        val list = lockSchedules().toMutableList()
+        val i = list.indexOfFirst { it.id == s.id }
+        if (i >= 0) list[i] = s else list.add(s)
+        saveLockSchedules(list)
+    }
+
+    fun deleteLockSchedule(id: String) = saveLockSchedules(lockSchedules().filter { it.id != id })
+
+    fun newScheduleId(): String = "s" + System.currentTimeMillis()
+
+    fun scheduleTimeText(s: LockSchedule): String {
+        return if (s.startMin == s.endMin) "khóa cả ngày"
+        else if (s.startMin == 0 && s.endMin == 1439) "khóa cả ngày"
+        else fmt(s.startMin) + "–" + fmt(s.endMin) + if (s.startMin > s.endMin) " (qua đêm)" else ""
+    }
+
+    fun scheduleSummary(s: LockSchedule): String {
+        val daysTxt = if (s.days.size == 7) "Hằng ngày"
+            else s.days.sorted().joinToString(", ") { dayNames()[it] }
+        return "$daysTxt: ${scheduleTimeText(s)}"
+    }
+
+    fun schedulesForDay(day: Int): List<LockSchedule> = lockSchedules().filter { day in it.days }
+
+    fun todayScheduleSummaries(nowMs: Long): List<String> {
+        val c = Calendar.getInstance()
+        c.timeInMillis = nowMs
+        return schedulesForDay(dayIndexOf(c)).map { scheduleSummary(it) }
+    }
+
+    /** Schedules matching right now (union: any match locks the TV). */
+    fun matchingSchedules(nowMs: Long): List<LockSchedule> {
+        val c = Calendar.getInstance()
+        c.timeInMillis = nowMs
+        val today = dayIndexOf(c)
+        val yesterday = (today + 6) % 7
+        val nowMin = minutesOfDay(nowMs)
+        return lockSchedules().filter { s ->
+            if (s.days.isEmpty()) return@filter false
+            when {
+                s.startMin == s.endMin -> today in s.days // all-day convention
+                s.startMin < s.endMin -> today in s.days && nowMin in s.startMin until s.endMin
+                else -> (today in s.days && nowMin >= s.startMin) ||
+                    (yesterday in s.days && nowMin < s.endMin)
+            }
+        }
+    }
+
+    fun isLockedBySchedule(nowMs: Long): Boolean = matchingSchedules(nowMs).isNotEmpty()
+
+    /** Minutes until the next schedule starts (0 when inside one, MAX when none). */
+    fun minutesUntilNextLock(nowMs: Long): Int {
+        val c = Calendar.getInstance()
+        c.timeInMillis = nowMs
+        val today = dayIndexOf(c)
+        val nowMin = minutesOfDay(nowMs)
+        if (isLockedBySchedule(nowMs)) return 0
+        var best = Int.MAX_VALUE
+        for (s in lockSchedules()) {
+            if (s.days.isEmpty()) continue
+            for (d in 0..7) {
+                val day = (today + d) % 7
+                if (day !in s.days) continue
+                val delta = d * 1440 + s.startMin - nowMin
+                if (delta <= 0) continue
+                if (delta < best) best = delta
+            }
+        }
+        return best
+    }
+
+    // ---------- v4: daily limit per weekday (0=Mon..6=Sun; <=0 = unlimited) ----------
+    private fun dailyLimitsJson(): JSONObject {
+        // One-time migration from the old single daily limit (v3).
+        if (!prefs.contains("dailyLimits")) {
+            val old = prefs.getInt("dailyLimitMin", 90)
+            val j = JSONObject()
+            for (d in 0..6) j.put(d.toString(), old)
+            prefs.edit().putString("dailyLimits", j.toString()).remove("dailyLimitMin").apply()
+            return j
+        }
+        return try { JSONObject(prefs.getString("dailyLimits", "{}") ?: "{}") }
+        catch (_: Exception) { JSONObject() }
+    }
+
+    fun limitForDay(day: Int): Int = dailyLimitsJson().optInt(day.toString(), 90)
+
+    fun limitForToday(): Int {
+        val c = Calendar.getInstance()
+        return limitForDay(dayIndexOf(c))
+    }
+
+    fun setLimitForDay(day: Int, minutes: Int) {
+        val j = dailyLimitsJson()
+        j.put(day.toString(), minutes)
+        prefs.edit().putString("dailyLimits", j.toString()).apply()
+    }
+
+    fun limitText(min: Int): String = if (min <= 0) "không giới hạn" else "$min phút"
+
+    fun dailyLimitsSummary(): String {
+        return (0..6).joinToString("\n") { "${dayNames()[it]}: ${limitText(limitForDay(it))}" }
+    }
 
     var newsStartMin: Int
         get() = prefs.getInt("newsStartMin", 1140)
@@ -257,34 +411,26 @@ class Store(private val ctx: Context) {
         return if (start < end) nowMin in start until end else nowMin >= start || nowMin < end
     }
 
-    fun isInLockWindow(nowMs: Long): Boolean = isInWindow(minutesOfDay(nowMs), lockStartMin, lockEndMin)
     fun isInNewsSlot(nowMs: Long): Boolean = isInWindow(minutesOfDay(nowMs), newsStartMin, newsEndMin)
-
-    /** Minutes until the lock window starts (0 when inside it, MAX when the window is disabled). */
-    fun minutesUntilLockWindow(nowMs: Long): Int {
-        if (lockStartMin == lockEndMin) return Int.MAX_VALUE
-        if (isInLockWindow(nowMs)) return 0
-        val nowMin = minutesOfDay(nowMs)
-        return if (nowMin < lockStartMin) lockStartMin - nowMin
-        else lockStartMin + 1440 - nowMin
-    }
 
     /** True when the TV should be locked right now (whole-TV rules; per-app rules are separate). */
     fun isLockedNow(nowMs: Long): Boolean {
         resetUsedIfNewDay()
         if (nowMs < unlockUntilMs) return false
         if (manualLocked) return true
-        if (isInLockWindow(nowMs)) return true
+        if (isLockedBySchedule(nowMs)) return true
         // Daily limit only locks when the bonus pool is also exhausted.
-        if (dailyLimitMin > 0 && usedTodayMin >= dailyLimitMin && bonusMin <= 0) return true
+        val limit = limitForToday()
+        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0) return true
         return false
     }
 
     /** Minutes of daily limit left (excluding bonus). */
     fun dailyRemainingMin(): Int {
         resetUsedIfNewDay()
-        if (dailyLimitMin <= 0) return Int.MAX_VALUE
-        return (dailyLimitMin - usedTodayMin).coerceAtLeast(0)
+        val limit = limitForToday()
+        if (limit <= 0) return Int.MAX_VALUE
+        return (limit - usedTodayMin).coerceAtLeast(0)
     }
 
     /** Effective minutes left: daily limit + bonus pool. */
@@ -297,10 +443,13 @@ class Store(private val ctx: Context) {
     fun lockReason(nowMs: Long): String {
         resetUsedIfNewDay()
         if (manualLocked && nowMs >= unlockUntilMs) return "Đã khóa"
-        if (isInLockWindow(nowMs)) return "Đến giờ khóa"
-        if (dailyLimitMin > 0 && usedTodayMin >= dailyLimitMin && bonusMin <= 0)
+        val match = matchingSchedules(nowMs)
+        if (match.isNotEmpty())
+            return "Đến giờ khóa (${match.joinToString("; ") { scheduleSummary(it) }})"
+        val limit = limitForToday()
+        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0)
             return "Hết giờ xem — đã hết cả phút thưởng"
-        if (dailyLimitMin > 0 && usedTodayMin >= dailyLimitMin) return "Hết giờ xem"
+        if (limit > 0 && usedTodayMin >= limit) return "Hết giờ xem"
         if (isInNewsSlot(nowMs)) return "Giờ thời sự — chỉ xem thời sự"
         return "Đã khóa"
     }
@@ -320,8 +469,11 @@ class Store(private val ctx: Context) {
         if (rule.mode == "limit" && perAppMin(pkg) >= rule.minutes)
             return "Hết giờ cho app $label"
         if (manualLocked) return "Đã khóa"
-        if (isInLockWindow(nowMs)) return "Đến giờ khóa"
-        if (dailyLimitMin > 0 && usedTodayMin >= dailyLimitMin && bonusMin <= 0)
+        val match = matchingSchedules(nowMs)
+        if (match.isNotEmpty())
+            return "Đến giờ khóa (${match.joinToString("; ") { scheduleSummary(it) }})"
+        val limit = limitForToday()
+        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0)
             return "Hết giờ xem — đã hết cả phút thưởng"
         return null
     }
@@ -364,11 +516,12 @@ class Store(private val ctx: Context) {
         addPerAppMin(pkg, mins)
         val rule = appRule(pkg)
         if (rule.mode == "free") return
-        if (dailyLimitMin <= 0) {
+        val limit = limitForToday()
+        if (limit <= 0) {
             usedTodayMin = usedTodayMin + mins
             return
         }
-        val room = (dailyLimitMin - usedTodayMin).coerceAtLeast(0)
+        val room = (limit - usedTodayMin).coerceAtLeast(0)
         val toDaily = minOf(mins, room)
         val overflow = mins - toDaily
         usedTodayMin = usedTodayMin + toDaily
@@ -399,17 +552,31 @@ class Store(private val ctx: Context) {
         clearWarnings()
     }
 
-    /** Unlock until the end of the current lock window (or +60 min if not in one). */
+    /** Unlock until the end of the current lock schedule (or +60 min if not in one). */
     fun unlockUntilEndOfLockWindow(nowMs: Long) {
         val c = Calendar.getInstance()
         c.timeInMillis = nowMs
         val nowMin = minutesOfDay(nowMs)
-        if (isInLockWindow(nowMs)) {
-            c.set(Calendar.HOUR_OF_DAY, lockEndMin / 60)
-            c.set(Calendar.MINUTE, lockEndMin % 60)
+        val match = matchingSchedules(nowMs)
+        if (match.isNotEmpty()) {
+            val s = match.first()
+            when {
+                s.startMin == s.endMin -> { // all-day: unlock until the end of today
+                    c.set(Calendar.HOUR_OF_DAY, 23)
+                    c.set(Calendar.MINUTE, 59)
+                }
+                s.startMin < s.endMin -> {
+                    c.set(Calendar.HOUR_OF_DAY, s.endMin / 60)
+                    c.set(Calendar.MINUTE, s.endMin % 60)
+                }
+                else -> { // overnight: ends tomorrow if we are past the start
+                    if (nowMin >= s.startMin) c.add(Calendar.DAY_OF_YEAR, 1)
+                    c.set(Calendar.HOUR_OF_DAY, s.endMin / 60)
+                    c.set(Calendar.MINUTE, s.endMin % 60)
+                }
+            }
             c.set(Calendar.SECOND, 0)
             c.set(Calendar.MILLISECOND, 0)
-            if (lockEndMin <= nowMin) c.add(Calendar.DAY_OF_YEAR, 1)
             unlockUntilMs = c.timeInMillis
         } else {
             unlockUntilMs = nowMs + 60 * 60000L

@@ -2,7 +2,7 @@
 
 App Android TV (Google TV) quản lý thời gian xem TV chung cho cả nhà, không dùng Family Link.
 
-- Package: `vn.tvlock`, versionCode 3, versionName 1.2, minSdk 26, targetSdk 34.
+- Package: `vn.tvlock`, versionCode 4, versionName 1.3, minSdk 26, targetSdk 34.
 - Ngôn ngữ: Kotlin, **View system (XML layout), không Compose, không AndroidX** — chỉ cần kotlin-stdlib + android.jar.
 - APK: `~/workspace/your_files/tv-lock/khoa-tv.apk` (đã ký bằng debug keystore dùng chung trong `~/workspace/manual-build/debug.keystore`).
 - Build thủ công: `~/workspace/manual-build/build_tvlock.sh` (không dùng Gradle — VM chặn Gradle daemon và Java HTTPS; compile bằng K2JVMCompiler trực tiếp, aapt2/d8/zipalign/apksigner từ build-tools 34.0.0).
@@ -11,15 +11,15 @@ App Android TV (Google TV) quản lý thời gian xem TV chung cho cả nhà, kh
 
 | File | Vai trò |
 |---|---|
-| `Store.kt` | SharedPreferences `tvlock`: PIN, giới hạn ngày, khung khóa, khung thời sự, app thời sự, khóa thủ công, unlockUntil, số phút đã xem hôm nay. **v3:** phút thưởng `bonusMin` (không hết hạn khi sang ngày), quy tắc từng app (`appRules`: limit/free/blocked), số phút từng app hôm nay (`perAppToday`), lịch sử 14 ngày (`history`), mốc đã cảnh báo (`warned`). Logic thuần: `isInLockWindow`, `isInNewsSlot`, `isLockedNow`, `remainingMin` (giới hạn ngày + thưởng), `blockReason(pkg, now, label)` (thứ tự ưu tiên: thời sự > mở tạm bằng PIN > blocked/limit từng app > khóa thủ công/khung khóa/giới hạn ngày), `minutesUntilLockWindow`, cộng dồn thời gian xem theo từng phút (app "free" không cộng vào giới hạn ngày; phút vượt giới hạn ngày trừ dần từ quỹ thưởng). |
+| `Store.kt` | SharedPreferences `tvlock`: PIN, khung thời sự, app thời sự, khóa thủ công, unlockUntil, số phút đã xem hôm nay. **v3:** phút thưởng `bonusMin` (không hết hạn khi sang ngày), quy tắc từng app (`appRules`: limit/free/blocked), số phút từng app hôm nay (`perAppToday`), lịch sử 14 ngày (`history`), mốc đã cảnh báo (`warned`). **v4:** danh sách lịch khóa (`lockSchedules`: mỗi lịch `{id, days[0=Thứ 2..6=Chủ nhật], startMin, endMin}` — `startMin==endMin` là khóa cả ngày, `startMin>endMin` là qua đêm; nhiều lịch gộp theo phép hợp), giới hạn ngày theo ngày (`dailyLimits`: 0=Thứ 2..6=Chủ nhật, -1 = không giới hạn). Migration lần đầu: khung khóa cũ 21:00–07:00 thành một lịch hằng ngày, giới hạn ngày cũ 90' gán cho cả 7 ngày. Logic thuần: `isLockedBySchedule`, `matchingSchedules`, `minutesUntilNextLock`, `isInNewsSlot`, `isLockedNow`, `limitForToday`, `remainingMin` (giới hạn ngày + thưởng), `blockReason(pkg, now, label)` (thứ tự ưu tiên: thời sự > mở tạm bằng PIN > blocked/limit từng app > khóa thủ công/lịch khóa/giới hạn ngày), cộng dồn thời gian xem theo từng phút (app "free" không cộng vào giới hạn ngày; phút vượt giới hạn ngày trừ dần từ quỹ thưởng). |
 | `GuardAccessibilityService.kt` | AccessibilityService (`typeWindowStateChanged`): theo dõi app foreground, cộng dồn thời gian cho app cũ, mở `LockActivity` khi app mới bị chặn (lý do từ `Store.blockReason`). |
-| `GuardService.kt` | Foreground service (START_STICKY, `foregroundServiceType="specialUse"`): tick mỗi 15 giây để cộng dồn thời gian khi xem lâu một app và kích hoạt khóa khi tới giờ/hết hạn; **v3:** kiểm tra ngưỡng cảnh báo 5'/1' (giới hạn ngày tính cả thưởng, giới hạn riêng của app đang xem, tới giờ khóa) và mở `WarningActivity`; chạy WebServer; notification ongoing hiện trạng thái (kèm số phút thưởng còn lại). |
+| `GuardService.kt` | Foreground service (START_STICKY, `foregroundServiceType="specialUse"`): tick mỗi 15 giây để cộng dồn thời gian khi xem lâu một app và kích hoạt khóa khi tới giờ/hết hạn; **v3:** kiểm tra ngưỡng cảnh báo 5'/1' (giới hạn ngày tính cả thưởng, giới hạn riêng của app đang xem, tới giờ khóa) và mở `WarningActivity`; chạy WebServer; notification ongoing hiện trạng thái (kèm số phút thưởng còn lại). **v4:** cảnh báo tới giờ khóa dùng `minutesUntilNextLock`, notification dùng `limitForToday()`. |
 | `WarningActivity.kt` | **v3:** bảng nhắc nhẹ phía trên màn hình (nền tối, chữ lớn), tự tắt sau 20 giây hoặc khi bấm Đã hiểu/Back; không chặn việc xem, không tính giờ. |
 | `AppRulesActivity.kt` | **v3:** liệt kê app launchable đã cài, bấm vào một app để chọn: Bình thường / Giới hạn riêng 15/30/60' / Không tính giờ / Chặn hẳn; lưu xong áp dụng ngay. |
-| `WebServer.kt` | HTTP server tự viết bằng `java.net.ServerSocket` cổng 8080 (không dùng `com.sun.net.httpserver` vì Android không có): `GET /` trang điều khiển mobile-first (nền tối, nút lớn), `GET /api/status` JSON, `POST /api/lock`, `/api/unlock`, `/api/add` — từ v2 KHÔNG yêu cầu PIN trên điện thoại (điện thoại do bố cầm); `POST /api/change-pin` đổi PIN mới (4–6 số, không cần PIN cũ). Màn hình khóa trên TV vẫn yêu cầu PIN như cũ. **v3:** `POST /api/bonus` (+5/+10/+15/+30 phút thưởng, không cần PIN), `GET /api/report` JSON `{today:{date,total,perApp}, days:[{date,total}]}`, mục **Thưởng phút** và **Báo cáo** (bảng hôm nay theo app + 7 ngày gần nhất dạng thanh ngang) trên trang chủ. |
-| `MainActivity.kt` | Màn hình chính TV: trạng thái, đã xem/còn lại, giờ khóa, giờ thời sự, địa chỉ web `http://IP:8080`, nút Khóa ngay / Mở khóa / +5…+30 / Cài đặt / Mở app thời sự / Bật Trợ năng. **v3:** hiện "Còn lại hôm nay: X phút + thưởng Y phút" và dòng nhỏ "Hôm qua đã xem X phút". |
+| `WebServer.kt` | HTTP server tự viết bằng `java.net.ServerSocket` cổng 8080 (không dùng `com.sun.net.httpserver` vì Android không có): `GET /` trang điều khiển mobile-first (nền tối, nút lớn), `GET /api/status` JSON, `POST /api/lock`, `/api/unlock`, `/api/add` — từ v2 KHÔNG yêu cầu PIN trên điện thoại (điện thoại do bố cầm); `POST /api/change-pin` đổi PIN mới (4–6 số, không cần PIN cũ). Màn hình khóa trên TV vẫn yêu cầu PIN như cũ. **v3:** `POST /api/bonus` (+5/+10/+15/+30 phút thưởng, không cần PIN), `GET /api/report` JSON `{today:{date,total,perApp}, days:[{date,total}]}`, mục **Thưởng phút** và **Báo cáo** (bảng hôm nay theo app + 7 ngày gần nhất dạng thanh ngang) trên trang chủ. **v4:** trang chủ hiện giới hạn của hôm nay + lịch khóa hôm nay (chỉ đọc, sửa trên TV); `GET /api/status` thêm `todayLimit` + `todaySchedules`; `GET /api/report` thêm `today.limit`. |
+| `MainActivity.kt` | Màn hình chính TV: trạng thái, đã xem/còn lại, giờ khóa, giờ thời sự, địa chỉ web `http://IP:8080`, nút Khóa ngay / Mở khóa / +5…+30 / Cài đặt / Mở app thời sự / Bật Trợ năng. **v3:** hiện "Còn lại hôm nay: X phút + thưởng Y phút" và dòng nhỏ "Hôm qua đã xem X phút". **v4:** hiện giới hạn của hôm nay (`limitForToday()`) và lịch khóa hôm nay. |
 | `LockActivity.kt` | Màn hình khóa toàn màn hình: lý do khóa, bàn phím số trên màn hình (D-pad) + hỗ trợ phím số vật lý KEYCODE_0–9, nhập đúng PIN thì hiện lựa chọn +5…+30, mở đến hết khung khóa, hủy. Nút BACK bị chặn khi đang ở chế độ khóa. **v3:** chế độ `bonus` — nhập đúng PIN thì cộng phút thưởng (dùng từ Cài đặt trên TV). |
-| `SettingsActivity.kt` | Đổi PIN, giới hạn ngày (0/30/60/90/120/180), giờ khóa và giờ thời sự (±30 phút), chọn app thời sự (Spinner liệt kê app launchable), khóa thủ công, reset phút hôm nay, trạng thái + nút mở cài đặt Accessibility. **v3:** mục **Giới hạn từng app** (mở AppRulesActivity, hiện tóm tắt các quy tắc đã đặt) và mục **Phút thưởng** (hiện quỹ còn lại + nút Thưởng +5/+10/+15/+30, bấm rồi nhập PIN). |
+| `SettingsActivity.kt` | Đổi PIN, giờ thời sự (±30 phút), chọn app thời sự (Spinner liệt kê app launchable), khóa thủ công, reset phút hôm nay, trạng thái + nút mở cài đặt Accessibility. **v3:** mục **Giới hạn từng app** (mở AppRulesActivity, hiện tóm tắt các quy tắc đã đặt) và mục **Phút thưởng** (hiện quỹ còn lại + nút Thưởng +5/+10/+15/+30, bấm rồi nhập PIN). **v4:** mục **Lịch khóa theo ngày** (mở SchedulesActivity) và **Giới hạn ngày theo ngày** (mở DailyLimitsActivity); bỏ mục giới hạn ngày chung và khung khóa cố định. |
 | `BootReceiver.kt` | `BOOT_COMPLETED` → chạy lại GuardService. |
 | `DeviceOwnerReceiver.kt` | DeviceAdminReceiver cho bước chống gỡ tùy chọn bằng ADB (`dpm set-device-owner vn.tvlock/.DeviceOwnerReceiver`); không cần cho khóa/mở bình thường. |
 | `res/xml/accessibility_service_config.xml` | Cấu hình AccessibilityService. |
@@ -34,6 +34,12 @@ về rồi gửi sang TV cài đặt (cho phép cài từ nguồn không xác đ
 Lưu ý: file workflow phải do anh tự thêm qua web GitHub (GitHub chặn app
 tạo file workflow qua API). Các bản build CI đều ký bằng cùng một debug
 keystore cố định (`android/app/debug.keystore.b64`) nên cài đè lên nhau được.
+
+## Bản v4 (1.3) — lịch khóa linh hoạt theo ngày + giới hạn ngày theo ngày
+
+- **Lịch khóa theo ngày:** thay khung khóa cố định bằng danh sách lịch (`lockSchedules`): mỗi lịch chọn ngày trong tuần + giờ từ–đến, gộp nhiều lịch (lịch nào khớp thì khóa). `startMin==endMin` = khóa cả ngày; `startMin>endMin` = qua đêm (19:00→10:00 hôm sau). UI: `SchedulesActivity` (danh sách + thêm mới) và `ScheduleEditActivity` (7 checkbox ngày, giờ bắt đầu/kết thúc ±15 phút, nút Khóa cả ngày, Lưu/Xóa). Migration: khung khóa cũ 21:00–07:00 hằng ngày thành một lịch. Khung thời sự 19:00–20:00 giữ nguyên, không nằm trong danh sách lịch.
+- **Giới hạn ngày theo ngày:** `dailyLimits` — mỗi ngày trong tuần một mức (30/60/90/120/180/240 phút hoặc Không giới hạn = -1), đặt trong `DailyLimitsActivity`. Mọi chỗ dùng giới hạn ngày (khóa, cảnh báo 5'/1', màn hình chính, web, báo cáo) đều dùng `limitForToday()`. Migration: mức cũ 90' gán cho cả 7 ngày.
+- Version: versionCode 4, versionName 1.3, cùng keystore ký cố định nên cài đè lên bản v3 được.
 
 ## Bản v3 (1.2) — giới hạn từng app, phút thưởng, nhắc nhẹ, báo cáo
 
@@ -51,7 +57,7 @@ keystore cố định (`android/app/debug.keystore.b64`) nên cài đè lên nha
 
 ## Mặc định
 
-PIN `1234` · giới hạn ngày 90 phút · khóa 21:00–07:00 · thời sự 19:00–20:00 (chưa chọn app) · thời gian xem app thời sự trong khung thời sự không tính vào giới hạn ngày.
+PIN `1234` · giới hạn ngày 90 phút cho cả 7 ngày (đặt riêng từng ngày từ v4) · lịch khóa mặc định 21:00–07:00 hằng ngày (sửa/thêm lịch từ v4) · thời sự 19:00–20:00 (chưa chọn app) · thời gian xem app thời sự trong khung thời sự không tính vào giới hạn ngày.
 
 ## Giới hạn đã biết
 

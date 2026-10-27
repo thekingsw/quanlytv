@@ -89,8 +89,8 @@ class GuardService : Service() {
             launchWarning("Còn $rem phút nữa là hết giờ xem", sub)
             return
         }
-        // 3) Lock window start.
-        val untilLock = store.minutesUntilLockWindow(now)
+        // 3) Next lock schedule start.
+        val untilLock = store.minutesUntilNextLock(now)
         if (untilLock in 1..5 && !store.warned("lockwindow", untilLock)) {
             store.markWarned("lockwindow", untilLock)
             launchWarning(
@@ -113,8 +113,9 @@ class GuardService : Service() {
         val locked = store.isLockedNow(System.currentTimeMillis())
         val rem = store.remainingMin()
         val bonus = if (store.bonusMin > 0) " • thưởng còn ${store.bonusMin} phút" else ""
-        val text = if (locked) "TV đang khóa" else if (store.dailyLimitMin > 0)
-            "Đã xem ${store.usedTodayMin}/${store.dailyLimitMin} phút — còn lại $rem phút$bonus"
+        val limit = store.limitForToday()
+        val text = if (locked) "TV đang khóa" else if (limit > 0)
+            "Đã xem ${store.usedTodayMin}/$limit phút — còn lại $rem phút$bonus"
         else "Đã xem ${store.usedTodayMin} phút hôm nay$bonus"
         val pi = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

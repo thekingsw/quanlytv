@@ -40,18 +40,29 @@ Không bật bước này thì app không chặn được app khác.
 Mở Cài đặt của app (xem mục 1b nếu icon đã ẩn):
 
 - **Mã PIN mặc định: 1234** — đổi ngay trong Cài đặt (nhập PIN cũ + PIN mới, ít nhất 4 số).
-- **Giới hạn ngày: 90 phút** (bấm để đổi: Tắt / 30 / 60 / 90 / 120 / 180).
-- **Khung giờ khóa: 21:00 – 07:00** (nút − / + thay đổi từng 30 phút).
-- **Khung giờ thời sự: 19:00 – 20:00** — chọn **app thời sự** trong danh sách. Trong khung này TV chỉ mở được đúng app đó, các app khác mở lên sẽ hiện màn hình khóa. Thời gian xem app thời sự trong khung này **không tính** vào giới hạn ngày. Nếu chưa chọn app nào thì khung thời sự không có tác dụng gì thêm.
+- **Lịch khóa theo ngày** (bản v4, xem mục 3c): mỗi lịch chọn ngày trong tuần + giờ khóa từ–đến, gộp nhiều lịch được. Mặc định ban đầu: một lịch khóa 21:00 – 07:00 hằng ngày (giữ nguyên quy tắc cũ của bản v3).
+- **Giới hạn ngày theo ngày** (bản v4, xem mục 3c): mỗi ngày trong tuần một mức riêng, mặc định 90 phút cho cả 7 ngày (giữ nguyên mức cũ).
+- **Khung giờ thời sự: 19:00 – 20:00** — chọn **app thời sự** trong danh sách. Trong khung này TV chỉ mở được đúng app đó, các app khác mở lên sẽ hiện màn hình khóa. Thời gian xem app thời sự trong khung này **không tính** vào giới hạn ngày. Nếu chưa chọn app nào thì khung thời sự không có tác dụng gì thêm. Khung thời sự KHÔNG nằm trong danh sách lịch khóa — nó là luật riêng, luôn giữ nguyên như cũ.
 - **Khóa thủ công**: bật/tắt khóa ngay.
 - **Reset số phút đã xem hôm nay** nếu muốn cho xem lại từ đầu.
 
 ## 3b. Tính năng mới bản v3 (1.2)
 
-- **Giới hạn từng app** (trong Cài đặt → mục **Giới hạn từng app** → bấm **Chọn app để đặt giới hạn**): chọn một app rồi chọn chế độ: **Bình thường** (tính vào giới hạn ngày như cũ) / **Giới hạn riêng 15 / 30 / 60 phút mỗi ngày** / **Không tính giờ** (app học — xem bao lâu cũng được, không cộng vào giới hạn ngày) / **Chặn hẳn** (mở lên là hiện màn hình khóa, trừ khi nhập PIN mở tạm). Lưu xong áp dụng ngay, không cần khởi động lại. Hết giờ của app nào thì chỉ app đó bị khóa (màn hình khóa ghi rõ lý do, ví dụ "Hết giờ cho app YouTube"), TV vẫn xem app khác được. Thứ tự ưu tiên: khung thời sự 19:00–20:00 vẫn cao nhất; ngoài khung đó thì quy tắc của app được áp dụng; khóa thủ công / khung khóa / giới hạn ngày như cũ. Lưu ý: app "Không tính giờ" vẫn bị khóa trong khung giờ khóa 21:00–07:00 và khi bố khóa thủ công. Đổi quy tắc chỉ làm trên TV trong bản này; trang web điện thoại chỉ xem số phút từng app.
+- **Giới hạn từng app** (trong Cài đặt → mục **Giới hạn từng app** → bấm **Chọn app để đặt giới hạn**): chọn một app rồi chọn chế độ: **Bình thường** (tính vào giới hạn ngày như cũ) / **Giới hạn riêng 15 / 30 / 60 phút mỗi ngày** / **Không tính giờ** (app học — xem bao lâu cũng được, không cộng vào giới hạn ngày) / **Chặn hẳn** (mở lên là hiện màn hình khóa, trừ khi nhập PIN mở tạm). Lưu xong áp dụng ngay, không cần khởi động lại. Hết giờ của app nào thì chỉ app đó bị khóa (màn hình khóa ghi rõ lý do, ví dụ "Hết giờ cho app YouTube"), TV vẫn xem app khác được. Thứ tự ưu tiên: khung thời sự 19:00–20:00 vẫn cao nhất; ngoài khung đó thì quy tắc của app được áp dụng; khóa thủ công / khung khóa / giới hạn ngày như cũ. Lưu ý: app "Không tính giờ" vẫn bị khóa trong các lịch khóa và khi bố khóa thủ công. Đổi quy tắc chỉ làm trên TV trong bản này; trang web điện thoại chỉ xem số phút từng app.
 - **Phút thưởng** (trang web điện thoại → mục **Thưởng phút**, hoặc trên TV: Cài đặt → mục **Phút thưởng**): bấm **Thưởng +5 / +10 / +15 / +30 phút** để cộng vào quỹ thưởng. Khi hết giờ ngày mà quỹ còn phút, TV vẫn mở và tự trừ dần quỹ, mỗi phút xem trừ 1 phút thưởng; hết cả phút thưởng mới khóa. Phút thưởng chưa dùng hết **dồn sang hôm sau** (khác với phút ngày chưa dùng thì không dồn). Số phút thưởng còn lại hiện trên màn hình chính của TV ("Còn lại hôm nay: X phút + thưởng Y phút"), trong Cài đặt, và trên trang web. Trên TV phải nhập PIN trước khi thưởng (bấm nút rồi nhập PIN); trên điện thoại thì không cần PIN. Khác với nút "+5 phút" thường (mở khóa ngay 5 phút): phút thưởng chỉ có tác dụng khi đã hết giờ ngày.
 - **Nhắc nhẹ trước khi khóa**: khi còn đúng **5 phút** và **1 phút** nữa là hết giờ ngày (tính cả phút thưởng), hoặc hết giờ riêng của app đang xem, hoặc đến giờ bắt đầu khung khóa, TV hiện một bảng nhắc nhỏ ở phía trên màn hình ("Còn 5 phút nữa là hết giờ xem"), tự tắt sau 20 giây hoặc khi bấm **Đã hiểu** / Back trên điều khiển. Bảng nhắc không chặn việc đang xem — trẻ vẫn xem tiếp được đến khi khóa thật. Mỗi mốc chỉ nhắc một lần; được cộng thêm giờ hoặc phút thưởng thì nhắc lại từ đầu cho lần tới hạn mới.
-- **Báo cáo** (trang web điện thoại → mục **Báo cáo**; trên TV: màn hình chính hiện dòng nhỏ **"Hôm qua đã xem X phút"**): trang web hiện bảng hôm nay — từng app xem bao nhiêu phút, tổng hôm nay so với giới hạn ngày — và 7 ngày gần nhất, mỗi ngày một hàng với thanh ngang + số phút. Lịch sử lưu 14 ngày gần nhất. Ngoài ra có endpoint `GET /api/report` trả JSON `{today:{date,total,perApp:{pkg:min}}, days:[{date,total}]}` để sau này dùng.
+- **Báo cáo** (trang web điện thoại → mục **Báo cáo**; trên TV: màn hình chính hiện dòng nhỏ **"Hôm qua đã xem X phút"**): trang web hiện bảng hôm nay — từng app xem bao nhiêu phút, tổng hôm nay so với giới hạn ngày — và 7 ngày gần nhất, mỗi ngày một hàng với thanh ngang + số phút. Lịch sử lưu 14 ngày gần nhất. Ngoài ra có endpoint `GET /api/report` trả JSON `{today:{date,total,limit,perApp:{pkg:min}}, days:[{date,total}]}` để sau này dùng.
+
+## 3c. Tính năng mới bản v4 (1.3) — Lịch khóa linh hoạt
+
+- **Lịch khóa theo ngày** (trong Cài đặt → mục **Lịch khóa theo ngày** → bấm **Quản lý lịch khóa**): danh sách các lịch hiện có, bấm vào một lịch để sửa, bấm **Thêm lịch mới** để tạo thêm. Mỗi lịch gồm: 7 ô tick chọn ngày trong tuần (Thứ 2 … Chủ nhật, bấm bằng điều khiển), giờ **bắt đầu** và giờ **kết thúc** (nút − / + thay đổi từng 15 phút), nút **Khóa cả ngày** (đặt 00:00–23:59), nút **Xóa lịch này**. Lưu xong áp dụng ngay, không cần khởi động lại.
+  - **Khóa qua đêm:** nếu giờ kết thúc nhỏ hơn giờ bắt đầu thì app hiểu là khóa sang ngày hôm sau. Ví dụ lịch Thứ 4, Thứ 5 khóa 19:00–10:00 nghĩa là: Thứ 4 từ 19:00 đến Thứ 5 10:00 sáng, và Thứ 5 từ 19:00 đến Thứ 6 10:00 sáng.
+  - **Gộp nhiều lịch:** lịch nào khớp giờ hiện tại thì TV khóa. Màn hình khóa ghi rõ lý do, ví dụ "Đến giờ khóa (Thứ 4, Thứ 5: 19:00–10:00 (qua đêm))".
+  - **Ví dụ của anh:** lịch 1 = tick Thứ 2, Thứ 3 + bấm **Khóa cả ngày**; lịch 2 = tick Thứ 4, Thứ 5 + bắt đầu 19:00, kết thúc 10:00.
+  - **Chuyển từ bản cũ:** lần đầu mở bản v4, khung khóa cũ (21:00–07:00 hằng ngày) tự chuyển thành một lịch trong danh sách — quy tắc hiện tại của anh không mất, anh chỉ việc sửa/xóa/thêm lịch theo ý.
+  - Nhắc nhẹ 5 phút / 1 phút trước giờ khóa vẫn hoạt động theo lịch mới (tính tới giờ bắt đầu của lịch gần nhất).
+- **Giới hạn ngày theo ngày** (trong Cài đặt → mục **Giới hạn ngày theo ngày** → bấm **Đặt giới hạn từng ngày**): bấm vào một ngày rồi chọn mức: 30 / 60 / 90 / 120 / 180 / 240 phút hoặc **Không giới hạn**. Ngày "Không giới hạn" thì chỉ còn bị khóa bởi lịch khóa (và các quy tắc khác như giới hạn từng app). Ví dụ: ngày học 60 phút, cuối tuần 120 phút. Lần đầu mở bản v4, mức 90 phút cũ được gán cho cả 7 ngày.
+- **Trang web điện thoại:** chỉ xem (không sửa) — hiện giới hạn của hôm nay và các lịch khóa của hôm nay. Muốn sửa lịch và giới hạn theo ngày thì làm trên TV trong Cài đặt. Endpoint `GET /api/status` thêm `todayLimit` và `todaySchedules`.
 
 ## 4. Điều khiển từ điện thoại (cùng WiFi)
 
@@ -86,7 +97,7 @@ Cách làm (không root máy, chỉ cần bật ADB trên TV):
 
 1. Khởi động lại TV, mở YouTube xem thử vài phút — màn hình chính app phải đếm số phút đã xem tăng lên.
 2. Bấm **Khóa ngay** trên app (hoặc từ điện thoại), rồi thử mở YouTube — phải hiện ngay màn hình khóa đỏ, nhập PIN mới mở được.
-3. Đổi giờ khóa tạm thành giờ hiện tại để thử khung giờ khóa, rồi đổi lại.
+3. Thêm tạm một lịch khóa vào giờ hiện tại để thử, rồi xóa lịch đó đi.
 4. Vào khung 19:00–20:00 thử mở app khác ngoài app thời sự đã chọn — phải bị chặn.
 
 ## Gỡ app (khi không cần nữa)

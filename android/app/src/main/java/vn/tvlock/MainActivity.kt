@@ -102,13 +102,16 @@ class MainActivity : Activity() {
         val rem = store.remainingMin()
         val remTxt = if (rem == Int.MAX_VALUE) "không giới hạn" else "$rem phút"
         val bonusTxt = if (store.bonusMin > 0) " + thưởng ${store.bonusMin} phút" else ""
-        tvUsed.text = "Đã xem hôm nay: ${store.usedTodayMin} / ${store.dailyLimitMin} phút\nCòn lại hôm nay: $remTxt$bonusTxt"
-        tvTimes.text = "Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)}\nGiờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
+        val limit = store.limitForToday()
+        val limitTxt = if (limit <= 0) "không giới hạn" else "$limit phút"
+        tvUsed.text = "Đã xem hôm nay: ${store.usedTodayMin} / $limitTxt\nCòn lại hôm nay: $remTxt$bonusTxt"
+        val todays = store.todayScheduleSummaries(now)
+        val lockTxt = if (todays.isEmpty()) "Hôm nay không có lịch khóa"
+            else "Lịch khóa hôm nay:\n" + todays.joinToString("\n")
+        tvTimes.text = "$lockTxt\nGiờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
         tvNews.text = if (store.newsPkg.isEmpty()) "App thời sự: chưa chọn" else "App thời sự: ${appLabel(store.newsPkg)}"
         val yday = store.yesterdayTotal()
         tvYesterday.text = if (yday >= 0) "Hôm qua đã xem $yday phút" else ""
-        tvTimes.text = "Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)}\nGiờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
-        tvNews.text = if (store.newsPkg.isEmpty()) "App thời sự: chưa chọn" else "App thời sự: ${appLabel(store.newsPkg)}"
         tvWeb.text = "Điều khiển từ điện thoại (cùng WiFi):\nhttp://${wifiIp()}:8080"
     }
 
