@@ -147,6 +147,29 @@ class Store(private val ctx: Context) {
         return best
     }
 
+    /** v1.7: seconds until the next schedule starts — same logic as
+     * [minutesUntilNextLock] but exact to the second, for the 60s countdown. */
+    fun secondsUntilNextLock(nowMs: Long): Int {
+        val c = Calendar.getInstance()
+        c.timeInMillis = nowMs
+        val today = dayIndexOf(c)
+        val secOfDay = c.get(Calendar.HOUR_OF_DAY) * 3600 +
+            c.get(Calendar.MINUTE) * 60 + c.get(Calendar.SECOND)
+        if (isLockedBySchedule(nowMs)) return 0
+        var best = Int.MAX_VALUE
+        for (s in lockSchedules()) {
+            if (s.days.isEmpty()) continue
+            for (d in 0..7) {
+                val day = (today + d) % 7
+                if (day !in s.days) continue
+                val delta = d * 86400 + s.startMin * 60 - secOfDay
+                if (delta <= 0) continue
+                if (delta < best) best = delta
+            }
+        }
+        return best
+    }
+
     // ---------- v4: daily limit per weekday (0=Mon..6=Sun; <=0 = unlimited) ----------
     private fun dailyLimitsJson(): JSONObject {
         // One-time migration from the old single daily limit (v3).
@@ -452,6 +475,39 @@ class Store(private val ctx: Context) {
         val d = dailyRemainingMin()
         if (d == Int.MAX_VALUE) return Int.MAX_VALUE
         return d + bonusMin
+    }
+
+    /** v1.7: seconds until the daily limit (+ bonus pool) runs out (MAX when
+     * unlimited). Counts full minutes already watched + the sub-minute
+     * remainder + time on the current app since the last tick, so the
+     * last-minute countdown is accurate to the second. */
+    fun secondsUntilDailyLimit(nowMs: Long): Int {
+        resetUsedIfNewDay()
+        val limit = limitForToday()
+        if (limit <= 0) return Int.MAX_VALUE
+        val watchedSec = usedTodayMin * 60 + (remainderMs / 1000).toInt() + elapsedSec(nowMs)
+        return (limit + bonusMin) * 60 - watchedSec
+    }
+
+    /** v1.7: seconds until this app's own limit runs out (MAX when it has none). */
+    fun secondsUntilAppLimit(pkg: String, nowMs: Long): Int {
+        val r = appRule(pkg)
+        if (r.mode != "limit") return Int.MAX_VALUE
+        val watchedSec = perAppMin(pkg) * 60 + (remainderMs / 1000).toInt() +
+            if (pkg == lastPkg) elapsedSec(nowMs) else 0
+        return r.minutes * 60 - watchedSec
+    }
+
+    /** Seconds of countable watch time since the last tick for the current
+     * foreground app (0 when it is exempt or not counted). */
+    private fun elapsedSec(nowMs: Long): Int {
+        val pkg = lastPkg
+        if (pkg.isEmpty() || isExcluded(pkg)) return 0
+        if (isNewsExempt(pkg, nowMs)) return 0
+        if (appRule(pkg).mode == "free") return 0
+        val start = lastPkgStartMs
+        if (start <= 0L || nowMs <= start) return 0
+        return ((nowMs - start) / 1000).toInt()
     }
 
     fun lockReason(nowMs: Long): String {

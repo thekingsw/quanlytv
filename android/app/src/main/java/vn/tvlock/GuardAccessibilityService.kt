@@ -7,9 +7,24 @@ import android.view.accessibility.AccessibilityEvent
 class GuardAccessibilityService : AccessibilityService() {
     private lateinit var store: Store
 
+    private val warningListener = object : WarningBus.Listener {
+        override fun showWarning(title: String, sub: String) = WarningOverlay.show(title, sub)
+        override fun hideWarning() = WarningOverlay.hide()
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         store = Store(this)
+        // v1.7: nhận banner nhắc từ GuardService để vẽ overlay — chỉ service
+        // trợ năng mới vẽ được cửa sổ TYPE_ACCESSIBILITY_OVERLAY.
+        WarningOverlay.attach(this)
+        WarningBus.listener = warningListener
+    }
+
+    override fun onDestroy() {
+        WarningBus.listener = null
+        WarningOverlay.detach()
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

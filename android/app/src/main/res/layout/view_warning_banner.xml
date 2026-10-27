@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.7: banner nhắc kiểu notification — dải nhỏ phía trên màn hình, vẽ bằng
+     WindowManager overlay (không phải Activity) nên không pause app đang xem,
+     không cướp focus, không nhận chạm. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginLeft="48dp" android:layout_marginRight="48dp"
+    android:orientation="vertical" android:background="@drawable/card_bg"
+    android:padding="12dp">
+    <TextView android:id="@+id/tvBannerTitle"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="" android:textSize="22sp" android:textStyle="bold"
+        android:textColor="@color/text_primary" android:gravity="center" />
+    <TextView android:id="@+id/tvBannerSub"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="" android:textSize="16sp"
+        android:textColor="@color/text_muted" android:gravity="center"
+        android:layout_marginTop="4dp" />
+</LinearLayout>

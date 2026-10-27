@@ -8,9 +8,11 @@ import android.widget.Button
 import android.widget.TextView
 
 /**
- * Gentle pre-lock warning banner: shows a message at the top of the screen
- * for 20 seconds (or until the parent presses OK/Back). It never blocks
- * viewing and is not counted as watch time (vn.tvlock is excluded).
+ * v1.7: chỉ còn là DỰ PHÒNG khi banner overlay không vẽ được (Trợ năng chưa
+ * chạy). Bình thường GuardService nhắc bằng banner overlay của
+ * GuardAccessibilityService — không chắn app, không cướp focus.
+ * Popup này hiện tối đa 20 giây (hoặc tới khi bấm OK/Back) và không tính
+ * vào giờ xem (vn.tvlock được loại khỏi tính giờ).
  */
 class WarningActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
@@ -24,7 +26,8 @@ class WarningActivity : Activity() {
         findViewById<TextView>(R.id.tvWarnSub).text =
             intent.getStringExtra("sub") ?: ""
         findViewById<Button>(R.id.btnWarnOk).setOnClickListener { finish() }
-        findViewById<Button>(R.id.btnWarnOk).requestFocus()
+        // v1.7: dự phòng khi overlay không vẽ được — không giành focus để
+        // điều khiển vẫn ở app đang xem; bấm Back là tắt bảng này.
         handler.postDelayed(dismiss, 20000)
     }
 

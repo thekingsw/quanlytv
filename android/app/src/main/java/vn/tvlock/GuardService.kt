@@ -29,7 +29,9 @@ class GuardService : Service() {
         tickThread = Thread({
             while (running) {
                 try {
-                    Thread.sleep(15000)
+                    // v1.7: tick mỗi 1 giây (trước đây 15 giây) để đếm ngược
+                    // từng giây trong 60 giây cuối trước khi khóa.
+                    Thread.sleep(1000)
                     tick()
                 } catch (_: InterruptedException) { break } catch (_: Exception) { }
             }
@@ -39,10 +41,21 @@ class GuardService : Service() {
     private fun tick() {
         val now = System.currentTimeMillis()
         store.tick(now)
+        if (now < store.unlockUntilMs || store.isLockedNow(now)) {
+            // Đang khóa / đang mở tạm: không nhắc nữa, gỡ banner nếu còn.
+            WarningBus.hide()
+            countdownActive = false
+            bannerShown = false
+            updateNotification()
+            return
+        }
         val pkg = store.lastPkg
         if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
             val reason = store.blockReason(pkg, now, store.appLabel(pkg))
             if (reason != null) {
+                WarningBus.hide()
+                countdownActive = false
+                bannerShown = false
                 val i = Intent(this, LockActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 i.putExtra("reason", reason)
@@ -51,6 +64,63 @@ class GuardService : Service() {
             }
         }
         warnIfNeeded(now)
+        updateCountdown(now)
+        updateNotification()
+    }
+
+    // v1.7: trạng thái banner nhắc (overlay) + đếm ngược 60 giây cuối.
+    private var countdownActive = false
+    private var bannerShown = false
+    private var bannerShownAtMs = 0L
+    private var lastNotifText = ""
+
+    /** Hạn gần nhất còn chạy (số giây, nhãn) — hạn ngày, hạn app, giờ khóa. */
+    private fun nearestDeadline(now: Long): Pair<Int, String>? {
+        var best: Pair<Int, String>? = null
+        fun consider(sec: Int, label: String) {
+            if (sec in 1..3600) {
+                val cur = best
+                if (cur == null || sec < cur.first) best = sec to label
+            }
+        }
+        consider(store.secondsUntilDailyLimit(now), "hết giờ xem")
+        val pkg = store.lastPkg
+        if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
+            consider(store.secondsUntilAppLimit(pkg, now), "hết giờ cho app ${store.appLabel(pkg)}")
+        }
+        consider(store.secondsUntilNextLock(now), "đến giờ khóa TV")
+        return best
+    }
+
+    /** v1.7: 60 giây cuối đếm ngược từng giây ("Còn 42 giây nữa là...").
+     * Tick chạy mỗi 1 giây nên số giây luôn tươi. Hết hạn / được cộng thêm
+     * giờ thì banner tự gỡ. Banner nhắc 5'/1' tự tắt sau 20 giây. */
+    private fun updateCountdown(now: Long) {
+        val deadline = nearestDeadline(now)
+        if (deadline != null && deadline.first in 1..60) {
+            val (sec, label) = deadline
+            countdownActive = true
+            val s = if (sec == 1) "1 giây" else "$sec giây"
+            showBanner("Còn $s nữa là $label", "Nhớ lưu lại việc đang xem nhé!")
+            return
+        }
+        if (countdownActive) {
+            countdownActive = false
+            bannerShown = false
+            WarningBus.hide()
+            return
+        }
+        if (bannerShown && System.currentTimeMillis() - bannerShownAtMs > 20000) {
+            bannerShown = false
+            WarningBus.hide()
+        }
+    }
+
+    /** Chỉ cập nhật notification khi nội dung đổi (tick nay chạy mỗi giây). */
+    private fun updateNotification() {
+        val text = notificationText()
+        if (text == lastNotifText) return
+        lastNotifText = text
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         try { nm.notify(1, buildNotification()) } catch (_: Exception) { }
     }
@@ -58,8 +128,11 @@ class GuardService : Service() {
     /**
      * v3: gentle warning when 5 or 1 minutes remain before the daily limit
      * (including bonus), the current app's own limit, or the lock window
-     * starts. Each threshold fires once per deadline; never launches the
-     * lock screen and never counts as viewing (WarningActivity is vn.tvlock).
+     * starts. v1.7: warnings show as a non-blocking overlay banner
+     * (WarningOverlay via GuardAccessibilityService), never as a popup that
+     * pauses the app being watched. Each threshold fires once per deadline;
+     * never launches the lock screen and never counts as viewing
+     * (vn.tvlock is excluded from watch time).
      */
     private fun warnIfNeeded(now: Long) {
         // v1.5: bỏ điều kiện "đang ở màn hình của app thì không nhắc" — màn hình
@@ -74,7 +147,7 @@ class GuardService : Service() {
                 val kind = "app:$pkg"
                 if (!store.warned(kind, appRem)) {
                     store.markWarned(kind, appRem)
-                    launchWarning(
+                    showBanner(
                         "Còn $appRem phút nữa là hết giờ cho app ${store.appLabel(pkg)}",
                         "Hết giờ app này thì vẫn xem được app khác."
                     )
@@ -88,7 +161,7 @@ class GuardService : Service() {
             store.markWarned("daily", rem)
             val sub = if (store.bonusMin > 0) "Trong đó có ${store.bonusMin} phút thưởng."
                 else "Bố có thể cộng thêm giờ từ điện thoại."
-            launchWarning("Còn $rem phút nữa là hết giờ xem", sub)
+            showBanner("Còn $rem phút nữa là hết giờ xem", sub)
             return
         }
         // 3) Next lock schedule start.
@@ -99,11 +172,19 @@ class GuardService : Service() {
         if (untilLock > 5) store.clearWarningsKind("lockwindow")
         if (untilLock in 1..5 && !store.warned("lockwindow", untilLock)) {
             store.markWarned("lockwindow", untilLock)
-            launchWarning(
+            showBanner(
                 "Còn $untilLock phút nữa là đến giờ khóa TV",
                 "Nhớ lưu lại việc đang xem nhé!"
             )
         }
+    }
+
+    /** v1.7: nhắc bằng banner overlay (không chắn app đang xem, không cướp
+     * focus); chỉ khi Trợ năng chưa chạy mới rơi về popup WarningActivity cũ. */
+    private fun showBanner(message: String, sub: String) {
+        bannerShown = true
+        bannerShownAtMs = System.currentTimeMillis()
+        if (!WarningBus.show(message, sub)) launchWarning(message, sub)
     }
 
     private fun launchWarning(message: String, sub: String) {
@@ -114,15 +195,19 @@ class GuardService : Service() {
         try { startActivity(i) } catch (_: Exception) { }
     }
 
-    private fun buildNotification(): Notification {
+    private fun notificationText(): String {
         store.resetUsedIfNewDay()
         val locked = store.isLockedNow(System.currentTimeMillis())
         val rem = store.remainingMin()
         val bonus = if (store.bonusMin > 0) " • thưởng còn ${store.bonusMin} phút" else ""
         val limit = store.limitForToday()
-        val text = if (locked) "TV đang khóa" else if (limit > 0)
+        return if (locked) "TV đang khóa" else if (limit > 0)
             "Đã xem ${store.usedTodayMin}/$limit phút — còn lại $rem phút$bonus"
         else "Đã xem ${store.usedTodayMin} phút hôm nay$bonus"
+    }
+
+    private fun buildNotification(): Notification {
+        val text = notificationText()
         val pi = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val b = if (Build.VERSION.SDK_INT >= 26)
