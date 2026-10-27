@@ -49,6 +49,52 @@
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Giới hạn từng app" style="@style/TvSection" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="16dp" android:layout_marginTop="12dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Đặt giới hạn riêng cho từng app: ví dụ YouTube 30 phút/ngày, app học không tính giờ, game thì chặn hẳn. Áp dụng ngay."
+            style="@style/TvBody" android:textColor="@color/text_muted" />
+        <TextView android:id="@+id/tvAppRules"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" style="@style/TvBody" android:textSize="20sp"
+            android:layout_marginTop="12dp" />
+        <Button android:id="@+id/btnAppRules" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Chọn app để đặt giới hạn"
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Phút thưởng" style="@style/TvSection" android:layout_marginTop="20dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="16dp" android:layout_marginTop="12dp">
+        <TextView android:id="@+id/tvBonus"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" style="@style/TvBody" android:textSize="20sp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Bấm một nút rồi nhập PIN để thưởng phút. Phút thưởng chỉ trừ khi đã hết giờ ngày, không hết hạn khi sang ngày mới."
+            style="@style/TvBody" android:textColor="@color/text_muted"
+            android:layout_marginTop="8dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="12dp">
+            <Button android:id="@+id/btnBonus5" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                android:text="Thưởng +5'" />
+            <Button android:id="@+id/btnBonus10" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                android:text="Thưởng +10'" />
+            <Button android:id="@+id/btnBonus15" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                android:text="Thưởng +15'" />
+            <Button android:id="@+id/btnBonus30" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                android:text="Thưởng +30'" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Khung giờ khóa" style="@style/TvSection" android:layout_marginTop="20dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"

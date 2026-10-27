@@ -112,6 +112,13 @@ class LockActivity : Activity() {
                     Toast.makeText(this, "Đã mở khóa 60 phút", Toast.LENGTH_SHORT).show()
                     finish()
                 }
+                "bonus" -> {
+                    if (addMinutes > 0) {
+                        store.addBonus(addMinutes)
+                        Toast.makeText(this, "Đã thưởng thêm $addMinutes phút (quỹ còn ${store.bonusMin} phút)", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
                 else -> {
                     pinView.visibility = View.GONE
                     optionsView.visibility = View.VISIBLE

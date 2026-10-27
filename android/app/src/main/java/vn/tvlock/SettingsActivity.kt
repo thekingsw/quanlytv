@@ -25,6 +25,8 @@ class SettingsActivity : Activity() {
     private lateinit var tvManual: TextView
     private lateinit var tvAccess: TextView
     private lateinit var tvIconState: TextView
+    private lateinit var tvBonus: TextView
+    private lateinit var tvAppRules: TextView
     private lateinit var btnIconToggle: Button
     private val limits = listOf(0, 30, 60, 90, 120, 180)
     private var newsPkgs = listOf<String>()
@@ -42,6 +44,8 @@ class SettingsActivity : Activity() {
         tvManual = findViewById(R.id.tvManual)
         tvAccess = findViewById(R.id.tvAccess)
         tvIconState = findViewById(R.id.tvIconState)
+        tvBonus = findViewById(R.id.tvBonus)
+        tvAppRules = findViewById(R.id.tvAppRules)
         btnIconToggle = findViewById(R.id.btnIconToggle)
 
         findViewById<Button>(R.id.btnChangePin).setOnClickListener {
@@ -74,6 +78,22 @@ class SettingsActivity : Activity() {
             refresh()
         }
         btnIconToggle.setOnClickListener { toggleLauncherIcon(); refresh() }
+        findViewById<Button>(R.id.btnAppRules).setOnClickListener {
+            startActivity(Intent(this, AppRulesActivity::class.java))
+        }
+        // v3: bonus minutes on TV require the PIN first (LockActivity mode "bonus").
+        val bonusBtns = listOf(
+            R.id.btnBonus5 to 5, R.id.btnBonus10 to 10,
+            R.id.btnBonus15 to 15, R.id.btnBonus30 to 30
+        )
+        for ((id, min) in bonusBtns) {
+            findViewById<Button>(id).setOnClickListener {
+                val i = Intent(this, LockActivity::class.java)
+                i.putExtra("mode", "bonus"); i.putExtra("minutes", min)
+                i.putExtra("reason", "Thưởng thêm $min phút")
+                startActivity(i)
+            }
+        }
         findViewById<Button>(R.id.btnOpenMain).setOnClickListener {
             val i = Intent(this, MainActivity::class.java)
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -133,6 +153,19 @@ class SettingsActivity : Activity() {
         val iconOn = launcherIconEnabled()
         tvIconState.text = if (iconOn) "Icon trên màn hình chính: ĐANG HIỆN" else "Icon trên màn hình chính: ĐANG ẨN"
         btnIconToggle.text = if (iconOn) "Ẩn icon" else "Hiện icon"
+        // v3: bonus pool + per-app rules summary.
+        tvBonus.text = "Phút thưởng còn lại: ${store.bonusMin} phút\n(Phút thưởng chỉ trừ khi đã hết giờ ngày, và không hết hạn khi sang ngày mới.)"
+        val rules = store.appRules()
+        tvAppRules.text = if (rules.isEmpty()) "Chưa đặt giới hạn riêng cho app nào."
+        else rules.entries.joinToString("\n") { (pkg, r) ->
+            val label = store.appLabel(pkg)
+            when (r.mode) {
+                "limit" -> "$label: giới hạn riêng ${r.minutes} phút/ngày (hôm nay đã xem ${store.perAppMin(pkg)} phút)"
+                "free" -> "$label: không tính giờ"
+                "blocked" -> "$label: chặn hẳn"
+                else -> "$label: bình thường"
+            }
+        }
     }
 
     private fun launcherIconEnabled(): Boolean {

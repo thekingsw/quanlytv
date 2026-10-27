@@ -44,6 +44,11 @@
         android:text="" android:textSize="18sp" android:textColor="#90CAF9"
         android:gravity="center" android:layout_marginTop="16dp" />
 
+    <TextView android:id="@+id/tvYesterday"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="18sp" android:textColor="@color/text_muted"
+        android:gravity="center" android:layout_marginTop="8dp" />
+
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:layout_marginTop="20dp">
         <Button android:id="@+id/btnLock" style="@style/TvButton"

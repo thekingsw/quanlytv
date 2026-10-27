@@ -13,8 +13,8 @@ android {
         applicationId = "vn.tvlock"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     // Fixed debug keystore so every CI build signs with the same key:

@@ -20,6 +20,7 @@ class MainActivity : Activity() {
     private lateinit var tvTimes: TextView
     private lateinit var tvWeb: TextView
     private lateinit var tvNews: TextView
+    private lateinit var tvYesterday: TextView
     private val handler = Handler(Looper.getMainLooper())
     private val refresh = object : Runnable {
         override fun run() { updateUi(); handler.postDelayed(this, 5000) }
@@ -34,6 +35,7 @@ class MainActivity : Activity() {
         tvTimes = findViewById(R.id.tvTimes)
         tvWeb = findViewById(R.id.tvWeb)
         tvNews = findViewById(R.id.tvNews)
+        tvYesterday = findViewById(R.id.tvYesterday)
         findViewById<Button>(R.id.btnLock).setOnClickListener {
             store.manualLocked = true; store.unlockUntilMs = 0L
             Toast.makeText(this, "Đã khóa TV", Toast.LENGTH_SHORT).show(); updateUi()
@@ -99,7 +101,12 @@ class MainActivity : Activity() {
         tvStatus.setBackgroundResource(if (locked) R.drawable.pill_locked else R.drawable.pill_open)
         val rem = store.remainingMin()
         val remTxt = if (rem == Int.MAX_VALUE) "không giới hạn" else "$rem phút"
-        tvUsed.text = "Đã xem hôm nay: ${store.usedTodayMin} / ${store.dailyLimitMin} phút\nCòn lại: $remTxt"
+        val bonusTxt = if (store.bonusMin > 0) " + thưởng ${store.bonusMin} phút" else ""
+        tvUsed.text = "Đã xem hôm nay: ${store.usedTodayMin} / ${store.dailyLimitMin} phút\nCòn lại hôm nay: $remTxt$bonusTxt"
+        tvTimes.text = "Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)}\nGiờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
+        tvNews.text = if (store.newsPkg.isEmpty()) "App thời sự: chưa chọn" else "App thời sự: ${appLabel(store.newsPkg)}"
+        val yday = store.yesterdayTotal()
+        tvYesterday.text = if (yday >= 0) "Hôm qua đã xem $yday phút" else ""
         tvTimes.text = "Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)}\nGiờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
         tvNews.text = if (store.newsPkg.isEmpty()) "App thời sự: chưa chọn" else "App thời sự: ${appLabel(store.newsPkg)}"
         tvWeb.text = "Điều khiển từ điện thoại (cùng WiFi):\nhttp://${wifiIp()}:8080"

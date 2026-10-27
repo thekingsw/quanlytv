@@ -46,12 +46,19 @@ Mở Cài đặt của app (xem mục 1b nếu icon đã ẩn):
 - **Khóa thủ công**: bật/tắt khóa ngay.
 - **Reset số phút đã xem hôm nay** nếu muốn cho xem lại từ đầu.
 
+## 3b. Tính năng mới bản v3 (1.2)
+
+- **Giới hạn từng app** (trong Cài đặt → mục **Giới hạn từng app** → bấm **Chọn app để đặt giới hạn**): chọn một app rồi chọn chế độ: **Bình thường** (tính vào giới hạn ngày như cũ) / **Giới hạn riêng 15 / 30 / 60 phút mỗi ngày** / **Không tính giờ** (app học — xem bao lâu cũng được, không cộng vào giới hạn ngày) / **Chặn hẳn** (mở lên là hiện màn hình khóa, trừ khi nhập PIN mở tạm). Lưu xong áp dụng ngay, không cần khởi động lại. Hết giờ của app nào thì chỉ app đó bị khóa (màn hình khóa ghi rõ lý do, ví dụ "Hết giờ cho app YouTube"), TV vẫn xem app khác được. Thứ tự ưu tiên: khung thời sự 19:00–20:00 vẫn cao nhất; ngoài khung đó thì quy tắc của app được áp dụng; khóa thủ công / khung khóa / giới hạn ngày như cũ. Lưu ý: app "Không tính giờ" vẫn bị khóa trong khung giờ khóa 21:00–07:00 và khi bố khóa thủ công. Đổi quy tắc chỉ làm trên TV trong bản này; trang web điện thoại chỉ xem số phút từng app.
+- **Phút thưởng** (trang web điện thoại → mục **Thưởng phút**, hoặc trên TV: Cài đặt → mục **Phút thưởng**): bấm **Thưởng +5 / +10 / +15 / +30 phút** để cộng vào quỹ thưởng. Khi hết giờ ngày mà quỹ còn phút, TV vẫn mở và tự trừ dần quỹ, mỗi phút xem trừ 1 phút thưởng; hết cả phút thưởng mới khóa. Phút thưởng chưa dùng hết **dồn sang hôm sau** (khác với phút ngày chưa dùng thì không dồn). Số phút thưởng còn lại hiện trên màn hình chính của TV ("Còn lại hôm nay: X phút + thưởng Y phút"), trong Cài đặt, và trên trang web. Trên TV phải nhập PIN trước khi thưởng (bấm nút rồi nhập PIN); trên điện thoại thì không cần PIN. Khác với nút "+5 phút" thường (mở khóa ngay 5 phút): phút thưởng chỉ có tác dụng khi đã hết giờ ngày.
+- **Nhắc nhẹ trước khi khóa**: khi còn đúng **5 phút** và **1 phút** nữa là hết giờ ngày (tính cả phút thưởng), hoặc hết giờ riêng của app đang xem, hoặc đến giờ bắt đầu khung khóa, TV hiện một bảng nhắc nhỏ ở phía trên màn hình ("Còn 5 phút nữa là hết giờ xem"), tự tắt sau 20 giây hoặc khi bấm **Đã hiểu** / Back trên điều khiển. Bảng nhắc không chặn việc đang xem — trẻ vẫn xem tiếp được đến khi khóa thật. Mỗi mốc chỉ nhắc một lần; được cộng thêm giờ hoặc phút thưởng thì nhắc lại từ đầu cho lần tới hạn mới.
+- **Báo cáo** (trang web điện thoại → mục **Báo cáo**; trên TV: màn hình chính hiện dòng nhỏ **"Hôm qua đã xem X phút"**): trang web hiện bảng hôm nay — từng app xem bao nhiêu phút, tổng hôm nay so với giới hạn ngày — và 7 ngày gần nhất, mỗi ngày một hàng với thanh ngang + số phút. Lịch sử lưu 14 ngày gần nhất. Ngoài ra có endpoint `GET /api/report` trả JSON `{today:{date,total,perApp:{pkg:min}}, days:[{date,total}]}` để sau này dùng.
+
 ## 4. Điều khiển từ điện thoại (cùng WiFi)
 
 1. Màn hình chính của app trên TV hiện địa chỉ dạng `http://192.168.x.x:8080`.
 2. Điện thoại **cùng WiFi nhà** mở trình duyệt tới địa chỉ đó.
-3. Bấm một cái là xong, **không cần nhập mã PIN**: **Khóa ngay**, **Mở khóa 60 phút**, hoặc **+5 / +10 / +15 / +20 / +30 phút**.
-4. Trang web hiện trạng thái: đang khóa hay mở, đã xem bao nhiêu phút, còn lại bao nhiêu.
+3. Bấm một cái là xong, **không cần nhập mã PIN**: **Khóa ngay**, **Mở khóa 60 phút**, hoặc **+5 / +10 / +15 / +20 / +30 phút**. Mục **Thưởng phút** cộng phút vào quỹ thưởng (+5 / +10 / +15 / +30), mục **Báo cáo** xem hôm nay xem app nào bao nhiêu phút và 7 ngày gần nhất.
+4. Trang web hiện trạng thái: đang khóa hay mở, đã xem bao nhiêu phút, còn lại bao nhiêu (kể cả phút thưởng).
 5. Không cần cài thêm app nào trên điện thoại, không cần tài khoản hay cloud.
 
 > Ai vào được trang web này (cùng WiFi nhà hoặc cùng Tailscale) đều bấm được — đó là lựa chọn của anh vì điện thoại do anh cầm.

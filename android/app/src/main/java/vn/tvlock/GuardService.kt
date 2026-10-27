@@ -41,27 +41,81 @@ class GuardService : Service() {
         store.tick(now)
         val pkg = store.lastPkg
         if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
-            val blocked = (store.isInNewsSlot(now) && store.newsPkg.isNotEmpty() && pkg != store.newsPkg) ||
-                (now >= store.unlockUntilMs && store.isLockedNow(now))
-            if (blocked) {
+            val reason = store.blockReason(pkg, now, store.appLabel(pkg))
+            if (reason != null) {
                 val i = Intent(this, LockActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                i.putExtra("reason", store.lockReason(now))
+                i.putExtra("reason", reason)
                 i.putExtra("mode", "lock")
                 try { startActivity(i) } catch (_: Exception) { }
             }
         }
+        warnIfNeeded(now)
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         try { nm.notify(1, buildNotification()) } catch (_: Exception) { }
+    }
+
+    /**
+     * v3: gentle warning when 5 or 1 minutes remain before the daily limit
+     * (including bonus), the current app's own limit, or the lock window
+     * starts. Each threshold fires once per deadline; never launches the
+     * lock screen and never counts as viewing (WarningActivity is vn.tvlock).
+     */
+    private fun warnIfNeeded(now: Long) {
+        if (store.lastPkg == packageName) return // a tvlock screen is already showing
+        if (now < store.unlockUntilMs || store.isLockedNow(now)) return
+        val pkg = store.lastPkg
+        // 1) Current app's own limit.
+        if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
+            val appRem = store.appLimitRemainingMin(pkg)
+            if (appRem in 1..5) {
+                val kind = "app:$pkg"
+                if (!store.warned(kind, appRem)) {
+                    store.markWarned(kind, appRem)
+                    launchWarning(
+                        "Còn $appRem phút nữa là hết giờ cho app ${store.appLabel(pkg)}",
+                        "Hết giờ app này thì vẫn xem được app khác."
+                    )
+                    return
+                }
+            }
+        }
+        // 2) Daily limit (including bonus pool).
+        val rem = store.remainingMin()
+        if (rem in 1..5 && !store.warned("daily", rem)) {
+            store.markWarned("daily", rem)
+            val sub = if (store.bonusMin > 0) "Trong đó có ${store.bonusMin} phút thưởng."
+                else "Bố có thể cộng thêm giờ từ điện thoại."
+            launchWarning("Còn $rem phút nữa là hết giờ xem", sub)
+            return
+        }
+        // 3) Lock window start.
+        val untilLock = store.minutesUntilLockWindow(now)
+        if (untilLock in 1..5 && !store.warned("lockwindow", untilLock)) {
+            store.markWarned("lockwindow", untilLock)
+            launchWarning(
+                "Còn $untilLock phút nữa là đến giờ khóa TV",
+                "Nhớ lưu lại việc đang xem nhé!"
+            )
+        }
+    }
+
+    private fun launchWarning(message: String, sub: String) {
+        val i = Intent(this, WarningActivity::class.java)
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        i.putExtra("message", message)
+        i.putExtra("sub", sub)
+        try { startActivity(i) } catch (_: Exception) { }
     }
 
     private fun buildNotification(): Notification {
         store.resetUsedIfNewDay()
         val locked = store.isLockedNow(System.currentTimeMillis())
         val rem = store.remainingMin()
+        val bonus = if (store.bonusMin > 0) " • thưởng còn ${store.bonusMin} phút" else ""
         val text = if (locked) "TV đang khóa" else if (store.dailyLimitMin > 0)
-            "Đã xem ${store.usedTodayMin}/${store.dailyLimitMin} phút — còn lại $rem phút"
-        else "Đã xem ${store.usedTodayMin} phút hôm nay"
+            "Đã xem ${store.usedTodayMin}/${store.dailyLimitMin} phút — còn lại $rem phút$bonus"
+        else "Đã xem ${store.usedTodayMin} phút hôm nay$bonus"
         val pi = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val b = if (Build.VERSION.SDK_INT >= 26)

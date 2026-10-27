@@ -26,16 +26,8 @@ class GuardAccessibilityService : AccessibilityService() {
         store.lastPkg = pkg
         store.lastPkgStartMs = now
         if (store.isExcluded(pkg) || pkg == packageName) return
-        if (isBlocked(pkg, now)) {
-            launchLock(store.lockReason(now))
-        }
-    }
-
-    private fun isBlocked(pkg: String, now: Long): Boolean {
-        // News slot: only the news app may run (when one is chosen).
-        if (store.isInNewsSlot(now) && store.newsPkg.isNotEmpty() && pkg != store.newsPkg) return true
-        if (now < store.unlockUntilMs) return false
-        return store.isLockedNow(now)
+        val reason = store.blockReason(pkg, now, store.appLabel(pkg))
+        if (reason != null) launchLock(reason)
     }
 
     private fun launchLock(reason: String) {
