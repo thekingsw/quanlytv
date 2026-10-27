@@ -3,31 +3,31 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="@color/bg_dark">
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:padding="24dp">
+    android:orientation="vertical" android:padding="16dp">
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Cài đặt Khóa TV" style="@style/TvTitle" />
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Đổi mã PIN" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Đổi mã PIN" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Mã PIN mặc định: 1234" style="@style/TvBody"
             android:textColor="@color/text_muted" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="12dp">
+            android:orientation="horizontal" android:layout_marginTop="8dp">
             <EditText android:id="@+id/etOldPin"
-                android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1"
+                android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
                 android:background="@drawable/card_bg" android:padding="12dp"
                 android:hint="PIN cũ" android:inputType="numberPassword"
-                android:textSize="20sp" android:textColor="@color/text_primary"
+                android:textSize="18sp" android:textColor="@color/text_primary"
                 android:textColorHint="#888888" android:layout_margin="4dp" />
             <EditText android:id="@+id/etNewPin"
-                android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1"
+                android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
                 android:background="@drawable/card_bg" android:padding="12dp"
                 android:hint="PIN mới" android:inputType="numberPassword"
-                android:textSize="20sp" android:textColor="@color/text_primary"
+                android:textSize="18sp" android:textColor="@color/text_primary"
                 android:textColorHint="#888888" android:layout_margin="4dp" />
             <Button android:id="@+id/btnChangePin" style="@style/TvButton"
                 android:layout_width="wrap_content" android:text="Đổi PIN"
@@ -36,70 +36,70 @@
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Lịch khóa theo ngày" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Lịch khóa theo ngày" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Mỗi lịch chọn ngày trong tuần và giờ khóa từ–đến, gộp nhiều lịch được. Khóa qua đêm (ví dụ 19:00 đến 10:00 sáng hôm sau) cũng được. Khung thời sự vẫn riêng, không nằm trong danh sách này."
+            android:text="Mỗi lịch chọn ngày + giờ khóa từ–đến, gộp được nhiều lịch, khóa qua đêm cũng được."
             style="@style/TvBody" android:textColor="@color/text_muted" />
         <TextView android:id="@+id/tvSchedules"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp"
-            android:layout_marginTop="12dp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp"
+            android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnSchedules" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Quản lý lịch khóa"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Giới hạn ngày theo ngày" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Giới hạn ngày theo ngày" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Mỗi ngày trong tuần một mức riêng, ví dụ ngày học 60 phút, cuối tuần 120 phút."
+            android:text="Mỗi ngày một mức riêng, ví dụ ngày học 60', cuối tuần 120'."
             style="@style/TvBody" android:textColor="@color/text_muted" />
         <TextView android:id="@+id/tvDailyLimits"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp"
-            android:layout_marginTop="12dp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp"
+            android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnDailyLimits" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Đặt giới hạn từng ngày"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Giới hạn từng app" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Giới hạn từng app" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Đặt giới hạn riêng cho từng app: ví dụ YouTube 30 phút/ngày, app học không tính giờ, game thì chặn hẳn. Áp dụng ngay."
+            android:text="Ví dụ YouTube 30'/ngày, app học không tính giờ, game chặn hẳn."
             style="@style/TvBody" android:textColor="@color/text_muted" />
         <TextView android:id="@+id/tvAppRules"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp"
-            android:layout_marginTop="12dp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp"
+            android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnAppRules" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Chọn app để đặt giới hạn"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Phút thưởng" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Phút thưởng" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:id="@+id/tvBonus"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Bấm một nút rồi nhập PIN để thưởng phút. Phút thưởng chỉ trừ khi đã hết giờ ngày, không hết hạn khi sang ngày mới."
+            android:text="Phút thưởng chỉ trừ khi đã hết giờ ngày, không hết hạn qua ngày mới."
             style="@style/TvBody" android:textColor="@color/text_muted"
             android:layout_marginTop="8dp" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="12dp">
+            android:orientation="horizontal" android:layout_marginTop="8dp">
             <Button android:id="@+id/btnBonus5" style="@style/TvButton"
                 android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
                 android:text="Thưởng +5'" />
@@ -116,103 +116,103 @@
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khung giờ thời sự" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Khung giờ thời sự" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Trong khung này TV chỉ mở được app thời sự" style="@style/TvBody"
             android:textColor="@color/text_muted" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="12dp">
+            android:orientation="horizontal" android:layout_marginTop="8dp">
             <TextView android:id="@+id/tvNewsStart"
                 android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="20sp"
+                android:text="" style="@style/TvBody" android:textSize="18sp"
                 android:gravity="center_vertical" />
             <Button android:id="@+id/btnNewsStartMinus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="−" android:textSize="28sp"
+                android:layout_width="72dp" android:text="−" android:textSize="24sp"
                 android:layout_margin="4dp" />
             <Button android:id="@+id/btnNewsStartPlus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="+" android:textSize="28sp"
+                android:layout_width="72dp" android:text="+" android:textSize="24sp"
                 android:layout_margin="4dp" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
             <TextView android:id="@+id/tvNewsEnd"
                 android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="20sp"
+                android:text="" style="@style/TvBody" android:textSize="18sp"
                 android:gravity="center_vertical" />
             <Button android:id="@+id/btnNewsEndMinus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="−" android:textSize="28sp"
+                android:layout_width="72dp" android:text="−" android:textSize="24sp"
                 android:layout_margin="4dp" />
             <Button android:id="@+id/btnNewsEndPlus" style="@style/TvButton"
-                android:layout_width="90dp" android:text="+" android:textSize="28sp"
+                android:layout_width="72dp" android:text="+" android:textSize="24sp"
                 android:layout_margin="4dp" />
         </LinearLayout>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="App thời sự:" style="@style/TvBody" android:textSize="20sp"
-            android:layout_marginTop="12dp" />
+            android:text="App thời sự:" style="@style/TvBody" android:textSize="18sp"
+            android:layout_marginTop="8dp" />
         <Spinner android:id="@+id/spNews"
-            android:layout_width="match_parent" android:layout_height="64dp"
+            android:layout_width="match_parent" android:layout_height="52dp"
             android:background="@drawable/card_bg" android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khóa thủ công" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Khóa thủ công" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:id="@+id/tvManual"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp" />
         <Button android:id="@+id/btnManual" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Bật / tắt khóa thủ công"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnResetUsed" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Reset số phút đã xem hôm nay"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Hiển thị icon" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Hiển thị icon" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:id="@+id/tvIconState"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp" />
+            android:text="" style="@style/TvBody" android:textSize="18sp" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Icon đang ẩn thì trẻ khó thấy app trên màn hình chính. Bố vẫn mở được app qua Trợ năng, màn hình khóa, hoặc lệnh ADB."
+            android:text="Icon ẩn thì trẻ khó thấy app. Bố vẫn mở được qua Trợ năng, màn hình khóa, hoặc ADB."
             style="@style/TvBody" android:textColor="@color/text_muted"
             android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnIconToggle" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Hiện icon"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
         <Button android:id="@+id/btnOpenMain" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Mở màn hình chính"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Trợ năng" style="@style/TvSection" android:layout_marginTop="20dp" />
+        android:text="Trợ năng" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="12dp">
+        android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:id="@+id/tvAccess"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="20sp"
+            android:text="" style="@style/TvBody" android:textSize="18sp"
             android:textColor="#FFEB3B" />
         <Button android:id="@+id/btnAccessSettings" style="@style/TvButton"
             android:layout_width="match_parent" android:text="Mở cài đặt Trợ năng của TV"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Chống gỡ (tùy chọn, cần laptop cùng WiFi, xem HUONG_DAN.md): dùng ADB đặt app làm Device Owner. Nếu không làm bước này, trẻ vẫn có thể gỡ app từ Cài đặt &gt; Ứng dụng — ẩn icon không chặn được việc gỡ."
+        android:text="Chống gỡ (tùy chọn, xem HUONG_DAN.md): dùng ADB đặt app làm Device Owner, nếu không trẻ vẫn gỡ được từ Cài đặt &gt; Ứng dụng."
         style="@style/TvBody" android:textColor="@color/text_muted"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="8dp" />
     <Button android:id="@+id/btnBack" style="@style/TvButton"
         android:layout_width="match_parent" android:text="Quay lại"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="8dp" />
 </LinearLayout>
 </ScrollView>

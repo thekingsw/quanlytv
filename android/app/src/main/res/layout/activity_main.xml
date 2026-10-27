@@ -1,107 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- v1.4: bọc ScrollView + thu gọn lề, để màn hình chính vừa 1 trang trên TV 55". -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="24dp"
-    android:background="@color/bg_dark" android:gravity="center_horizontal">
+    android:background="@color/bg_dark" android:fillViewport="true">
+<LinearLayout
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="16dp"
+    android:gravity="center_horizontal">
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Khóa TV" style="@style/TvTitle" android:gravity="center" />
 
     <TextView android:id="@+id/tvStatus"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="ĐANG MỞ" android:textSize="28sp" android:textColor="@color/text_primary"
+        android:text="ĐANG MỞ" android:textSize="24sp" android:textColor="@color/text_primary"
         android:textStyle="bold" android:gravity="center"
         android:background="@drawable/pill_open"
-        android:paddingLeft="32dp" android:paddingRight="32dp"
-        android:paddingTop="12dp" android:paddingBottom="12dp"
-        android:layout_marginTop="16dp" />
+        android:paddingLeft="24dp" android:paddingRight="24dp"
+        android:paddingTop="8dp" android:paddingBottom="8dp"
+        android:layout_marginTop="10dp" />
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:background="@drawable/card_bg"
-        android:padding="16dp" android:layout_marginTop="20dp">
+        android:padding="12dp" android:layout_marginTop="12dp">
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
             android:paddingRight="8dp">
             <TextView android:id="@+id/tvUsed"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" />
+                android:text="" style="@style/TvBody" android:textSize="18sp" />
         </LinearLayout>
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
             android:paddingLeft="8dp">
             <TextView android:id="@+id/tvTimes"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" />
+                android:text="" style="@style/TvBody" android:textSize="18sp" />
             <TextView android:id="@+id/tvNews"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp"
-                android:layout_marginTop="8dp" />
+                android:text="" style="@style/TvBody" android:textSize="18sp"
+                android:layout_marginTop="6dp" />
         </LinearLayout>
     </LinearLayout>
 
     <TextView android:id="@+id/tvWeb"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="" android:textSize="18sp" android:textColor="#90CAF9"
-        android:gravity="center" android:layout_marginTop="16dp" />
+        android:text="" android:textSize="16sp" android:textColor="#90CAF9"
+        android:gravity="center" android:layout_marginTop="10dp" />
 
     <TextView android:id="@+id/tvYesterday"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="" android:textSize="18sp" android:textColor="@color/text_muted"
-        android:gravity="center" android:layout_marginTop="8dp" />
+        android:text="" android:textSize="16sp" android:textColor="@color/text_muted"
+        android:gravity="center" android:layout_marginTop="6dp" />
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="20dp">
+        android:orientation="horizontal" android:layout_marginTop="12dp">
         <Button android:id="@+id/btnLock" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="Khóa ngay"
+            android:layout_margin="3dp" android:text="Khóa ngay"
             android:nextFocusDown="@id/btnAdd5" />
         <Button android:id="@+id/btnUnlock" style="@style/TvButtonPrimary"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="Mở khóa"
+            android:layout_margin="3dp" android:text="Mở khóa"
             android:nextFocusDown="@id/btnAdd10" />
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Cho thêm giờ (cần nhập PIN):" style="@style/TvBody"
-        android:textSize="20sp" android:layout_marginTop="20dp" />
+        android:textSize="18sp" android:layout_marginTop="12dp" />
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="8dp">
+        android:orientation="horizontal" android:layout_marginTop="6dp">
         <Button android:id="@+id/btnAdd5" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="+5 phút"
+            android:layout_margin="3dp" android:text="+5 phút"
             android:nextFocusUp="@id/btnLock" android:nextFocusDown="@id/btnSettings" />
         <Button android:id="@+id/btnAdd10" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="+10 phút"
+            android:layout_margin="3dp" android:text="+10 phút"
             android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnSettings" />
         <Button android:id="@+id/btnAdd15" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="+15 phút"
+            android:layout_margin="3dp" android:text="+15 phút"
             android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnNews" />
         <Button android:id="@+id/btnAdd20" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="+20 phút"
+            android:layout_margin="3dp" android:text="+20 phút"
             android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnAccess" />
         <Button android:id="@+id/btnAdd30" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="+30 phút"
+            android:layout_margin="3dp" android:text="+30 phút"
             android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnAccess" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="8dp">
+        android:orientation="horizontal" android:layout_marginTop="6dp">
         <Button android:id="@+id/btnSettings" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="Cài đặt"
+            android:layout_margin="3dp" android:text="Cài đặt"
             android:nextFocusUp="@id/btnAdd5" />
         <Button android:id="@+id/btnNews" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="Mở app thời sự"
+            android:layout_margin="3dp" android:text="Mở app thời sự"
             android:nextFocusUp="@id/btnAdd15" />
         <Button android:id="@+id/btnAccess" style="@style/TvButton"
             android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="4dp" android:text="Bật Trợ năng"
+            android:layout_margin="3dp" android:text="Bật Trợ năng"
             android:nextFocusUp="@id/btnAdd30" />
     </LinearLayout>
 </LinearLayout>
+</ScrollView>

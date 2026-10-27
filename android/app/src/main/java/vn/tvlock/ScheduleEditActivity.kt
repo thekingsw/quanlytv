@@ -42,7 +42,7 @@ class ScheduleEditActivity : Activity() {
         for (d in 0..6) {
             val cb = CheckBox(this)
             cb.text = names[d]
-            cb.textSize = 22f
+            cb.textSize = 19f
             cb.setTextColor(android.graphics.Color.WHITE)
             cb.isChecked = existing?.days?.contains(d) ?: (d < 5) // default: weekdays
             cb.isFocusable = true
