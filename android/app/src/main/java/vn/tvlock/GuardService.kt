@@ -62,7 +62,9 @@ class GuardService : Service() {
      * lock screen and never counts as viewing (WarningActivity is vn.tvlock).
      */
     private fun warnIfNeeded(now: Long) {
-        if (store.lastPkg == packageName) return // a tvlock screen is already showing
+        // v1.5: bỏ điều kiện "đang ở màn hình của app thì không nhắc" — màn hình
+        // khóa đã được chặn bởi isLockedNow/unlockUntilMs bên dưới, còn đang ở
+        // màn hình chính/cài đặt thì nhắc vẫn có ích (đặc biệt lúc anh test).
         if (now < store.unlockUntilMs || store.isLockedNow(now)) return
         val pkg = store.lastPkg
         // 1) Current app's own limit.
@@ -90,7 +92,11 @@ class GuardService : Service() {
             return
         }
         // 3) Next lock schedule start.
+        // v1.5: ngoài "cửa sổ" đếm ngược (còn >5') thì xóa cờ lockwindow, để
+        // mỗi khung khóa đều được nhắc 5'/1' riêng — trước đây cờ chỉ reset
+        // mỗi ngày nên khung khóa thứ 2 trong ngày mất luôn cảnh báo 5'.
         val untilLock = store.minutesUntilNextLock(now)
+        if (untilLock > 5) store.clearWarningsKind("lockwindow")
         if (untilLock in 1..5 && !store.warned("lockwindow", untilLock)) {
             store.markWarned("lockwindow", untilLock)
             launchWarning(

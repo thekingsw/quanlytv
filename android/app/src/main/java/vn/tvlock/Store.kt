@@ -378,6 +378,20 @@ class Store(private val ctx: Context) {
         prefs.edit().putString("warned", "{}").apply()
     }
 
+    /** v1.5: chỉ xóa cờ cảnh báo của một loại (ví dụ "lockwindow"),
+     * để mỗi khung khóa đều được nhắc 5'/1' riêng, không phải 1 lần/ngày. */
+    fun clearWarningsKind(kind: String) {
+        val j = warnedJson()
+        val keys = j.keys()
+        val toRemove = mutableListOf<String>()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            if (k.startsWith("$kind:")) toRemove.add(k)
+        }
+        toRemove.forEach { j.remove(it) }
+        prefs.edit().putString("warned", j.toString()).apply()
+    }
+
     fun todayStr(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     fun resetUsedIfNewDay() {
