@@ -196,6 +196,34 @@
     </LinearLayout>
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Màn hình khóa (ảnh nền + lời nhắc)" style="@style/TvSection" android:layout_marginTop="8dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="12dp" android:layout_marginTop="8dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Lời nhắc hiện cùng ảnh nền bên trái màn hình khóa. Ảnh tiện nhất là tải từ điện thoại qua trang web."
+            style="@style/TvBody" android:textColor="@color/text_muted" />
+        <EditText android:id="@+id/etLockMessage"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:background="@drawable/card_bg" android:padding="12dp"
+            android:textSize="18sp" android:textColor="@color/text_primary"
+            android:textColorHint="#888888" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnSaveLockMessage" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Lưu lời nhắc"
+            android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/tvLockBgState"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" style="@style/TvBody" android:textSize="18sp"
+            android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnPickLockBg" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Chọn ảnh nền từ TV"
+            android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnRemoveLockBg" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Xóa ảnh nền riêng"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Khóa thủ công" style="@style/TvSection" android:layout_marginTop="8dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:background="@drawable/card_bg"

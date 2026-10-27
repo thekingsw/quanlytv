@@ -28,6 +28,8 @@ class SettingsActivity : Activity() {
     private lateinit var tvIconState: TextView
     private lateinit var tvBonus: TextView
     private lateinit var tvAppRules: TextView
+    private lateinit var tvLockBgState: TextView
+    private lateinit var etLockMessage: EditText
     private lateinit var btnIconToggle: Button
     private var newsPkgs = listOf<String>()
     private var newsLabels = listOf<String>()
@@ -47,6 +49,8 @@ class SettingsActivity : Activity() {
         tvIconState = findViewById(R.id.tvIconState)
         tvBonus = findViewById(R.id.tvBonus)
         tvAppRules = findViewById(R.id.tvAppRules)
+        tvLockBgState = findViewById(R.id.tvLockBgState)
+        etLockMessage = findViewById(R.id.etLockMessage)
         btnIconToggle = findViewById(R.id.btnIconToggle)
 
         findViewById<Button>(R.id.btnChangePin).setOnClickListener {
@@ -86,6 +90,28 @@ class SettingsActivity : Activity() {
         btnIconToggle.setOnClickListener { toggleLauncherIcon(); refresh() }
         findViewById<Button>(R.id.btnAppRules).setOnClickListener {
             startActivity(Intent(this, AppRulesActivity::class.java))
+        }
+        // v1.8: tùy chỉnh màn hình khóa — lời nhắc + ảnh nền.
+        findViewById<Button>(R.id.btnSaveLockMessage).setOnClickListener {
+            val msg = etLockMessage.text.toString().trim()
+            if (msg.isEmpty() || msg.length > 140) {
+                Toast.makeText(this, "Lời nhắc từ 1–140 ký tự", Toast.LENGTH_SHORT).show()
+            } else {
+                store.lockMessage = msg
+                Toast.makeText(this, "Đã lưu lời nhắc", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<Button>(R.id.btnPickLockBg).setOnClickListener {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
+            try { startActivityForResult(i, 1001) } catch (_: Exception) {
+                Toast.makeText(this, "TV không có trình chọn ảnh", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<Button>(R.id.btnRemoveLockBg).setOnClickListener {
+            store.deleteLockBg()
+            Toast.makeText(this, "Đã xóa ảnh nền riêng", Toast.LENGTH_SHORT).show()
+            refresh()
         }
         // v3: bonus minutes on TV require the PIN first (LockActivity mode "bonus").
         val bonusBtns = listOf(
@@ -147,6 +173,24 @@ class SettingsActivity : Activity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1001 && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            try {
+                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
+                if (store.saveLockBgBytes(bytes)) {
+                    Toast.makeText(this, "Đã lưu ảnh nền màn hình khóa", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Ảnh không đọc được", Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(this, "Không đọc được ảnh", Toast.LENGTH_SHORT).show()
+            }
+            refresh()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         refresh()
@@ -170,6 +214,10 @@ class SettingsActivity : Activity() {
         btnIconToggle.text = if (iconOn) "Ẩn icon" else "Hiện icon"
         // v3: bonus pool + per-app rules summary.
         tvBonus.text = "Phút thưởng còn lại: ${store.bonusMin} phút\n(Phút thưởng chỉ trừ khi đã hết giờ ngày, và không hết hạn khi sang ngày mới.)"
+        // v1.8: màn hình khóa — lời nhắc + ảnh nền.
+        if (etLockMessage.text.toString() != store.lockMessage) etLockMessage.setText(store.lockMessage)
+        tvLockBgState.text = if (store.hasLockBg()) "Ảnh nền: đã đặt ảnh riêng"
+            else "Ảnh nền: chưa có — đang dùng nền mặc định"
         val rules = store.appRules()
         tvAppRules.text = if (rules.isEmpty()) "Chưa đặt giới hạn riêng cho app nào."
         else rules.entries.joinToString("\n") { (pkg, r) ->

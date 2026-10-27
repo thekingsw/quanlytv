@@ -2,10 +2,12 @@ package vn.tvlock
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -16,6 +18,9 @@ class LockActivity : Activity() {
     private lateinit var tvPin: TextView
     private lateinit var pinView: LinearLayout
     private lateinit var optionsView: LinearLayout
+    private lateinit var btnNews: Button
+    private lateinit var ivLockBg: ImageView
+    private lateinit var tvLockMessage: TextView
     private var mode = "lock"
     private var addMinutes = 0
 
@@ -31,6 +36,14 @@ class LockActivity : Activity() {
         tvPin = findViewById(R.id.tvPin)
         pinView = findViewById(R.id.pinView)
         optionsView = findViewById(R.id.optionsView)
+        btnNews = findViewById(R.id.btnNews)
+        ivLockBg = findViewById(R.id.ivLockBg)
+        tvLockMessage = findViewById(R.id.tvLockMessage)
+        // v1.8: nút Mở thời sự — chỉ ở chế độ khóa và đang trong khung thời sự,
+        // không cần PIN (trẻ được xem thời sự, app khác vẫn khóa).
+        btnNews.setOnClickListener { openNewsApp() }
+        refreshLockLook()
+        refreshNewsButton()
         val digits = listOf(
             R.id.key0 to "0", R.id.key1 to "1", R.id.key2 to "2", R.id.key3 to "3",
             R.id.key4 to "4", R.id.key5 to "5", R.id.key6 to "6", R.id.key7 to "7",
@@ -60,6 +73,52 @@ class LockActivity : Activity() {
         }
         findViewById<Button>(R.id.key1).requestFocus()
         updatePinDisplay()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Ảnh/lời nhắc có thể vừa đổi từ điện thoại — tải lại mỗi lần hiện.
+        refreshLockLook()
+        refreshNewsButton()
+        findViewById<TextView>(R.id.tvReason).text =
+            intent.getStringExtra("reason") ?: store.lockReason(System.currentTimeMillis())
+    }
+
+    /** v1.8: ảnh nền + lời nhắc bên trái (ảnh riêng nếu có, không thì nền tối). */
+    private fun refreshLockLook() {
+        tvLockMessage.text = store.lockMessage
+        val bgFile = store.lockBgFile()
+        if (bgFile.exists()) {
+            try {
+                val bmp = BitmapFactory.decodeFile(bgFile.absolutePath)
+                if (bmp != null) ivLockBg.setImageBitmap(bmp)
+                else ivLockBg.setImageDrawable(null)
+            } catch (_: Exception) { ivLockBg.setImageDrawable(null) }
+        } else {
+            ivLockBg.setImageDrawable(null)
+        }
+    }
+
+    /** v1.8: chỉ hiện nút Mở thời sự khi đang trong khung thời sự và đã
+     * chọn app thời sự. Mở app rồi để màn hình khóa ở dưới — thoát app
+     * thời sự là quay lại màn hình khóa. */
+    private fun refreshNewsButton() {
+        val show = mode == "lock" && store.newsPkg.isNotEmpty() &&
+            store.isInNewsSlot(System.currentTimeMillis())
+        btnNews.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) btnNews.text = "Mở thời sự: ${store.appLabel(store.newsPkg)}"
+    }
+
+    private fun openNewsApp() {
+        val pkg = store.newsPkg
+        val launch = packageManager.getLaunchIntentForPackage(pkg)
+        if (launch == null) {
+            Toast.makeText(this, "Không mở được app thời sự", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try { startActivity(launch) } catch (_: Exception) {
+            Toast.makeText(this, "Không mở được app thời sự", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

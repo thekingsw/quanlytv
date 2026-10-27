@@ -215,6 +215,48 @@ class Store(private val ctx: Context) {
         get() = prefs.getString("newsPkg", "") ?: ""
         set(v) = prefs.edit().putString("newsPkg", v).apply()
 
+    // ---------- v1.8: tùy chỉnh màn hình khóa (ảnh nền + lời nhắc) ----------
+    var lockMessage: String
+        get() = prefs.getString("lockMessage", "Hết giờ xem TV rồi con nhé!") ?: "Hết giờ xem TV rồi con nhé!"
+        set(v) = prefs.edit().putString("lockMessage", v).apply()
+
+    fun lockBgFile(): java.io.File = java.io.File(ctx.filesDir, "lock_bg.jpg")
+
+    fun hasLockBg(): Boolean = lockBgFile().exists()
+
+    fun deleteLockBg() {
+        try { lockBgFile().delete() } catch (_: Exception) { }
+    }
+
+    /** Giải mã ảnh, thu nhỏ về tối đa 1920px rồi lưu JPEG (85%) làm ảnh nền
+     * màn hình khóa. Trả false khi dữ liệu không phải ảnh hợp lệ. */
+    fun saveLockBgBytes(bytes: ByteArray): Boolean {
+        return try {
+            if (bytes.size > 8 * 1024 * 1024) return false
+            val bounds = android.graphics.BitmapFactory.Options().also { it.inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return false
+            var sample = 1
+            while (bounds.outWidth / sample > 1920 || bounds.outHeight / sample > 1920) sample *= 2
+            val opts = android.graphics.BitmapFactory.Options().also { it.inSampleSize = sample }
+            var bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                ?: return false
+            if (bmp.width > 1920 || bmp.height > 1920) {
+                val scale = minOf(1920f / bmp.width, 1920f / bmp.height)
+                val scaled = android.graphics.Bitmap.createScaledBitmap(
+                    bmp, (bmp.width * scale).toInt(), (bmp.height * scale).toInt(), true
+                )
+                if (scaled != bmp) bmp.recycle()
+                bmp = scaled
+            }
+            java.io.FileOutputStream(lockBgFile()).use {
+                bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it)
+            }
+            bmp.recycle()
+            true
+        } catch (_: Exception) { false }
+    }
+
     var manualLocked: Boolean
         get() = prefs.getBoolean("manualLocked", false)
         set(v) = prefs.edit().putBoolean("manualLocked", v).apply()

@@ -82,6 +82,9 @@ class WebServer(private val ctx: Context, private val port: Int) {
                 method == "POST" && path == "/api/settings-limits" -> settingsLimits(out, params)
                 method == "POST" && path == "/api/settings-schedule" -> settingsSchedule(out, params)
                 method == "POST" && path == "/api/settings-schedule-delete" -> settingsScheduleDelete(out, params)
+                method == "POST" && path == "/api/settings-lockmsg" -> settingsLockMsg(out, params)
+                method == "POST" && path == "/api/settings-lockbg" -> settingsLockBg(out, params)
+                method == "POST" && path == "/api/settings-lockbg-remove" -> settingsLockBgRemove(out, params)
                 else -> sendHtml(out, 404, "<h1>Không tìm thấy</h1><a href='/'>Về trang chính</a>")
             }
         } catch (_: Exception) {
@@ -257,6 +260,54 @@ class WebServer(private val ctx: Context, private val port: Int) {
         sendHtml(out, 200, settingsPage("Đã xóa lịch khóa."))
     }
 
+    // ---------- v1.8: màn hình khóa — lời nhắc + ảnh nền (tải từ điện thoại) ----------
+
+    private fun settingsLockMsg(out: OutputStream, params: Map<String, String>) {
+        val msg = params["message"]?.trim() ?: ""
+        if (msg.isEmpty() || msg.length > 140) {
+            sendHtml(out, 200, settingsPage("Lời nhắc từ 1–140 ký tự.", true))
+            return
+        }
+        Store(ctx).lockMessage = msg
+        sendHtml(out, 200, settingsPage("Đã lưu lời nhắc màn hình khóa."))
+    }
+
+    /** Ảnh gửi lên dạng base64 (data URL) trong field "img" — đọc dạng text
+     * nên không cần parse multipart nhị phân. Chỉ nhận JPEG/PNG ≤ 5MB. */
+    private fun settingsLockBg(out: OutputStream, params: Map<String, String>) {
+        val img = params["img"] ?: ""
+        val b64 = if (img.contains(",")) img.substringAfter(",") else img
+        if (b64.length < 100 || b64.length > 7_000_000) {
+            sendHtml(out, 200, settingsPage("Ảnh không hợp lệ hoặc quá lớn (tối đa ~5MB).", true))
+            return
+        }
+        val bytes = try { java.util.Base64.getDecoder().decode(b64) } catch (_: Exception) {
+            sendHtml(out, 200, settingsPage("Ảnh không đọc được.", true))
+            return
+        }
+        if (bytes.size < 100 || bytes.size > 5 * 1024 * 1024) {
+            sendHtml(out, 200, settingsPage("Ảnh quá lớn (tối đa ~5MB).", true))
+            return
+        }
+        val isJpeg = bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
+        val isPng = bytes.size > 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() &&
+            bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()
+        if (!isJpeg && !isPng) {
+            sendHtml(out, 200, settingsPage("Chỉ nhận ảnh JPEG hoặc PNG.", true))
+            return
+        }
+        if (!Store(ctx).saveLockBgBytes(bytes)) {
+            sendHtml(out, 200, settingsPage("Không lưu được ảnh.", true))
+            return
+        }
+        sendHtml(out, 200, settingsPage("Đã lưu ảnh nền màn hình khóa."))
+    }
+
+    private fun settingsLockBgRemove(out: OutputStream, params: Map<String, String>) {
+        Store(ctx).deleteLockBg()
+        sendHtml(out, 200, settingsPage("Đã xóa ảnh nền riêng — màn hình khóa dùng nền mặc định."))
+    }
+
     private fun shortDay(d: Int): String = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")[d]
 
     private fun limitOptions(selected: Int): String {
@@ -297,6 +348,18 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val newsOpts = "<option value=''>— Chưa chọn app thời sự —</option>" + newsApps.joinToString("") { (pkg, label) ->
             "<option value='${esc(pkg)}'${if (pkg == store.newsPkg) " selected" else ""}>${esc(label)}</option>"
         }
+        val lockBgState = if (store.hasLockBg()) "Đã đặt ảnh nền riêng." else "Chưa có ảnh nền riêng — đang dùng nền mặc định."
+        val lockCard = "<div class='card'><h2>Màn hình khóa</h2>" +
+            "<p class='lbl' style='margin-top:0'>Lời nhắc hiện cùng ảnh nền bên trái màn hình khóa</p>" +
+            "<form method='post' action='/api/settings-lockmsg'>" +
+            "<input type='text' name='message' value='${esc(store.lockMessage)}' maxlength='140'>" +
+            "<button class='green' type='submit'>Lưu lời nhắc</button></form>" +
+            "<p class='lbl'>Ảnh nền màn hình khóa — $lockBgState</p>" +
+            "<input type='file' id='bgFile' accept='image/*'>" +
+            "<img id='bgPreview' style='max-width:100%;border-radius:12px;display:none;margin-bottom:12px'>" +
+            "<button class='green' type='button' id='bgUploadBtn'>Tải ảnh này lên TV</button>" +
+            "<p class='lbl' style='font-size:18px'>Ảnh trên điện thoại là tiện nhất — chọn ảnh rồi bấm tải lên. Ảnh JPEG/PNG tối đa ~5MB, tự thu nhỏ vừa màn hình TV.</p>" +
+            "<form method='post' action='/api/settings-lockbg-remove'><button class='red' type='submit'>Xóa ảnh nền riêng</button></form></div>"
         val limitRows = (0..6).joinToString("") { d ->
             "<p class='lbl'>${store.dayNames()[d]}</p>" +
             "<select name='limit$d'>${limitOptions(store.limitForDay(d))}</select>"
@@ -328,6 +391,7 @@ $msgHtml
 <p class="lbl">App thời sự (trong khung này TV chỉ mở được app này)</p>
 <select name="newsPkg">$newsOpts</select>
 <button class="green" type="submit">Lưu giờ thời sự</button></form></div>
+$lockCard
 <div class="card"><h2>Giới hạn xem từng ngày</h2>
 <form method="post" action="/api/settings-limits">
 $limitRows
@@ -336,6 +400,10 @@ $limitRows
 <p class="lbl" style="margin-top:0">Mỗi lịch chọn ngày + giờ khóa từ–đến, gộp được nhiều lịch, khóa qua đêm cũng được.</p></div>
 $schedForms
 <p><a href="/">← Về trang chính</a></p>
+<script>
+document.getElementById('bgFile').addEventListener('change', function(e){ var f=e.target.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ var img=document.getElementById('bgPreview'); img.src=r.result; img.style.display='block'; }; r.readAsDataURL(f); });
+document.getElementById('bgUploadBtn').addEventListener('click', function(){ var f=document.getElementById('bgFile').files[0]; if(!f){ alert('Chọn một ảnh trước đã.'); return; } var r=new FileReader(); r.onload=function(){ fetch('/api/settings-lockbg',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'img='+encodeURIComponent(r.result)}).then(function(resp){ return resp.text(); }).then(function(html){ document.open(); document.write(html); document.close(); }).catch(function(){ alert('Không tải được ảnh, thử lại nhé.'); }); }; r.readAsDataURL(f); });
+</script>
 </body></html>"""
     }
 

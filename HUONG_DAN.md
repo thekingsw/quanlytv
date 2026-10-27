@@ -73,6 +73,15 @@ Mở Cài đặt của app (xem mục 1b nếu icon đã ẩn):
   - **Lịch khóa:** sửa từng lịch có sẵn (tick ngày, giờ bắt đầu / kết thúc), xóa lịch, hoặc thêm lịch mới.
   - Lưu xong áp dụng ngay trên TV, không cần khởi động lại. Như các nút khác trên web, cài đặt từ điện thoại **không cần nhập PIN** (điện thoại do anh cầm).
 
+## 3e. Tính năng mới bản v1.8 (1.8) — Màn hình khóa 2 cột + nút Mở thời sự
+
+- **Bố cục mới:** màn hình khóa chia 2 cột — **bên trái là ảnh nền + lời nhắc của bố** (chữ lớn đè lên ảnh, có nền mờ cho dễ đọc), **bên phải là cụm bàn phím PIN** + lý do khóa + các nút sau khi nhập đúng PIN. Trước đây màn hình khóa là một cột dọc, nay ảnh chiếm nửa trái màn hình.
+- **Nút Mở thời sự:** khi đang trong khung giờ thời sự (và đã chọn app thời sự), màn hình khóa hiện nút **"Mở thời sự: <tên app>"** ngay trên bàn phím — bấm là mở thẳng app thời sự, **không cần nhập PIN** (trẻ chỉ xem được đúng app thời sự, app khác vẫn khóa). Thoát app thời sự là quay lại màn hình khóa. Ngoài khung thời sự thì nút này tự ẩn.
+- **Tùy chỉnh ảnh nền + lời nhắc — làm được cả trên TV lẫn điện thoại:**
+  - **Trên điện thoại** (trang Cài đặt của web → mục **Màn hình khóa**): sửa lời nhắc (tối đa 140 ký tự), chọn ảnh trên điện thoại rồi bấm **Tải ảnh này lên TV** (xem trước ảnh ngay trên trang). Ảnh JPEG/PNG tối đa ~5MB, app tự thu nhỏ vừa màn hình TV. Có nút **Xóa ảnh nền riêng** để về nền mặc định.
+  - **Trên TV** (Cài đặt → mục **Màn hình khóa**): sửa lời nhắc, bấm **Chọn ảnh nền từ TV** (chọn ảnh qua trình chọn file của TV), hoặc **Xóa ảnh nền riêng**.
+  - Lời nhắc mặc định: "Hết giờ xem TV rồi con nhé!". Ảnh/lời nhắc đổi từ điện thoại thì màn hình khóa tải lại ngay lần mở sau (không cần khởi động lại app).
+
 ## 4. Điều khiển từ điện thoại (cùng WiFi)
 
 1. Màn hình chính của app trên TV hiện địa chỉ dạng `http://192.168.x.x:8080`.
