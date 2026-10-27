@@ -121,33 +121,71 @@
         android:orientation="vertical" android:background="@drawable/card_bg"
         android:padding="12dp" android:layout_marginTop="8dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Trong khung này TV chỉ mở được app thời sự" style="@style/TvBody"
+            android:text="Trong khung này TV chỉ mở được app thời sự. Giờ và phút chỉnh riêng, mỗi lần bấm ±1; giữ nút để tăng/giảm liên tục." style="@style/TvBody"
             android:textColor="@color/text_muted" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
-            <TextView android:id="@+id/tvNewsStart"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" />
-            <Button android:id="@+id/btnNewsStartMinus" style="@style/TvButton"
-                android:layout_width="72dp" android:text="−" android:textSize="24sp"
-                android:layout_margin="4dp" />
-            <Button android:id="@+id/btnNewsStartPlus" style="@style/TvButton"
-                android:layout_width="72dp" android:text="+" android:textSize="24sp"
-                android:layout_margin="4dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Bắt đầu:" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginEnd="8dp" />
+            <Button android:id="@+id/btnNewsStartHourMinus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="−" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:id="@+id/tvNewsStartHour"
+                android:layout_width="44dp" android:layout_height="wrap_content"
+                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
+                android:gravity="center" />
+            <Button android:id="@+id/btnNewsStartHourPlus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="+" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="giờ" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginStart="2dp" android:layout_marginEnd="8dp" />
+            <Button android:id="@+id/btnNewsStartMinMinus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="−" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:id="@+id/tvNewsStartMin"
+                android:layout_width="44dp" android:layout_height="wrap_content"
+                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
+                android:gravity="center" />
+            <Button android:id="@+id/btnNewsStartMinPlus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="+" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="phút" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginStart="2dp" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
-            <TextView android:id="@+id/tvNewsEnd"
-                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" />
-            <Button android:id="@+id/btnNewsEndMinus" style="@style/TvButton"
-                android:layout_width="72dp" android:text="−" android:textSize="24sp"
-                android:layout_margin="4dp" />
-            <Button android:id="@+id/btnNewsEndPlus" style="@style/TvButton"
-                android:layout_width="72dp" android:text="+" android:textSize="24sp"
-                android:layout_margin="4dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Kết thúc:" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginEnd="8dp" />
+            <Button android:id="@+id/btnNewsEndHourMinus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="−" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:id="@+id/tvNewsEndHour"
+                android:layout_width="44dp" android:layout_height="wrap_content"
+                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
+                android:gravity="center" />
+            <Button android:id="@+id/btnNewsEndHourPlus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="+" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="giờ" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginStart="2dp" android:layout_marginEnd="8dp" />
+            <Button android:id="@+id/btnNewsEndMinMinus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="−" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:id="@+id/tvNewsEndMin"
+                android:layout_width="44dp" android:layout_height="wrap_content"
+                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
+                android:gravity="center" />
+            <Button android:id="@+id/btnNewsEndMinPlus" style="@style/TvButton"
+                android:layout_width="52dp" android:text="+" android:textSize="22sp"
+                android:layout_margin="2dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="phút" style="@style/TvBody" android:textSize="18sp"
+                android:gravity="center_vertical" android:layout_marginStart="2dp" />
         </LinearLayout>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="App thời sự:" style="@style/TvBody" android:textSize="18sp"

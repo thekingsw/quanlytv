@@ -70,6 +70,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
             val out = sock.getOutputStream()
             when {
                 method == "GET" && path == "/" -> sendHtml(out, 200, homePage(""))
+                method == "GET" && path == "/settings" -> sendHtml(out, 200, settingsPage(""))
                 method == "GET" && path == "/api/status" -> status(out, params)
                 method == "GET" && path == "/api/report" -> report(out, params)
                 method == "POST" && path == "/api/lock" -> action(out, params, "lock")
@@ -77,6 +78,10 @@ class WebServer(private val ctx: Context, private val port: Int) {
                 method == "POST" && path == "/api/add" -> action(out, params, "add")
                 method == "POST" && path == "/api/bonus" -> bonus(out, params)
                 method == "POST" && path == "/api/change-pin" -> changePin(out, params)
+                method == "POST" && path == "/api/settings-news" -> settingsNews(out, params)
+                method == "POST" && path == "/api/settings-limits" -> settingsLimits(out, params)
+                method == "POST" && path == "/api/settings-schedule" -> settingsSchedule(out, params)
+                method == "POST" && path == "/api/settings-schedule-delete" -> settingsScheduleDelete(out, params)
                 else -> sendHtml(out, 404, "<h1>Không tìm thấy</h1><a href='/'>Về trang chính</a>")
             }
         } catch (_: Exception) {
@@ -170,6 +175,170 @@ class WebServer(private val ctx: Context, private val port: Int) {
         sendHtml(out, 200, homePage("Đã đổi mã PIN thành công."))
     }
 
+    // ---------- v1.6: cài đặt từ điện thoại (không cần PIN — điện thoại nằm trong tay bố) ----------
+
+    /** "HH:MM" (từ input type=time) hoặc số phút thuần -> phút từ 0h, null nếu sai. */
+    private fun parseTimeParam(s: String?): Int? {
+        if (s.isNullOrBlank()) return null
+        val t = s.trim()
+        if (t.contains(":")) {
+            val p = t.split(":")
+            if (p.size != 2) return null
+            val h = p[0].toIntOrNull() ?: return null
+            val m = p[1].toIntOrNull() ?: return null
+            if (h !in 0..23 || m !in 0..59) return null
+            return h * 60 + m
+        }
+        val v = t.toIntOrNull() ?: return null
+        return if (v in 0..1439) v else null
+    }
+
+    private fun launcherApps(): List<Pair<String, String>> {
+        return try {
+            val pm = ctx.packageManager
+            val intent = android.content.Intent(android.content.Intent.ACTION_MAIN)
+                .addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+            pm.queryIntentActivities(intent, 0)
+                .map { it.activityInfo.packageName to it.loadLabel(pm).toString() }
+                .distinctBy { it.first }.sortedBy { it.second }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private fun settingsNews(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val start = parseTimeParam(params["start"])
+        val end = parseTimeParam(params["end"])
+        if (start == null || end == null) {
+            sendHtml(out, 200, settingsPage("Giờ thời sự không hợp lệ.", true))
+            return
+        }
+        store.newsStartMin = start
+        store.newsEndMin = end
+        store.newsPkg = params["newsPkg"]?.trim() ?: ""
+        sendHtml(out, 200, settingsPage("Đã lưu giờ thời sự ${store.fmt(start)} – ${store.fmt(end)}."))
+    }
+
+    private fun settingsLimits(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val allowed = setOf(5, 10, 15, 30, 60, 90, 120, 180, 240, -1)
+        for (d in 0..6) {
+            val v = params["limit$d"]?.toIntOrNull() ?: continue
+            if (v in allowed) store.setLimitForDay(d, v)
+        }
+        sendHtml(out, 200, settingsPage("Đã lưu giới hạn xem từng ngày."))
+    }
+
+    private fun settingsSchedule(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val days = (0..6).filter { params["d$it"] == "1" }
+        val start = parseTimeParam(params["start"])
+        val end = parseTimeParam(params["end"])
+        if (days.isEmpty()) {
+            sendHtml(out, 200, settingsPage("Chọn ít nhất một ngày trong tuần.", true))
+            return
+        }
+        if (start == null || end == null) {
+            sendHtml(out, 200, settingsPage("Giờ khóa không hợp lệ.", true))
+            return
+        }
+        val id = params["id"]?.trim().orEmpty().ifEmpty { store.newScheduleId() }
+        store.upsertLockSchedule(Store.LockSchedule(id, days, start, end))
+        sendHtml(out, 200, settingsPage("Đã lưu lịch khóa ${store.fmt(start)} – ${store.fmt(end)}."))
+    }
+
+    private fun settingsScheduleDelete(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val id = params["id"]?.trim() ?: ""
+        if (id.isEmpty()) {
+            sendHtml(out, 200, settingsPage("Không rõ lịch nào cần xóa.", true))
+            return
+        }
+        store.deleteLockSchedule(id)
+        sendHtml(out, 200, settingsPage("Đã xóa lịch khóa."))
+    }
+
+    private fun shortDay(d: Int): String = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")[d]
+
+    private fun limitOptions(selected: Int): String {
+        val opts = listOf(5 to "5 phút", 10 to "10 phút", 15 to "15 phút", 30 to "30 phút",
+            60 to "60 phút", 90 to "90 phút", 120 to "120 phút", 180 to "180 phút",
+            240 to "240 phút", -1 to "Không giới hạn")
+        return opts.joinToString("") { (v, label) ->
+            "<option value=\"$v\"${if (v == selected) " selected" else ""}>$label</option>"
+        }
+    }
+
+    private fun scheduleForm(store: Store, s: Store.LockSchedule?, isNew: Boolean): String {
+        val id = s?.id ?: ""
+        val days = s?.days ?: listOf(0, 1, 2, 3, 4)
+        val start = s?.startMin ?: 1260
+        val end = s?.endMin ?: 420
+        val dayBoxes = (0..6).joinToString(" ") { d ->
+            "<label style='display:inline-block;margin:4px 8px 4px 0;font-size:20px'><input type='checkbox' name='d$d' value='1' style='width:22px;height:22px'${if (d in days) " checked" else ""}> ${shortDay(d)}</label>"
+        }
+        val title = if (isNew) "Thêm lịch khóa mới" else store.scheduleSummary(s!!)
+        val delBtn = if (isNew) "" else
+            "<form method='post' action='/api/settings-schedule-delete' style='margin-top:8px'>" +
+            "<input type='hidden' name='id' value='${esc(id)}'>" +
+            "<button class='red' type='submit'>Xóa lịch này</button></form>"
+        return "<div class='card'><h2>$title</h2>" +
+            "<form method='post' action='/api/settings-schedule'>" +
+            "<input type='hidden' name='id' value='${esc(id)}'>" +
+            "<p class='lbl' style='margin-top:0'>Ngày áp dụng</p><div>$dayBoxes</div>" +
+            "<p class='lbl'>Bắt đầu khóa</p><input type='time' name='start' value='${store.fmt(start)}' required>" +
+            "<p class='lbl'>Kết thúc khóa</p><input type='time' name='end' value='${store.fmt(end)}' required>" +
+            "<p class='lbl' style='font-size:18px'>Kết thúc sớm hơn bắt đầu = khóa qua đêm. Bắt đầu = kết thúc thì khóa cả ngày — đặt 00:00 và 23:59 cũng được.</p>" +
+            "<button class='green' type='submit'>Lưu lịch này</button></form>$delBtn</div>"
+    }
+
+    private fun settingsPage(msg: String, error: Boolean = false): String {
+        val store = Store(ctx)
+        val newsApps = launcherApps()
+        val newsOpts = "<option value=''>— Chưa chọn app thời sự —</option>" + newsApps.joinToString("") { (pkg, label) ->
+            "<option value='${esc(pkg)}'${if (pkg == store.newsPkg) " selected" else ""}>${esc(label)}</option>"
+        }
+        val limitRows = (0..6).joinToString("") { d ->
+            "<p class='lbl'>${store.dayNames()[d]}</p>" +
+            "<select name='limit$d'>${limitOptions(store.limitForDay(d))}</select>"
+        }
+        val schedForms = store.lockSchedules().joinToString("") { scheduleForm(store, it, false) } +
+            scheduleForm(store, null, true)
+        val msgHtml = if (msg.isEmpty()) "" else
+            if (error) "<p class='err'>$msg</p>" else "<p class='msg'>$msg</p>"
+        return """<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cài đặt — Khóa TV</title><style>
+body{font-family:sans-serif;background:#121212;color:#fff;margin:0;padding:16px}
+h1{font-size:32px;margin:8px 0 16px}h2{font-size:24px;margin:0 0 12px}
+.card{background:#1E1E1E;border:1px solid #333;border-radius:16px;padding:20px;margin-bottom:16px}
+.lbl{font-size:20px;color:#B0B0B0;margin:14px 0 2px}.val{font-size:28px;font-weight:bold;margin:0}
+button{font-size:22px;padding:18px 12px;border:0;border-radius:12px;color:#fff;width:100%}
+button.red{background:#C62828}button.green{background:#2E7D32}button.amber{background:#FF8F00;color:#000}
+input{font-size:22px;padding:16px;border-radius:12px;border:2px solid #444;background:#2A2A2A;color:#fff;width:100%;box-sizing:border-box;margin-bottom:12px}
+input[type=time]{font-size:26px}
+select{font-size:22px;padding:16px;border-radius:12px;border:2px solid #444;background:#2A2A2A;color:#fff;width:100%;box-sizing:border-box;margin-bottom:12px}
+.msg{font-size:22px;color:#66BB6A}.err{font-size:22px;color:#EF5350}
+a{color:#90CAF9;font-size:20px}
+</style></head><body>
+<h1>Cài đặt Khóa TV</h1>
+$msgHtml
+<div class="card"><h2>Giờ thời sự</h2>
+<form method="post" action="/api/settings-news">
+<p class="lbl" style="margin-top:0">Bắt đầu</p><input type="time" name="start" value="${store.fmt(store.newsStartMin)}" required>
+<p class="lbl">Kết thúc</p><input type="time" name="end" value="${store.fmt(store.newsEndMin)}" required>
+<p class="lbl">App thời sự (trong khung này TV chỉ mở được app này)</p>
+<select name="newsPkg">$newsOpts</select>
+<button class="green" type="submit">Lưu giờ thời sự</button></form></div>
+<div class="card"><h2>Giới hạn xem từng ngày</h2>
+<form method="post" action="/api/settings-limits">
+$limitRows
+<button class="green" type="submit">Lưu giới hạn ngày</button></form></div>
+<div class="card"><h2>Lịch khóa</h2>
+<p class="lbl" style="margin-top:0">Mỗi lịch chọn ngày + giờ khóa từ–đến, gộp được nhiều lịch, khóa qua đêm cũng được.</p></div>
+$schedForms
+<p><a href="/">← Về trang chính</a></p>
+</body></html>"""
+    }
+
     private fun wifiIp(): String {
         return try {
             val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -232,8 +401,9 @@ a{color:#90CAF9;font-size:20px}
 <p class="lbl">Đã xem hôm nay</p><p class="val">${store.usedTodayMin} / $limitTxt</p>
 <p class="lbl">Còn lại</p><p class="val">$remTxt</p>
 $bonusTxt
-<p class="lbl">Lịch khóa hôm nay (chỉ xem, sửa trên TV)</p><p class="val" style="font-size:22px">$schedTxt</p>
-<p class="lbl">Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p></div>
+<p class="lbl">Lịch khóa hôm nay</p><p class="val" style="font-size:22px">$schedTxt</p>
+<p class="lbl">Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p>
+<p><a href="/settings">Mở Cài đặt: sửa lịch khóa, giới hạn ngày, giờ thời sự</a></p></div>
 $msgHtml
 <div class="grid">
 <form method="post" action="/api/lock"><button class="red" type="submit">Khóa ngay</button></form>

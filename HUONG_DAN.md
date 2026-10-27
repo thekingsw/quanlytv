@@ -55,14 +55,23 @@ Mở Cài đặt của app (xem mục 1b nếu icon đã ẩn):
 
 ## 3c. Tính năng mới bản v4 (1.3) — Lịch khóa linh hoạt
 
-- **Lịch khóa theo ngày** (trong Cài đặt → mục **Lịch khóa theo ngày** → bấm **Quản lý lịch khóa**): danh sách các lịch hiện có, bấm vào một lịch để sửa, bấm **Thêm lịch mới** để tạo thêm. Mỗi lịch gồm: 7 ô tick chọn ngày trong tuần (Thứ 2 … Chủ nhật, bấm bằng điều khiển), giờ **bắt đầu** và giờ **kết thúc** (nút − / + thay đổi từng 15 phút), nút **Khóa cả ngày** (đặt 00:00–23:59), nút **Xóa lịch này**. Lưu xong áp dụng ngay, không cần khởi động lại.
+- **Lịch khóa theo ngày** (trong Cài đặt → mục **Lịch khóa theo ngày** → bấm **Quản lý lịch khóa**): danh sách các lịch hiện có, bấm vào một lịch để sửa, bấm **Thêm lịch mới** để tạo thêm. Mỗi lịch gồm: 7 ô tick chọn ngày trong tuần (Thứ 2 … Chủ nhật, bấm bằng điều khiển), giờ **bắt đầu** và giờ **kết thúc** (từ bản v1.6: giờ và phút chỉnh riêng — nút giờ ±1 giờ, nút phút ±1 phút, giữ nút là tự tăng/giảm liên tục như giữ phím volume), nút **Khóa cả ngày** (đặt 00:00–23:59), nút **Xóa lịch này**. Lưu xong áp dụng ngay, không cần khởi động lại.
   - **Khóa qua đêm:** nếu giờ kết thúc nhỏ hơn giờ bắt đầu thì app hiểu là khóa sang ngày hôm sau. Ví dụ lịch Thứ 4, Thứ 5 khóa 19:00–10:00 nghĩa là: Thứ 4 từ 19:00 đến Thứ 5 10:00 sáng, và Thứ 5 từ 19:00 đến Thứ 6 10:00 sáng.
   - **Gộp nhiều lịch:** lịch nào khớp giờ hiện tại thì TV khóa. Màn hình khóa ghi rõ lý do, ví dụ "Đến giờ khóa (Thứ 4, Thứ 5: 19:00–10:00 (qua đêm))".
   - **Ví dụ của anh:** lịch 1 = tick Thứ 2, Thứ 3 + bấm **Khóa cả ngày**; lịch 2 = tick Thứ 4, Thứ 5 + bắt đầu 19:00, kết thúc 10:00.
   - **Chuyển từ bản cũ:** lần đầu mở bản v4, khung khóa cũ (21:00–07:00 hằng ngày) tự chuyển thành một lịch trong danh sách — quy tắc hiện tại của anh không mất, anh chỉ việc sửa/xóa/thêm lịch theo ý.
   - Nhắc nhẹ 5 phút / 1 phút trước giờ khóa vẫn hoạt động theo lịch mới (tính tới giờ bắt đầu của lịch gần nhất).
-- **Giới hạn ngày theo ngày** (trong Cài đặt → mục **Giới hạn ngày theo ngày** → bấm **Đặt giới hạn từng ngày**): bấm vào một ngày rồi chọn mức: 30 / 60 / 90 / 120 / 180 / 240 phút hoặc **Không giới hạn**. Ngày "Không giới hạn" thì chỉ còn bị khóa bởi lịch khóa (và các quy tắc khác như giới hạn từng app). Ví dụ: ngày học 60 phút, cuối tuần 120 phút. Lần đầu mở bản v4, mức 90 phút cũ được gán cho cả 7 ngày.
-- **Trang web điện thoại:** chỉ xem (không sửa) — hiện giới hạn của hôm nay và các lịch khóa của hôm nay. Muốn sửa lịch và giới hạn theo ngày thì làm trên TV trong Cài đặt. Endpoint `GET /api/status` thêm `todayLimit` và `todaySchedules`.
+- **Giới hạn ngày theo ngày** (trong Cài đặt → mục **Giới hạn ngày theo ngày** → bấm **Đặt giới hạn từng ngày**): bấm vào một ngày rồi chọn mức: 5 / 10 / 15 / 30 / 60 / 90 / 120 / 180 / 240 phút hoặc **Không giới hạn** (thêm 5 / 10 / 15 phút từ bản v1.6 để test khóa nhanh). Ngày "Không giới hạn" thì chỉ còn bị khóa bởi lịch khóa (và các quy tắc khác như giới hạn từng app). Ví dụ: ngày học 60 phút, cuối tuần 120 phút. Lần đầu mở bản v4, mức 90 phút cũ được gán cho cả 7 ngày.
+- **Trang web điện thoại:** từ bản v1.6 sửa được cả cài đặt — xem mục 3d. Endpoint `GET /api/status` thêm `todayLimit` và `todaySchedules`.
+
+## 3d. Tính năng mới bản v1.6 (1.6) — Chỉnh giờ/phút riêng + cài đặt trên điện thoại
+
+- **Giờ và phút chỉnh riêng trên TV:** cả màn hình **Sửa lịch khóa** và **khung giờ thời sự** trong Cài đặt đều chia thành 2 cụm nút riêng — cụm **giờ** (bấm ±1 giờ, phút giữ nguyên) và cụm **phút** (bấm ±1 phút, tràn sang giờ bên cạnh, ví dụ 19:00 bấm phút − thành 18:59). **Giữ nút trên điều khiển** (giữ phím OK giữa) là số tự tăng/giảm liên tục như giữ phím volume, không phải bấm nhiều lần — giữ ~0,5 giây thì bắt đầu chạy, giữ lâu thì chạy nhanh dần. Bấm một cái vẫn chỉ đổi 1 đơn vị như cũ.
+- **Cài đặt từ điện thoại:** trang chính của web có đường dẫn **"Mở Cài đặt"** (hoặc vào thẳng `http://<IP-TV>:8080/settings`) — sửa được ngay trên điện thoại, không cần mở TV:
+  - **Giờ thời sự:** chọn giờ bắt đầu / kết thúc (ô nhập giờ, bấm vào chỉnh giờ và phút riêng) + chọn app thời sự trong danh sách.
+  - **Giới hạn xem từng ngày:** chọn mức cho từng ngày Thứ 2 … Chủ nhật (5 / 10 / 15 / 30 / 60 / 90 / 120 / 180 / 240 phút hoặc Không giới hạn).
+  - **Lịch khóa:** sửa từng lịch có sẵn (tick ngày, giờ bắt đầu / kết thúc), xóa lịch, hoặc thêm lịch mới.
+  - Lưu xong áp dụng ngay trên TV, không cần khởi động lại. Như các nút khác trên web, cài đặt từ điện thoại **không cần nhập PIN** (điện thoại do anh cầm).
 
 ## 4. Điều khiển từ điện thoại (cùng WiFi)
 

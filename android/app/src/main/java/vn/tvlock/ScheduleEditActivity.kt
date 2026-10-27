@@ -10,7 +10,8 @@ import android.widget.Toast
 
 /**
  * v4: edit one lock schedule — pick weekdays (7 checkboxes, D-pad friendly)
- * and start/end times in 15-minute steps. "Khóa cả ngày" sets 00:00–23:59.
+ * and start/end times. v1.6: hour and minute are separate steppers
+ * (±1 hour / ±1 minute, hold to repeat). "Khóa cả ngày" sets 00:00–23:59.
  * End <= start means overnight (except equal, which means all day).
  */
 class ScheduleEditActivity : Activity() {
@@ -19,8 +20,10 @@ class ScheduleEditActivity : Activity() {
     private val dayBoxes = mutableListOf<CheckBox>()
     private var startMin = 1140 // 19:00
     private var endMin = 600    // 10:00
-    private lateinit var tvStart: TextView
-    private lateinit var tvEnd: TextView
+    private lateinit var tvStartHour: TextView
+    private lateinit var tvStartMin: TextView
+    private lateinit var tvEndHour: TextView
+    private lateinit var tvEndMin: TextView
     private lateinit var tvRangeNote: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,8 +31,10 @@ class ScheduleEditActivity : Activity() {
         setContentView(R.layout.activity_schedule_edit)
         store = Store(this)
         scheduleId = intent.getStringExtra("id")
-        tvStart = findViewById(R.id.tvStart)
-        tvEnd = findViewById(R.id.tvEnd)
+        tvStartHour = findViewById(R.id.tvStartHour)
+        tvStartMin = findViewById(R.id.tvStartMin)
+        tvEndHour = findViewById(R.id.tvEndHour)
+        tvEndMin = findViewById(R.id.tvEndMin)
         tvRangeNote = findViewById(R.id.tvRangeNote)
 
         val daysBox = findViewById<LinearLayout>(R.id.daysBox)
@@ -50,8 +55,12 @@ class ScheduleEditActivity : Activity() {
             daysBox.addView(cb)
         }
 
-        bindTimeButtons(R.id.btnStartMinus, R.id.btnStartPlus, { startMin }) { startMin = it }
-        bindTimeButtons(R.id.btnEndMinus, R.id.btnEndPlus, { endMin }) { endMin = it }
+        // v1.6: giờ và phút chỉnh riêng — nút giờ ±1 giờ, nút phút ±1 phút,
+        // giữ nút là tự tăng/giảm liên tục (HoldRepeat, như giữ phím volume).
+        bindHourMin(R.id.btnStartHourMinus, R.id.btnStartHourPlus, R.id.btnStartMinMinus, R.id.btnStartMinPlus,
+            { startMin }) { startMin = it }
+        bindHourMin(R.id.btnEndHourMinus, R.id.btnEndHourPlus, R.id.btnEndMinMinus, R.id.btnEndMinPlus,
+            { endMin }) { endMin = it }
         findViewById<Button>(R.id.btnAllDay).setOnClickListener {
             startMin = 0; endMin = 1439; refresh()
         }
@@ -70,14 +79,20 @@ class ScheduleEditActivity : Activity() {
         refresh()
     }
 
-    private fun bindTimeButtons(minusId: Int, plusId: Int, get: () -> Int, set: (Int) -> Unit) {
-        findViewById<Button>(minusId).setOnClickListener { set((get() - 15 + 1440) % 1440); refresh() }
-        findViewById<Button>(plusId).setOnClickListener { set((get() + 15) % 1440); refresh() }
+    /** Giờ ±1 giờ (giữ nguyên phút), phút ±1 phút (tràn sang giờ bên cạnh). */
+    private fun bindHourMin(hourMinusId: Int, hourPlusId: Int, minMinusId: Int, minPlusId: Int,
+                            get: () -> Int, set: (Int) -> Unit) {
+        HoldRepeat.attach(findViewById(hourMinusId)) { set((get() - 60 + 1440) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(hourPlusId)) { set((get() + 60) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(minMinusId)) { set((get() - 1 + 1440) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(minPlusId)) { set((get() + 1) % 1440); refresh() }
     }
 
     private fun refresh() {
-        tvStart.text = "Bắt đầu: ${store.fmt(startMin)}"
-        tvEnd.text = "Kết thúc: ${store.fmt(endMin)}"
+        tvStartHour.text = String.format("%02d", startMin / 60)
+        tvStartMin.text = String.format("%02d", startMin % 60)
+        tvEndHour.text = String.format("%02d", endMin / 60)
+        tvEndMin.text = String.format("%02d", endMin % 60)
         tvRangeNote.text = when {
             startMin == endMin -> "Khóa cả ngày vào các ngày đã chọn."
             startMin > endMin -> "Khóa qua đêm: từ ${store.fmt(startMin)} đến ${store.fmt(endMin)} sáng hôm sau."

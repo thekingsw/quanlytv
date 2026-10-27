@@ -19,8 +19,10 @@ class SettingsActivity : Activity() {
     private lateinit var store: Store
     private lateinit var tvSchedules: TextView
     private lateinit var tvDailyLimits: TextView
-    private lateinit var tvNewsStart: TextView
-    private lateinit var tvNewsEnd: TextView
+    private lateinit var tvNewsStartHour: TextView
+    private lateinit var tvNewsStartMin: TextView
+    private lateinit var tvNewsEndHour: TextView
+    private lateinit var tvNewsEndMin: TextView
     private lateinit var tvManual: TextView
     private lateinit var tvAccess: TextView
     private lateinit var tvIconState: TextView
@@ -36,8 +38,10 @@ class SettingsActivity : Activity() {
         store = Store(this)
         tvSchedules = findViewById(R.id.tvSchedules)
         tvDailyLimits = findViewById(R.id.tvDailyLimits)
-        tvNewsStart = findViewById(R.id.tvNewsStart)
-        tvNewsEnd = findViewById(R.id.tvNewsEnd)
+        tvNewsStartHour = findViewById(R.id.tvNewsStartHour)
+        tvNewsStartMin = findViewById(R.id.tvNewsStartMin)
+        tvNewsEndHour = findViewById(R.id.tvNewsEndHour)
+        tvNewsEndMin = findViewById(R.id.tvNewsEndMin)
         tvManual = findViewById(R.id.tvManual)
         tvAccess = findViewById(R.id.tvAccess)
         tvIconState = findViewById(R.id.tvIconState)
@@ -60,8 +64,14 @@ class SettingsActivity : Activity() {
         findViewById<Button>(R.id.btnDailyLimits).setOnClickListener {
             startActivity(Intent(this, DailyLimitsActivity::class.java))
         }
-        bindTimeButtons(R.id.btnNewsStartMinus, R.id.btnNewsStartPlus, { store.newsStartMin }) { store.newsStartMin = it }
-        bindTimeButtons(R.id.btnNewsEndMinus, R.id.btnNewsEndPlus, { store.newsEndMin }) { store.newsEndMin = it }
+        // v1.6: giờ và phút chỉnh riêng — nút giờ ±1 giờ, nút phút ±1 phút,
+        // giữ nút là tự tăng/giảm liên tục (HoldRepeat, như giữ phím volume).
+        bindHourMin(R.id.btnNewsStartHourMinus, R.id.btnNewsStartHourPlus,
+            R.id.btnNewsStartMinMinus, R.id.btnNewsStartMinPlus,
+            { store.newsStartMin }) { store.newsStartMin = it }
+        bindHourMin(R.id.btnNewsEndHourMinus, R.id.btnNewsEndHourPlus,
+            R.id.btnNewsEndMinMinus, R.id.btnNewsEndMinPlus,
+            { store.newsEndMin }) { store.newsEndMin = it }
 
         findViewById<Button>(R.id.btnManual).setOnClickListener {
             store.manualLocked = !store.manualLocked
@@ -104,9 +114,13 @@ class SettingsActivity : Activity() {
         refresh()
     }
 
-    private fun bindTimeButtons(minusId: Int, plusId: Int, get: () -> Int, set: (Int) -> Unit) {
-        findViewById<Button>(minusId).setOnClickListener { set((get() - 30 + 1440) % 1440); refresh() }
-        findViewById<Button>(plusId).setOnClickListener { set((get() + 30) % 1440); refresh() }
+    /** Giờ ±1 giờ (giữ nguyên phút), phút ±1 phút (tràn sang giờ bên cạnh). */
+    private fun bindHourMin(hourMinusId: Int, hourPlusId: Int, minMinusId: Int, minPlusId: Int,
+                            get: () -> Int, set: (Int) -> Unit) {
+        HoldRepeat.attach(findViewById(hourMinusId)) { set((get() - 60 + 1440) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(hourPlusId)) { set((get() + 60) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(minMinusId)) { set((get() - 1 + 1440) % 1440); refresh() }
+        HoldRepeat.attach(findViewById(minPlusId)) { set((get() + 1) % 1440); refresh() }
     }
 
     private fun setupNewsSpinner() {
@@ -145,8 +159,10 @@ class SettingsActivity : Activity() {
         else scheds.joinToString("\n") { store.scheduleSummary(it) }
         tvDailyLimits.text = store.dailyLimitsSummary() +
             "\n(Hôm nay đã xem ${store.usedTodayMin} phút, giới hạn ${store.limitText(store.limitForToday())}.)"
-        tvNewsStart.text = "Bắt đầu thời sự: ${store.fmt(store.newsStartMin)}"
-        tvNewsEnd.text = "Kết thúc thời sự: ${store.fmt(store.newsEndMin)}"
+        tvNewsStartHour.text = String.format("%02d", store.newsStartMin / 60)
+        tvNewsStartMin.text = String.format("%02d", store.newsStartMin % 60)
+        tvNewsEndHour.text = String.format("%02d", store.newsEndMin / 60)
+        tvNewsEndMin.text = String.format("%02d", store.newsEndMin % 60)
         tvManual.text = if (store.manualLocked) "Khóa thủ công: ĐANG KHÓA" else "Khóa thủ công: đang mở"
         tvAccess.text = "Trợ năng (Accessibility): " + if (isAccessEnabled()) "ĐÃ BẬT" else "CHƯA BẬT — bấm nút dưới để bật"
         val iconOn = launcherIconEnabled()

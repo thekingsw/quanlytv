@@ -18,10 +18,10 @@ class DailyLimitsActivity : Activity() {
     private lateinit var adapter: ArrayAdapter<String>
 
     private val options = arrayOf(
-        "30 phút", "60 phút", "90 phút", "120 phút",
+        "5 phút", "10 phút", "15 phút", "30 phút", "60 phút", "90 phút", "120 phút",
         "180 phút", "240 phút", "Không giới hạn"
     )
-    private val values = listOf(30, 60, 90, 120, 180, 240, -1)
+    private val values = listOf(5, 10, 15, 30, 60, 90, 120, 180, 240, -1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +51,7 @@ class DailyLimitsActivity : Activity() {
 
     private fun showLimitDialog(day: Int) {
         val current = store.limitForDay(day)
-        val checked = values.indexOf(current).coerceAtLeast(2)
+        val checked = values.indexOf(current).let { if (it < 0) 5 else it } // mặc định 90 phút
         var chosen = checked
         AlertDialog.Builder(this)
             .setTitle("Giới hạn ngày ${store.dayNames()[day]}")
