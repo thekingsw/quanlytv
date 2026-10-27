@@ -9,17 +9,35 @@ TV: Xiaomi A Pro 55 (Google TV) — quản lý chung cả TV, không tách profi
 - Khi TV hỏi, cho phép **Cài đặt từ nguồn không xác định** cho app vừa dùng để cài (Send Files to TV / trình quản lý file).
 - Mở app **Khóa TV** lần đầu: app tự chạy dịch vụ bảo vệ.
 
+> **Bản v2 — icon đã ẩn khỏi màn hình chính:** sau khi cài đè bản v2, anh sẽ **không thấy icon Khóa TV** trên màn hình chính nữa — đó là đúng ý đồ, không phải lỗi cài đặt. Cách mở app lần đầu xem mục "Mở app khi icon đã ẩn" ngay dưới đây.
+
+## 1b. Mở app khi icon đã ẩn (bản v2)
+
+Chọn 1 trong 3 cách sau (đều không cần icon):
+
+1. **Qua Trợ năng (dễ nhất):** trên TV vào **Cài đặt → Hệ thống → Trợ năng → Khóa TV** → bấm **biểu tượng bánh răng** ⚙️ bên cạnh tên dịch vụ — màn hình Cài đặt của app sẽ mở ra. Trong đó bấm **Mở màn hình chính** để vào app.
+2. **Qua màn hình khóa:** khi TV đang khóa, nhập đúng **mã PIN** rồi bấm **Mở Cài đặt** → trong Cài đặt bấm **Mở màn hình chính**.
+3. **Qua ADB (dự phòng, cần laptop cùng WiFi):**
+   ```
+   adb connect <IP-của-TV>:5555
+   adb shell am start -n vn.tvlock/.MainActivity
+   ```
+
+**Hiện lại icon:** trong Cài đặt của app → mục **Hiển thị icon** → bấm **Hiện icon** (icon sẽ xuất hiện lại trên màn hình chính; có thể cần khởi động lại TV hoặc đợi launcher làm mới). Bấm **Ẩn icon** để ẩn lại.
+
+> **Nói thật với anh:** ẩn icon chỉ làm app khó thấy hơn thôi — trẻ vẫn có thể gỡ app từ **Cài đặt TV → Ứng dụng → Khóa TV → Gỡ cài đặt** nếu biết cách. Chỉ bước ADB Device Owner ở mục 5 mới chặn được việc gỡ.
+
 ## 2. Bật Trợ năng — BẮT BUỘC
 
 Không bật bước này thì app không chặn được app khác.
 
-1. Trên TV, mở app Khóa TV → bấm **Bật Trợ năng**, hoặc vào **Cài đặt TV → Hệ thống → Trợ năng**.
+1. Trên TV, vào **Cài đặt TV → Hệ thống → Trợ năng** (bản v2 không còn icon nên không mở app bằng icon được — dùng mục 1b ở trên).
 2. Tìm **Khóa TV** trong danh sách dịch vụ đã tải xuống → **Bật** → bấm **Cho phép** khi TV cảnh báo.
-3. Quay lại app Khóa TV → **Cài đặt**: dòng "Trợ năng" phải hiện **ĐÃ BẬT**.
+3. Bấm **biểu tượng bánh răng** ⚙️ cạnh **Khóa TV** để mở Cài đặt của app, kiểm tra dòng "Trợ năng" phải hiện **ĐÃ BẬT**.
 
 ## 3. Cài đặt theo ý anh (mặc định đã có sẵn)
 
-Mở app Khóa TV → **Cài đặt**:
+Mở Cài đặt của app (xem mục 1b nếu icon đã ẩn):
 
 - **Mã PIN mặc định: 1234** — đổi ngay trong Cài đặt (nhập PIN cũ + PIN mới, ít nhất 4 số).
 - **Giới hạn ngày: 90 phút** (bấm để đổi: Tắt / 30 / 60 / 90 / 120 / 180).
@@ -32,11 +50,15 @@ Mở app Khóa TV → **Cài đặt**:
 
 1. Màn hình chính của app trên TV hiện địa chỉ dạng `http://192.168.x.x:8080`.
 2. Điện thoại **cùng WiFi nhà** mở trình duyệt tới địa chỉ đó.
-3. Nhập **mã PIN** rồi bấm: **Khóa ngay**, **Mở khóa 60 phút**, hoặc **+5 / +10 / +15 / +20 / +30 phút**.
-4. Trang web cũng hiện trạng thái: đang khóa hay mở, đã xem bao nhiêu phút, còn lại bao nhiêu.
+3. Bấm một cái là xong, **không cần nhập mã PIN**: **Khóa ngay**, **Mở khóa 60 phút**, hoặc **+5 / +10 / +15 / +20 / +30 phút**.
+4. Trang web hiện trạng thái: đang khóa hay mở, đã xem bao nhiêu phút, còn lại bao nhiêu.
 5. Không cần cài thêm app nào trên điện thoại, không cần tài khoản hay cloud.
 
-Trên TV cũng làm được y hệt: màn hình chính có nút Khóa ngay / Mở khóa / +5…+30 — bấm nút nào cũng phải nhập PIN trên bàn phím số hiện trên màn hình (điều khiển Xiaomi không có phím số nên dùng bàn phím trên màn hình; nếu remote có phím số thì bấm trực tiếp cũng được).
+> Ai vào được trang web này (cùng WiFi nhà hoặc cùng Tailscale) đều bấm được — đó là lựa chọn của anh vì điện thoại do anh cầm.
+
+**Quên mã PIN thì đổi ngay trên điện thoại:** trên trang web, mục **Đổi mã PIN** chỉ có 1 ô duy nhất — nhập mã PIN mới (4–6 số) rồi bấm **Đổi PIN**, không cần nhập PIN cũ.
+
+Trên TV thì khác: màn hình khóa trên TV vẫn yêu cầu nhập PIN như cũ, và các nút Khóa ngay / Mở khóa / +5…+30 trên TV vẫn phải nhập PIN trên bàn phím số hiện trên màn hình (điều khiển Xiaomi không có phím số nên dùng bàn phím trên màn hình; nếu remote có phím số thì bấm trực tiếp cũng được).
 
 ## 5. Chống gỡ app (tùy chọn, cần laptop cùng WiFi, làm 1 lần)
 

@@ -1,6 +1,7 @@
 package vn.tvlock
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -23,6 +24,8 @@ class SettingsActivity : Activity() {
     private lateinit var tvNewsEnd: TextView
     private lateinit var tvManual: TextView
     private lateinit var tvAccess: TextView
+    private lateinit var tvIconState: TextView
+    private lateinit var btnIconToggle: Button
     private val limits = listOf(0, 30, 60, 90, 120, 180)
     private var newsPkgs = listOf<String>()
     private var newsLabels = listOf<String>()
@@ -38,6 +41,8 @@ class SettingsActivity : Activity() {
         tvNewsEnd = findViewById(R.id.tvNewsEnd)
         tvManual = findViewById(R.id.tvManual)
         tvAccess = findViewById(R.id.tvAccess)
+        tvIconState = findViewById(R.id.tvIconState)
+        btnIconToggle = findViewById(R.id.btnIconToggle)
 
         findViewById<Button>(R.id.btnChangePin).setOnClickListener {
             val old = findViewById<EditText>(R.id.etOldPin).text.toString()
@@ -67,6 +72,12 @@ class SettingsActivity : Activity() {
             store.usedTodayMin = 0
             Toast.makeText(this, "Đã reset số phút hôm nay", Toast.LENGTH_SHORT).show()
             refresh()
+        }
+        btnIconToggle.setOnClickListener { toggleLauncherIcon(); refresh() }
+        findViewById<Button>(R.id.btnOpenMain).setOnClickListener {
+            val i = Intent(this, MainActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(i)
         }
         findViewById<Button>(R.id.btnAccessSettings).setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -119,6 +130,31 @@ class SettingsActivity : Activity() {
         tvNewsEnd.text = "Kết thúc thời sự: ${store.fmt(store.newsEndMin)}"
         tvManual.text = if (store.manualLocked) "Khóa thủ công: ĐANG KHÓA" else "Khóa thủ công: đang mở"
         tvAccess.text = "Trợ năng (Accessibility): " + if (isAccessEnabled()) "ĐÃ BẬT" else "CHƯA BẬT — bấm nút dưới để bật"
+        val iconOn = launcherIconEnabled()
+        tvIconState.text = if (iconOn) "Icon trên màn hình chính: ĐANG HIỆN" else "Icon trên màn hình chính: ĐANG ẨN"
+        btnIconToggle.text = if (iconOn) "Ẩn icon" else "Hiện icon"
+    }
+
+    private fun launcherIconEnabled(): Boolean {
+        // Manifest sets the alias enabled=false, so DEFAULT also means hidden.
+        return packageManager.getComponentEnabledSetting(
+            ComponentName(packageName, "$packageName.LauncherAlias")
+        ) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+    }
+
+    private fun toggleLauncherIcon() {
+        val enabled = launcherIconEnabled()
+        packageManager.setComponentEnabledSetting(
+            ComponentName(packageName, "$packageName.LauncherAlias"),
+            if (enabled) PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        Toast.makeText(
+            this,
+            if (enabled) "Đã ẩn icon khỏi màn hình chính" else "Đã hiện icon trên màn hình chính",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun isAccessEnabled(): Boolean {

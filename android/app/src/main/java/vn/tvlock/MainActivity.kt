@@ -75,6 +75,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         handler.post(refresh)
+        findViewById<Button>(R.id.btnLock).requestFocus()
     }
 
     override fun onPause() {
@@ -95,6 +96,7 @@ class MainActivity : Activity() {
         val now = System.currentTimeMillis()
         val locked = store.isLockedNow(now)
         tvStatus.text = if (locked) "ĐANG KHÓA" else "ĐANG MỞ"
+        tvStatus.setBackgroundResource(if (locked) R.drawable.pill_locked else R.drawable.pill_open)
         val rem = store.remainingMin()
         val remTxt = if (rem == Int.MAX_VALUE) "không giới hạn" else "$rem phút"
         tvUsed.text = "Đã xem hôm nay: ${store.usedTodayMin} / ${store.dailyLimitMin} phút\nCòn lại: $remTxt"

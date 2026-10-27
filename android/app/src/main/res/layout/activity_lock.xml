@@ -1,53 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="32dp"
-    android:background="#B71C1C" android:gravity="center_horizontal">
-    <TextView android:id="@+id/tvReason" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Đã khóa" android:textSize="44sp" android:textColor="#FFFFFF" android:textStyle="bold" />
-    <TextView android:id="@+id/tvClock" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Nhập mã PIN để mở khóa" android:textSize="28sp" android:textColor="#FFFFFF" android:layout_marginTop="12dp" />
-    <TextView android:id="@+id/tvPin" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="____" android:textSize="48sp" android:textColor="#FFFFFF" android:layout_marginTop="16dp" />
-    <LinearLayout android:id="@+id/pinView" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:orientation="vertical" android:layout_marginTop="16dp">
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-            <Button android:id="@+id/key1" android:layout_width="110dp" android:layout_height="72dp" android:text="1" android:textSize="30sp" />
-            <Button android:id="@+id/key2" android:layout_width="110dp" android:layout_height="72dp" android:text="2" android:textSize="30sp" />
-            <Button android:id="@+id/key3" android:layout_width="110dp" android:layout_height="72dp" android:text="3" android:textSize="30sp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-            <Button android:id="@+id/key4" android:layout_width="110dp" android:layout_height="72dp" android:text="4" android:textSize="30sp" />
-            <Button android:id="@+id/key5" android:layout_width="110dp" android:layout_height="72dp" android:text="5" android:textSize="30sp" />
-            <Button android:id="@+id/key6" android:layout_width="110dp" android:layout_height="72dp" android:text="6" android:textSize="30sp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-            <Button android:id="@+id/key7" android:layout_width="110dp" android:layout_height="72dp" android:text="7" android:textSize="30sp" />
-            <Button android:id="@+id/key8" android:layout_width="110dp" android:layout_height="72dp" android:text="8" android:textSize="30sp" />
-            <Button android:id="@+id/key9" android:layout_width="110dp" android:layout_height="72dp" android:text="9" android:textSize="30sp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-            <Button android:id="@+id/keyDel" android:layout_width="110dp" android:layout_height="72dp" android:text="Xóa" android:textSize="26sp" />
-            <Button android:id="@+id/key0" android:layout_width="110dp" android:layout_height="72dp" android:text="0" android:textSize="30sp" />
-            <Button android:id="@+id/keyOk" android:layout_width="110dp" android:layout_height="72dp" android:text="OK" android:textSize="26sp" />
-        </LinearLayout>
-        <Button android:id="@+id/btnCancel" android:layout_width="match_parent" android:layout_height="64dp"
-            android:text="Hủy" android:textSize="24sp" android:layout_marginTop="12dp" />
+    android:orientation="vertical" android:padding="24dp"
+    android:background="@color/bg_dark" android:gravity="center_horizontal">
+
+    <TextView android:id="@+id/tvReason"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Đã khóa" android:textSize="36sp" android:textColor="@color/text_primary"
+        android:textStyle="bold" android:gravity="center"
+        android:background="@drawable/pill_locked"
+        android:paddingLeft="32dp" android:paddingRight="32dp"
+        android:paddingTop="12dp" android:paddingBottom="12dp" />
+
+    <TextView android:id="@+id/tvClock"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Nhập mã PIN để mở khóa" style="@style/TvBody"
+        android:textSize="22sp" android:gravity="center"
+        android:layout_marginTop="16dp" />
+
+    <TextView android:id="@+id/tvPin"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="____" android:textSize="48sp" android:textColor="@color/text_primary"
+        android:gravity="center" android:layout_marginTop="12dp" />
+
+    <LinearLayout android:id="@+id/pinView"
+        android:layout_width="560dp" android:layout_height="wrap_content"
+        android:orientation="vertical" android:layout_marginTop="12dp">
+        <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:columnCount="3" android:useDefaultMargins="false">
+            <Button android:id="@+id/key1" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="1" />
+            <Button android:id="@+id/key2" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="2" />
+            <Button android:id="@+id/key3" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="3" />
+            <Button android:id="@+id/key4" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="4" />
+            <Button android:id="@+id/key5" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="5" />
+            <Button android:id="@+id/key6" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="6" />
+            <Button android:id="@+id/key7" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="7" />
+            <Button android:id="@+id/key8" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="8" />
+            <Button android:id="@+id/key9" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="9" />
+            <Button android:id="@+id/keyDel" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="Xóa"
+                android:textSize="24sp" />
+            <Button android:id="@+id/key0" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="0" />
+            <Button android:id="@+id/keyOk" style="@style/TvKeyButton"
+                android:layout_width="0dp" android:layout_columnWeight="1"
+                android:layout_gravity="fill_horizontal"
+                android:layout_margin="4dp" android:text="OK"
+                android:textSize="24sp" />
+        </GridLayout>
+        <Button android:id="@+id/btnCancel" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Hủy"
+            android:layout_margin="4dp" android:layout_marginTop="12dp" />
     </LinearLayout>
-    <LinearLayout android:id="@+id/optionsView" android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:orientation="vertical" android:visibility="gone" android:layout_marginTop="16dp">
+
+    <LinearLayout android:id="@+id/optionsView"
+        android:layout_width="560dp" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone"
+        android:layout_marginTop="12dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="PIN đúng — chọn thao tác:" android:textSize="28sp" android:textColor="#FFFFFF" />
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp">
-            <Button android:id="@+id/optAdd5" android:layout_width="110dp" android:layout_height="72dp" android:text="+5'" android:textSize="26sp" />
-            <Button android:id="@+id/optAdd10" android:layout_width="110dp" android:layout_height="72dp" android:text="+10'" android:textSize="26sp" />
-            <Button android:id="@+id/optAdd15" android:layout_width="110dp" android:layout_height="72dp" android:text="+15'" android:textSize="26sp" />
-            <Button android:id="@+id/optAdd20" android:layout_width="110dp" android:layout_height="72dp" android:text="+20'" android:textSize="26sp" />
-            <Button android:id="@+id/optAdd30" android:layout_width="110dp" android:layout_height="72dp" android:text="+30'" android:textSize="26sp" />
+            android:text="PIN đúng — chọn thao tác:" style="@style/TvBody"
+            android:textSize="22sp" android:gravity="center" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="12dp">
+            <Button android:id="@+id/optAdd5" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_margin="4dp" android:text="+5'" />
+            <Button android:id="@+id/optAdd10" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_margin="4dp" android:text="+10'" />
+            <Button android:id="@+id/optAdd15" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_margin="4dp" android:text="+15'" />
+            <Button android:id="@+id/optAdd20" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_margin="4dp" android:text="+20'" />
+            <Button android:id="@+id/optAdd30" style="@style/TvButton"
+                android:layout_width="0dp" android:layout_weight="1"
+                android:layout_margin="4dp" android:text="+30'" />
         </LinearLayout>
-        <Button android:id="@+id/optUnlockEnd" android:layout_width="match_parent" android:layout_height="72dp"
-            android:text="Mở đến hết khung khóa" android:textSize="26sp" android:layout_marginTop="12dp" />
-        <Button android:id="@+id/optCancel" android:layout_width="match_parent" android:layout_height="64dp"
-            android:text="Hủy" android:textSize="24sp" android:layout_marginTop="12dp" />
+        <Button android:id="@+id/optUnlockEnd" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Mở đến hết khung khóa"
+            android:layout_margin="4dp" android:layout_marginTop="12dp" />
+        <Button android:id="@+id/btnOpenSettings" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Mở Cài đặt"
+            android:layout_margin="4dp" android:layout_marginTop="12dp" />
+        <Button android:id="@+id/optCancel" style="@style/TvButton"
+            android:layout_width="match_parent" android:text="Hủy"
+            android:layout_margin="4dp" android:layout_marginTop="12dp" />
     </LinearLayout>
 </LinearLayout>

@@ -74,6 +74,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
                 method == "POST" && path == "/api/lock" -> action(out, params, "lock")
                 method == "POST" && path == "/api/unlock" -> action(out, params, "unlock")
                 method == "POST" && path == "/api/add" -> action(out, params, "add")
+                method == "POST" && path == "/api/change-pin" -> changePin(out, params)
                 else -> sendHtml(out, 404, "<h1>Không tìm thấy</h1><a href='/'>Về trang chính</a>")
             }
         } catch (_: Exception) {
@@ -97,13 +98,9 @@ class WebServer(private val ctx: Context, private val port: Int) {
         return m
     }
 
-    private fun checkPin(params: Map<String, String>): Boolean {
-        val store = Store(ctx)
-        return params["pin"] == store.pin
-    }
-
     private fun status(out: OutputStream, params: Map<String, String>) {
-        if (!checkPin(params)) { sendJson(out, 403, """{"error":"Sai mã PIN"}"""); return }
+        // No PIN required: the phone is in the parent's hand (user's choice).
+        // The TV lock screen itself still requires the PIN.
         val store = Store(ctx)
         store.resetUsedIfNewDay()
         val now = System.currentTimeMillis()
@@ -116,22 +113,35 @@ class WebServer(private val ctx: Context, private val port: Int) {
     }
 
     private fun action(out: OutputStream, params: Map<String, String>, kind: String) {
-        if (!checkPin(params)) {
-            sendHtml(out, 403, homePage("Sai mã PIN, thử lại."))
-            return
-        }
+        // No PIN required on the phone: the phone is in the parent's hand
+        // (user's choice). Any "pin" param sent by a client is ignored.
+        // The TV lock screen itself still requires the PIN.
         val store = Store(ctx)
-        val msg = when (kind) {
-            "lock" -> { store.manualLocked = true; store.unlockUntilMs = 0L; "Đã khóa TV ngay." }
-            "unlock" -> { store.manualLocked = false; store.unlockUntilMs = System.currentTimeMillis() + 60 * 60000L; "Đã mở khóa TV trong 60 phút." }
+        var msg = ""
+        var error = false
+        when (kind) {
+            "lock" -> { store.manualLocked = true; store.unlockUntilMs = 0L; msg = "Đã khóa TV ngay." }
+            "unlock" -> { store.manualLocked = false; store.unlockUntilMs = System.currentTimeMillis() + 60 * 60000L; msg = "Đã mở khóa TV trong 60 phút." }
             "add" -> {
                 val min = params["minutes"]?.toIntOrNull() ?: 0
-                if (min !in setOf(5, 10, 15, 20, 30)) "Số phút không hợp lệ."
-                else { store.addMinutes(min); "Đã cho thêm $min phút." }
+                if (min !in setOf(5, 10, 15, 20, 30)) { msg = "Số phút không hợp lệ."; error = true }
+                else { store.addMinutes(min); msg = "Đã cho thêm $min phút." }
             }
-            else -> "Không rõ lệnh."
+            else -> { msg = "Không rõ lệnh."; error = true }
         }
-        sendHtml(out, 200, homePage(msg))
+        sendHtml(out, 200, homePage(msg, error))
+    }
+
+    /** Change the TV PIN from the phone — no old PIN required, so a forgotten
+        PIN can be reset from the phone. New PIN must be 4–6 digits only. */
+    private fun changePin(out: OutputStream, params: Map<String, String>) {
+        val newPin = params["newPin"]?.trim() ?: ""
+        if (!newPin.matches(Regex("^\\d{4,6}$"))) {
+            sendHtml(out, 200, homePage("Mã PIN mới phải là 4–6 chữ số.", true))
+            return
+        }
+        Store(ctx).pin = newPin
+        sendHtml(out, 200, homePage("Đã đổi mã PIN thành công."))
     }
 
     private fun wifiIp(): String {
@@ -142,7 +152,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         } catch (_: Exception) { "" }
     }
 
-    private fun homePage(msg: String): String {
+    private fun homePage(msg: String, error: Boolean = false): String {
         val store = Store(ctx)
         store.resetUsedIfNewDay()
         val now = System.currentTimeMillis()
@@ -150,23 +160,45 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val rem = store.remainingMin()
         val remTxt = if (rem == Int.MAX_VALUE) "không giới hạn" else "$rem phút"
         val status = if (locked) "ĐANG KHÓA" else "ĐANG MỞ"
+        val pillClass = if (locked) "pill locked" else "pill open"
         val newsTxt = if (store.newsPkg.isEmpty()) "chưa chọn app" else store.newsPkg
-        val msgHtml = if (msg.isEmpty()) "" else "<p style='color:#4CAF50;font-size:28px'>$msg</p>"
+        val msgHtml = if (msg.isEmpty()) "" else
+            if (error) "<p class='err'>$msg</p>" else "<p class='msg'>$msg</p>"
         return """<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Khóa TV</title><style>body{font-family:sans-serif;background:#111;color:#fff;padding:24px}h1{font-size:36px}input,button{font-size:26px;padding:14px;margin:6px;border-radius:10px}button{background:#1565C0;color:#fff;border:0;min-width:120px}button.red{background:#C62828}.pin{width:200px}</style></head><body>
-<h1>Khóa TV</h1><p style="font-size:28px">Trạng thái: <b>$status</b></p>
-<p style="font-size:24px">Đã xem hôm nay: ${store.usedTodayMin} / ${store.dailyLimitMin} phút — Còn lại: $remTxt</p>
-<p style="font-size:22px">Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)} &nbsp;|&nbsp; Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p>
+<title>Khóa TV</title><style>
+body{font-family:sans-serif;background:#121212;color:#fff;margin:0;padding:16px}
+h1{font-size:32px;margin:8px 0 16px}h2{font-size:24px;margin:0 0 12px}
+.card{background:#1E1E1E;border:1px solid #333;border-radius:16px;padding:20px;margin-bottom:16px}
+.pill{display:inline-block;padding:8px 20px;border-radius:24px;font-size:24px;font-weight:bold}
+.pill.open{background:#2E7D32}.pill.locked{background:#C62828}
+.lbl{font-size:20px;color:#B0B0B0;margin:14px 0 2px}.val{font-size:28px;font-weight:bold;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+button{font-size:22px;padding:18px 12px;border:0;border-radius:12px;color:#fff;width:100%}
+button.red{background:#C62828}button.green{background:#2E7D32}button.amber{background:#FF8F00;color:#000}
+input{font-size:22px;padding:16px;border-radius:12px;border:2px solid #444;background:#2A2A2A;color:#fff;width:100%;box-sizing:border-box;margin-bottom:12px}
+.msg{font-size:22px;color:#66BB6A}.err{font-size:22px;color:#EF5350}
+a{color:#90CAF9;font-size:20px}
+</style></head><body>
+<h1>Khóa TV</h1>
+<div class="card"><span class="$pillClass">$status</span>
+<p class="lbl">Đã xem hôm nay</p><p class="val">${store.usedTodayMin} / ${store.dailyLimitMin} phút</p>
+<p class="lbl">Còn lại</p><p class="val">$remTxt</p>
+<p class="lbl">Giờ khóa: ${store.fmt(store.lockStartMin)} – ${store.fmt(store.lockEndMin)} &nbsp;|&nbsp; Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)} ($newsTxt)</p></div>
 $msgHtml
-<form method="post" action="/api/lock"><input class="pin" type="password" name="pin" placeholder="Nhập mã PIN" inputmode="numeric"><button class="red" type="submit">Khóa ngay</button></form>
-<form method="post" action="/api/unlock"><input class="pin" type="password" name="pin" placeholder="Nhập mã PIN" inputmode="numeric"><button type="submit">Mở khóa 60 phút</button></form>
-<form method="post" action="/api/add"><input class="pin" type="password" name="pin" placeholder="Nhập mã PIN" inputmode="numeric"><br>
-<button type="submit" name="minutes" value="5">+5 phút</button>
-<button type="submit" name="minutes" value="10">+10 phút</button>
-<button type="submit" name="minutes" value="15">+15 phút</button>
-<button type="submit" name="minutes" value="20">+20 phút</button>
-<button type="submit" name="minutes" value="30">+30 phút</button></form>
-<p><a style="color:#90CAF9;font-size:22px" href="/">Làm mới trạng thái</a></p>
+<div class="grid">
+<form method="post" action="/api/lock"><button class="red" type="submit">Khóa ngay</button></form>
+<form method="post" action="/api/unlock"><button class="green" type="submit">Mở khóa 60 phút</button></form>
+</div>
+<div class="grid">
+<form method="post" action="/api/add"><button class="amber" type="submit" name="minutes" value="5">+5 phút</button></form>
+<form method="post" action="/api/add"><button class="amber" type="submit" name="minutes" value="10">+10 phút</button></form>
+<form method="post" action="/api/add"><button class="amber" type="submit" name="minutes" value="15">+15 phút</button></form>
+<form method="post" action="/api/add"><button class="amber" type="submit" name="minutes" value="20">+20 phút</button></form>
+<form method="post" action="/api/add" style="grid-column:span 2"><button class="amber" type="submit" name="minutes" value="30">+30 phút</button></form>
+</div>
+<div class="card"><h2>Đổi mã PIN</h2>
+<form method="post" action="/api/change-pin"><input type="password" name="newPin" placeholder="Nhập mã PIN mới (4–6 số)" inputmode="numeric" maxlength="6" autocomplete="off"><button class="amber" type="submit">Đổi PIN</button></form></div>
+<p><a href="/">Làm mới trạng thái</a></p>
 </body></html>"""
     }
 

@@ -1,6 +1,7 @@
 package vn.tvlock
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
@@ -54,6 +55,10 @@ class LockActivity : Activity() {
             finish()
         }
         findViewById<Button>(R.id.optCancel).setOnClickListener { finish() }
+        findViewById<Button>(R.id.btnOpenSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        findViewById<Button>(R.id.key1).requestFocus()
         updatePinDisplay()
     }
 
