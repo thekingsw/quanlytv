@@ -1,194 +1,70 @@
 package vn.tvlock
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.provider.Settings
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.EditText
-import android.widget.Spinner
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
+/**
+ * Giai đoạn 3 (redesign 2.2): Cài đặt dùng khung rail+pane — rail trái
+ * (SettingsRail, dựng từ SettingsRegistry), pane phải là tổng quan.
+ *
+ * v2.4: pane Tổng quan thành dashboard trực quan — 3 thẻ số liệu
+ * (Đã xem / Còn lại / Phút thưởng), thanh tiến độ hôm nay, biểu đồ
+ * cột 7 ngày, dòng Khóa đêm + Giờ thời sự. Nội dung nằm trong ScrollView,
+ * nút Quay lại ghim ở đáy pane.
+ */
 class SettingsActivity : Activity() {
     private lateinit var store: Store
-    private lateinit var tvSchedules: TextView
-    private lateinit var tvDailyLimits: TextView
-    private lateinit var tvNewsStartHour: TextView
-    private lateinit var tvNewsStartMin: TextView
-    private lateinit var tvNewsEndHour: TextView
-    private lateinit var tvNewsEndMin: TextView
-    private lateinit var tvManual: TextView
-    private lateinit var tvAccess: TextView
-    private lateinit var tvIconState: TextView
-    private lateinit var tvBonus: TextView
-    private lateinit var tvAppRules: TextView
-    private lateinit var tvLockBgState: TextView
-    private lateinit var etLockMessage: EditText
-    private lateinit var btnIconToggle: Button
-    private var newsPkgs = listOf<String>()
-    private var newsLabels = listOf<String>()
+    private lateinit var tvStatus: TextView
+    private lateinit var tvUsed: TextView
+    private lateinit var progressUsed: ProgressBar
+    private lateinit var tvStatUsed: TextView
+    private lateinit var tvStatRemaining: TextView
+    private lateinit var tvStatBonus: TextView
+    private lateinit var chartContainer: LinearLayout
+    private lateinit var tvChartEmpty: TextView
+    private lateinit var tvNightLock: TextView
+    private lateinit var tvNewsSlot: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v2.5: vào Cài đặt phải nhập mã PIN khóa TV — chặn ở cửa để bịt
+        // mọi đường vào chưa qua xác thực (nút Cài đặt ở màn hình chính,
+        // bánh răng Trợ năng của TV, ...). Đường vào hợp lệ duy nhất là
+        // LockActivity mode "settings" mở lại kèm pinVerified=true.
+        if (!intent.getBooleanExtra("pinVerified", false)) {
+            val i = Intent(this, LockActivity::class.java)
+            i.putExtra("mode", "settings")
+            startActivity(i)
+            finish()
+            return
+        }
         setContentView(R.layout.activity_settings)
         store = Store(this)
-        tvSchedules = findViewById(R.id.tvSchedules)
-        tvDailyLimits = findViewById(R.id.tvDailyLimits)
-        tvNewsStartHour = findViewById(R.id.tvNewsStartHour)
-        tvNewsStartMin = findViewById(R.id.tvNewsStartMin)
-        tvNewsEndHour = findViewById(R.id.tvNewsEndHour)
-        tvNewsEndMin = findViewById(R.id.tvNewsEndMin)
-        tvManual = findViewById(R.id.tvManual)
-        tvAccess = findViewById(R.id.tvAccess)
-        tvIconState = findViewById(R.id.tvIconState)
-        tvBonus = findViewById(R.id.tvBonus)
-        tvAppRules = findViewById(R.id.tvAppRules)
-        tvLockBgState = findViewById(R.id.tvLockBgState)
-        etLockMessage = findViewById(R.id.etLockMessage)
-        btnIconToggle = findViewById(R.id.btnIconToggle)
-
-        findViewById<Button>(R.id.btnChangePin).setOnClickListener {
-            val old = findViewById<EditText>(R.id.etOldPin).text.toString()
-            val nw = findViewById<EditText>(R.id.etNewPin).text.toString()
-            when {
-                old != store.pin -> Toast.makeText(this, "PIN cũ không đúng", Toast.LENGTH_SHORT).show()
-                nw.length < 4 -> Toast.makeText(this, "PIN mới ít nhất 4 số", Toast.LENGTH_SHORT).show()
-                else -> { store.pin = nw; Toast.makeText(this, "Đã đổi PIN", Toast.LENGTH_SHORT).show() }
-            }
-        }
-        findViewById<Button>(R.id.btnSchedules).setOnClickListener {
-            startActivity(Intent(this, SchedulesActivity::class.java))
-        }
-        findViewById<Button>(R.id.btnDailyLimits).setOnClickListener {
-            startActivity(Intent(this, DailyLimitsActivity::class.java))
-        }
-        // v1.6: giờ và phút chỉnh riêng — nút giờ ±1 giờ, nút phút ±1 phút,
-        // giữ nút là tự tăng/giảm liên tục (HoldRepeat, như giữ phím volume).
-        bindHourMin(R.id.btnNewsStartHourMinus, R.id.btnNewsStartHourPlus,
-            R.id.btnNewsStartMinMinus, R.id.btnNewsStartMinPlus,
-            { store.newsStartMin }) { store.newsStartMin = it }
-        bindHourMin(R.id.btnNewsEndHourMinus, R.id.btnNewsEndHourPlus,
-            R.id.btnNewsEndMinMinus, R.id.btnNewsEndMinPlus,
-            { store.newsEndMin }) { store.newsEndMin = it }
-
-        findViewById<Button>(R.id.btnManual).setOnClickListener {
-            store.manualLocked = !store.manualLocked
-            if (store.manualLocked) store.unlockUntilMs = 0L
-            refresh()
-        }
-        findViewById<Button>(R.id.btnResetUsed).setOnClickListener {
-            store.usedTodayMin = 0
-            Toast.makeText(this, "Đã reset số phút hôm nay", Toast.LENGTH_SHORT).show()
-            refresh()
-        }
-        btnIconToggle.setOnClickListener { toggleLauncherIcon(); refresh() }
-        findViewById<Button>(R.id.btnAppRules).setOnClickListener {
-            startActivity(Intent(this, AppRulesActivity::class.java))
-        }
-        // v1.8: tùy chỉnh màn hình khóa — lời nhắc + ảnh nền.
-        findViewById<Button>(R.id.btnSaveLockMessage).setOnClickListener {
-            val msg = etLockMessage.text.toString().trim()
-            if (msg.isEmpty() || msg.length > 140) {
-                Toast.makeText(this, "Lời nhắc từ 1–140 ký tự", Toast.LENGTH_SHORT).show()
-            } else {
-                store.lockMessage = msg
-                Toast.makeText(this, "Đã lưu lời nhắc", Toast.LENGTH_SHORT).show()
-            }
-        }
-        findViewById<Button>(R.id.btnPickLockBg).setOnClickListener {
-            val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                .addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
-            try { startActivityForResult(i, 1001) } catch (_: Exception) {
-                Toast.makeText(this, "TV không có trình chọn ảnh", Toast.LENGTH_SHORT).show()
-            }
-        }
-        findViewById<Button>(R.id.btnRemoveLockBg).setOnClickListener {
-            store.deleteLockBg()
-            Toast.makeText(this, "Đã xóa ảnh nền riêng", Toast.LENGTH_SHORT).show()
-            refresh()
-        }
-        // v3: bonus minutes on TV require the PIN first (LockActivity mode "bonus").
-        val bonusBtns = listOf(
-            R.id.btnBonus5 to 5, R.id.btnBonus10 to 10,
-            R.id.btnBonus15 to 15, R.id.btnBonus30 to 30
-        )
-        for ((id, min) in bonusBtns) {
-            findViewById<Button>(id).setOnClickListener {
-                val i = Intent(this, LockActivity::class.java)
-                i.putExtra("mode", "bonus"); i.putExtra("minutes", min)
-                i.putExtra("reason", "Thưởng thêm $min phút")
-                startActivity(i)
-            }
-        }
-        findViewById<Button>(R.id.btnOpenMain).setOnClickListener {
-            val i = Intent(this, MainActivity::class.java)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(i)
-        }
-        findViewById<Button>(R.id.btnAccessSettings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
+        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "")
+        tvStatus = findViewById(R.id.tvStatus)
+        tvUsed = findViewById(R.id.tvUsed)
+        progressUsed = findViewById(R.id.progressUsed)
+        tvStatUsed = findViewById(R.id.tvStatUsed)
+        tvStatRemaining = findViewById(R.id.tvStatRemaining)
+        tvStatBonus = findViewById(R.id.tvStatBonus)
+        chartContainer = findViewById(R.id.chartContainer)
+        tvChartEmpty = findViewById(R.id.tvChartEmpty)
+        tvNightLock = findViewById(R.id.tvNightLock)
+        tvNewsSlot = findViewById(R.id.tvNewsSlot)
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
-
-        setupNewsSpinner()
         refresh()
-    }
-
-    /** Giờ ±1 giờ (giữ nguyên phút), phút ±1 phút (tràn sang giờ bên cạnh). */
-    private fun bindHourMin(hourMinusId: Int, hourPlusId: Int, minMinusId: Int, minPlusId: Int,
-                            get: () -> Int, set: (Int) -> Unit) {
-        HoldRepeat.attach(findViewById(hourMinusId)) { set((get() - 60 + 1440) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(hourPlusId)) { set((get() + 60) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(minMinusId)) { set((get() - 1 + 1440) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(minPlusId)) { set((get() + 1) % 1440); refresh() }
-    }
-
-    private fun setupNewsSpinner() {
-        val pm = packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val apps = pm.queryIntentActivities(intent, 0)
-            .map { it.activityInfo.packageName to it.loadLabel(pm).toString() }
-            .distinctBy { it.first }.sortedBy { it.second }
-        newsPkgs = listOf("") + apps.map { it.first }
-        newsLabels = listOf("(Chưa chọn)") + apps.map { it.second }
-        val sp = findViewById<Spinner>(R.id.spNews)
-        sp.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, newsLabels).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        val idx = newsPkgs.indexOf(store.newsPkg).coerceAtLeast(0)
-        sp.setSelection(idx)
-        var first = true
-        sp.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                if (first) { first = false; return }
-                store.newsPkg = newsPkgs[pos]
-            }
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1001 && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            try {
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
-                if (store.saveLockBgBytes(bytes)) {
-                    Toast.makeText(this, "Đã lưu ảnh nền màn hình khóa", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Ảnh không đọc được", Toast.LENGTH_SHORT).show()
-                }
-            } catch (_: Exception) {
-                Toast.makeText(this, "Không đọc được ảnh", Toast.LENGTH_SHORT).show()
-            }
-            refresh()
-        }
     }
 
     override fun onResume() {
@@ -196,67 +72,132 @@ class SettingsActivity : Activity() {
         refresh()
     }
 
+    /** "1 giờ 12 phút" / "45 phút" / "1 giờ" — như MainActivity. */
+    private fun fmtDuration(min: Int): String {
+        if (min <= 0) return "Không giới hạn"
+        if (min < 60) return "$min phút"
+        val h = min / 60
+        val m = min % 60
+        return if (m == 0) "$h giờ" else "$h giờ $m phút"
+    }
+
+    /** "Khóa đêm": trong lịch hôm nay, ưu tiên lịch qua đêm (startMin > endMin),
+        nếu không có thì lịch đầu tiên hôm nay; không có lịch nào thì "Không có lịch khóa".
+        Như MainActivity. */
+    private fun nightLockText(): String {
+        val day = store.dayIndexOf(Calendar.getInstance())
+        val todays = store.schedulesForDay(day)
+        if (todays.isEmpty()) return "Không có lịch khóa"
+        val s = todays.firstOrNull { it.startMin > it.endMin } ?: todays[0]
+        return "${store.fmt(s.startMin)} – ${store.fmt(s.endMin)}"
+    }
+
     private fun refresh() {
-        // v4: flexible schedules + per-weekday daily limits.
-        val scheds = store.lockSchedules()
-        tvSchedules.text = if (scheds.isEmpty()) "Chưa có lịch khóa nào — TV không bị khóa theo giờ."
-        else scheds.joinToString("\n") { store.scheduleSummary(it) }
-        tvDailyLimits.text = store.dailyLimitsSummary() +
-            "\n(Hôm nay đã xem ${store.usedTodayMin} phút, giới hạn ${store.limitText(store.limitForToday())}.)"
-        tvNewsStartHour.text = String.format("%02d", store.newsStartMin / 60)
-        tvNewsStartMin.text = String.format("%02d", store.newsStartMin % 60)
-        tvNewsEndHour.text = String.format("%02d", store.newsEndMin / 60)
-        tvNewsEndMin.text = String.format("%02d", store.newsEndMin % 60)
-        tvManual.text = if (store.manualLocked) "Khóa thủ công: ĐANG KHÓA" else "Khóa thủ công: đang mở"
-        tvAccess.text = "Trợ năng (Accessibility): " + if (isAccessEnabled()) "ĐÃ BẬT" else "CHƯA BẬT — bấm nút dưới để bật"
-        val iconOn = launcherIconEnabled()
-        tvIconState.text = if (iconOn) "Icon trên màn hình chính: ĐANG HIỆN" else "Icon trên màn hình chính: ĐANG ẨN"
-        btnIconToggle.text = if (iconOn) "Ẩn icon" else "Hiện icon"
-        // v3: bonus pool + per-app rules summary.
-        tvBonus.text = "Phút thưởng còn lại: ${store.bonusMin} phút\n(Phút thưởng chỉ trừ khi đã hết giờ ngày, và không hết hạn khi sang ngày mới.)"
-        // v1.8: màn hình khóa — lời nhắc + ảnh nền.
-        if (etLockMessage.text.toString() != store.lockMessage) etLockMessage.setText(store.lockMessage)
-        tvLockBgState.text = if (store.hasLockBg()) "Ảnh nền: đã đặt ảnh riêng"
-            else "Ảnh nền: chưa có — đang dùng nền mặc định"
-        val rules = store.appRules()
-        tvAppRules.text = if (rules.isEmpty()) "Chưa đặt giới hạn riêng cho app nào."
-        else rules.entries.joinToString("\n") { (pkg, r) ->
-            val label = store.appLabel(pkg)
-            when (r.mode) {
-                "limit" -> "$label: giới hạn riêng ${r.minutes} phút/ngày (hôm nay đã xem ${store.perAppMin(pkg)} phút)"
-                "free" -> "$label: không tính giờ"
-                "blocked" -> "$label: chặn hẳn"
-                else -> "$label: bình thường"
+        store.resetUsedIfNewDay()
+        val now = System.currentTimeMillis()
+        val locked = store.isLockedNow(now)
+        tvStatus.text = if (locked) "ĐÃ KHÓA" else "ĐANG MỞ"
+        tvStatus.setBackgroundResource(
+            if (locked) R.drawable.pill_locked else R.drawable.pill_open)
+        tvStatus.setTextColor(resources.getColor(
+            if (locked) R.color.on_locked else R.color.on_open, null))
+
+        val limit = store.limitForToday()
+        val used = store.usedTodayMin
+        val rem = store.remainingMin()
+        tvStatUsed.text = "$used phút"
+        tvStatRemaining.text =
+            if (rem == Int.MAX_VALUE) "Không giới hạn" else fmtDuration(rem)
+        tvStatBonus.text =
+            if (store.bonusMin > 0) "+${store.bonusMin} phút" else "0 phút"
+        progressUsed.progress =
+            if (limit <= 0) 100 else (used * 100 / limit).coerceIn(0, 100)
+        tvUsed.text = "Đã xem $used phút · Giới hạn " +
+            if (limit <= 0) "không giới hạn" else fmtDuration(limit)
+        tvNightLock.text = "Khóa đêm: ${nightLockText()}"
+        tvNewsSlot.text = "Giờ thời sự: ${store.fmt(store.newsStartMin)} – ${store.fmt(store.newsEndMin)}"
+        buildChart()
+    }
+
+    /**
+     * Biểu đồ cột 7 ngày: 6 ngày gần nhất + hôm nay.
+     * historyDays() chỉ chứa ngày đã chốt — hôm nay chưa chốt nên số hôm
+     * nay lấy từ usedTodayMin, không lấy từ history (xem finalizeDay() /
+     * resetUsedIfNewDay() trong Store.kt). Ngày nào không có dữ liệu thì
+     * cột cao tối thiểu + nhãn "0". Chưa có dữ liệu nào (chưa chốt ngày
+     * nào, hôm nay cũng chưa xem) thì hiện dòng "Chưa đủ dữ liệu 7 ngày qua"
+     * thay cho biểu đồ.
+     */
+    private fun buildChart() {
+        val history = store.historyDays().associateBy { it.date }
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val days = (6 downTo 0).map { offset ->
+            val c = Calendar.getInstance()
+            c.add(Calendar.DAY_OF_YEAR, -offset)
+            val dateStr = sdf.format(c.time)
+            val isToday = offset == 0
+            val total = if (isToday) store.usedTodayMin
+                else history[dateStr]?.total ?: 0
+            val label = if (isToday) "Nay" else when (c.get(Calendar.DAY_OF_WEEK)) {
+                Calendar.MONDAY -> "T2"
+                Calendar.TUESDAY -> "T3"
+                Calendar.WEDNESDAY -> "T4"
+                Calendar.THURSDAY -> "T5"
+                Calendar.FRIDAY -> "T6"
+                Calendar.SATURDAY -> "T7"
+                else -> "CN"
             }
+            Triple(total, label, isToday)
         }
-    }
-
-    private fun launcherIconEnabled(): Boolean {
-        // Manifest sets the alias enabled=false, so DEFAULT also means hidden.
-        return packageManager.getComponentEnabledSetting(
-            ComponentName(packageName, "$packageName.LauncherAlias")
-        ) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-    }
-
-    private fun toggleLauncherIcon() {
-        val enabled = launcherIconEnabled()
-        packageManager.setComponentEnabledSetting(
-            ComponentName(packageName, "$packageName.LauncherAlias"),
-            if (enabled) PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP
-        )
-        Toast.makeText(
-            this,
-            if (enabled) "Đã ẩn icon khỏi màn hình chính" else "Đã hiện icon trên màn hình chính",
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
-    private fun isAccessEnabled(): Boolean {
-        return try {
-            val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
-            enabled.contains(packageName)
-        } catch (_: Exception) { false }
+        val hasAnyData = days.any { it.first > 0 } || history.isNotEmpty()
+        if (!hasAnyData) {
+            chartContainer.visibility = View.GONE
+            tvChartEmpty.visibility = View.VISIBLE
+            return
+        }
+        chartContainer.visibility = View.VISIBLE
+        tvChartEmpty.visibility = View.GONE
+        chartContainer.removeAllViews()
+        val max = days.maxOf { it.first }.coerceAtLeast(1)
+        val density = resources.displayMetrics.density
+        val maxBarPx = (100 * density).toInt()
+        val minBarPx = (4 * density).toInt()
+        val barWpx = (32 * density).toInt()
+        val gapPx = (6 * density).toInt()
+        for ((total, label, isToday) in days) {
+            val col = LinearLayout(this)
+            col.orientation = LinearLayout.VERTICAL
+            col.gravity = Gravity.CENTER_HORIZONTAL
+            col.layoutParams = LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            val tvVal = TextView(this)
+            tvVal.text = "$total"
+            tvVal.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            tvVal.setTextColor(getColor(
+                if (isToday) R.color.accent else R.color.text_muted))
+            col.addView(tvVal)
+            val bar = View(this)
+            val h = (total.toFloat() / max * maxBarPx).toInt()
+                .coerceIn(minBarPx, maxBarPx)
+            val barParams = LinearLayout.LayoutParams(barWpx, h)
+            barParams.topMargin = gapPx
+            bar.layoutParams = barParams
+            val bg = GradientDrawable()
+            bg.cornerRadius = 4 * density
+            bg.setColor(getColor(if (isToday) R.color.accent else R.color.open))
+            bar.background = bg
+            col.addView(bar)
+            val tvDay = TextView(this)
+            tvDay.text = label
+            tvDay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            tvDay.setTextColor(getColor(R.color.text_muted))
+            val dayParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT)
+            dayParams.topMargin = gapPx
+            tvDay.layoutParams = dayParams
+            col.addView(tvDay)
+            chartContainer.addView(col)
+        }
     }
 }

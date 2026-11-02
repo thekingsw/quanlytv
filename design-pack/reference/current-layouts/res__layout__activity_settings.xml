@@ -1,0 +1,15 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:background="@7F010000" android:layout_width="-1" android:layout_height="-1" android:fillViewport="true">
+  <LinearLayout android:orientation="1" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2">
+    <TextView android:layout_width="-2" android:layout_height="-2" android:text="C&#224;i &#273;&#7863;t" style="@7F070005"/>
+    <TextView android:textColor="@7F01000D" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="Ch&#7885;n m&#7897;t m&#7909;c &#8212; m&#7895;i m&#7909;c m&#7897;t m&#224;n h&#236;nh ri&#234;ng, kh&#244;ng c&#242;n cu&#7897;n d&#224;i." style="@7F070000"/>
+    <Button android:id="@7F030031" android:layout_width="-1" android:layout_marginTop="12.000000dip" android:text="L&#7883;ch kh&#243;a" style="@7F070001"/>
+    <Button android:id="@7F030014" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Gi&#7899;i h&#7841;n ng&#224;y" style="@7F070001"/>
+    <Button android:id="@7F030024" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Gi&#7901; th&#7901;i s&#7921;" style="@7F070001"/>
+    <Button android:id="@7F03000A" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Gi&#7899;i h&#7841;n t&#7915;ng app" style="@7F070001"/>
+    <Button android:id="@7F03001D" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="M&#224;n h&#236;nh kh&#243;a" style="@7F070001"/>
+    <Button android:id="@7F03002C" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="M&#227; PIN &amp; kh&#243;a th&#7911; c&#244;ng" style="@7F070001"/>
+    <Button android:id="@7F03000D" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Ph&#250;t th&#432;&#7903;ng" style="@7F070001"/>
+    <Button android:id="@7F030000" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Tr&#7907; n&#259;ng &amp; hi&#7875;n th&#7883;" style="@7F070001"/>
+    <Button android:id="@7F03000C" android:layout_width="-1" android:layout_marginTop="12.000000dip" android:text="Quay l&#7841;i" style="@7F070001"/>
+  </LinearLayout>
+</ScrollView>

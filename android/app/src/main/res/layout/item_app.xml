@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v3.0: một ô app — dùng chung cho hàng Yêu thích và lưới. Icon là
+     CircleIconView để hỗ trợ kiểu "Tròn" / "Mặc định". -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="96dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/app_card_selector"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="6dp"
+    android:stateListAnimator="@animator/focus_scale">
+
+    <vn.tvlock.CircleIconView
+        android:id="@+id/appIcon"
+        android:layout_width="48dp"
+        android:layout_height="48dp" />
+
+    <TextView
+        android:id="@+id/appLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/text"
+        android:shadowColor="#CC000000" android:shadowDx="0"
+        android:shadowDy="2" android:shadowRadius="6"
+        android:textSize="12sp" />
+</LinearLayout>

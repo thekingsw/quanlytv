@@ -1,0 +1,37 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:background="@7F010000" android:layout_width="-1" android:layout_height="-1">
+  <LinearLayout android:orientation="1" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2">
+    <TextView android:layout_width="-2" android:layout_height="-2" android:text="S&#7917;a l&#7883;ch kh&#243;a" style="@7F070005"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="Ng&#224;y &#225;p d&#7909;ng" style="@7F070004"/>
+    <LinearLayout android:orientation="1" android:id="@7F030039" android:background="@7F020002" android:padding="12.000000dip" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="8.000000dip"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="Gi&#7901; kh&#243;a &#8212; gi&#7901; v&#224; ph&#250;t ch&#7881;nh ri&#234;ng, m&#7895;i l&#7847;n b&#7845;m &#177;1; gi&#7919; n&#250;t &#273;&#7875; t&#259;ng/gi&#7843;m li&#234;n t&#7909;c nh&#432; ph&#237;m volume" style="@7F070004"/>
+    <LinearLayout android:orientation="1" android:background="@7F020002" android:padding="12.000000dip" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="8.000000dip">
+      <LinearLayout android:orientation="0" android:layout_width="-1" android:layout_height="-2">
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="B&#7855;t &#273;&#7847;u:" android:layout_marginEnd="8.000000dip" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030033" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="&#8722;" style="@7F070001"/>
+        <TextView android:textSize="20.000000sp" android:textStyle="0x00000001" android:gravity="0x00000011" android:id="@7F03006C" android:layout_width="44.000000dip" android:layout_height="-2" android:text="" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030034" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="+" style="@7F070001"/>
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="gi&#7901;" android:layout_marginStart="2.000000dip" android:layout_marginEnd="8.000000dip" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030035" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="&#8722;" style="@7F070001"/>
+        <TextView android:textSize="20.000000sp" android:textStyle="0x00000001" android:gravity="0x00000011" android:id="@7F03006D" android:layout_width="44.000000dip" android:layout_height="-2" android:text="" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030036" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="+" style="@7F070001"/>
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="ph&#250;t" android:layout_marginStart="2.000000dip" style="@7F070000"/>
+      </LinearLayout>
+      <LinearLayout android:orientation="0" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="8.000000dip">
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="K&#7871;t th&#250;c:" android:layout_marginEnd="8.000000dip" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030017" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="&#8722;" style="@7F070001"/>
+        <TextView android:textSize="20.000000sp" android:textStyle="0x00000001" android:gravity="0x00000011" android:id="@7F03005D" android:layout_width="44.000000dip" android:layout_height="-2" android:text="" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030018" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="+" style="@7F070001"/>
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="gi&#7901;" android:layout_marginStart="2.000000dip" android:layout_marginEnd="8.000000dip" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F030019" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="&#8722;" style="@7F070001"/>
+        <TextView android:textSize="20.000000sp" android:textStyle="0x00000001" android:gravity="0x00000011" android:id="@7F03005E" android:layout_width="44.000000dip" android:layout_height="-2" android:text="" style="@7F070000"/>
+        <Button android:textSize="22.000000sp" android:id="@7F03001A" android:layout_width="52.000000dip" android:layout_margin="2.000000dip" android:text="+" style="@7F070001"/>
+        <TextView android:textSize="18.000000sp" android:gravity="0x00000010" android:layout_width="-2" android:layout_height="-2" android:text="ph&#250;t" android:layout_marginStart="2.000000dip" style="@7F070000"/>
+      </LinearLayout>
+      <TextView android:textColor="@7F01000D" android:id="@7F03006A" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+      <Button android:id="@7F030008" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Kh&#243;a c&#7843; ng&#224;y" style="@7F070001"/>
+    </LinearLayout>
+    <Button android:id="@7F030030" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="L&#432;u l&#7883;ch" style="@7F070002"/>
+    <Button android:id="@7F030015" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="X&#243;a l&#7883;ch n&#224;y" style="@7F070001"/>
+    <Button android:id="@7F03000C" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Quay l&#7841;i (kh&#244;ng l&#432;u)" style="@7F070001"/>
+  </LinearLayout>
+</ScrollView>

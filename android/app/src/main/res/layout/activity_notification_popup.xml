@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4.0: thẻ popup thông báo — góc phải trên, nền trong suốt. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#40000000">
+    <LinearLayout
+        android:layout_width="420dp" android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="48dp" android:layout_marginEnd="48dp"
+        android:background="@drawable/card_bg"
+        android:orientation="vertical"
+        android:padding="24dp">
+        <TextView
+            android:id="@+id/tvPopupType"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="TINKER" android:textSize="14sp" android:textStyle="bold"
+            android:textColor="#FFC857" />
+        <TextView
+            android:id="@+id/tvPopupTitle"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="" android:textSize="22sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+        <TextView
+            android:id="@+id/tvPopupBody"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="" android:textSize="17sp"
+            android:textColor="@color/text_primary" />
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="OK để xem · Back để bỏ qua"
+            android:textSize="14sp" android:textColor="@color/text_muted" />
+    </LinearLayout>
+</FrameLayout>

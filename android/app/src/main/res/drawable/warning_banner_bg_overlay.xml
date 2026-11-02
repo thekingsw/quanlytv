@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.6: nền banner overlay — nền card #172035 ở 50% trong suốt (alpha 80)
+     để vẫn thấy được nội dung đang xem phía sau; viền hổ phách giữ nguyên
+     độ đậm để banner vẫn nhìn rõ. Chỉ dùng cho view_warning_banner.xml
+     (overlay); popup WarningActivity vẫn dùng warning_banner_bg.xml đặc. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#80172035" />
+    <stroke android:width="2dp" android:color="@color/accent" />
+    <corners android:radius="16dp" />
+</shape>

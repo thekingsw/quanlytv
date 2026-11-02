@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.7: màn hình tin nhắn — nền tối trong suốt để vẫn thấy video phía
+     sau, thẻ tin nhắn ở giữa màn hình. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#80000000"
+    android:gravity="center">
+    <LinearLayout
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/warning_banner_bg_overlay"
+        android:orientation="vertical"
+        android:padding="28dp"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Tin nhắn từ bố mẹ"
+            android:textSize="18sp" android:textColor="@color/text_muted"
+            android:gravity="center" />
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="" android:textSize="32sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" android:gravity="center" />
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Tự tắt sau 5 giây"
+            android:textSize="16sp" android:textColor="@color/text_muted"
+            android:gravity="center" />
+    </LinearLayout>
+</FrameLayout>

@@ -4,21 +4,23 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.ListView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 
 /**
  * Per-app limits: pick an installed launchable app, then choose
  * Normal / own limit (15/30/60 min) / Free (not counted) / Blocked.
+ *
+ * Giai đoạn 3 (redesign 2.2): rail+pane; mỗi app một ListRow trong
+ * listContainer thay cho ListView thô. Dialog + logic giữ nguyên.
  */
 class AppRulesActivity : Activity() {
     private lateinit var store: Store
     private var pkgs = listOf<String>()
     private var labels = listOf<String>()
-    private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var listContainer: LinearLayout
 
     private val options = arrayOf(
         "Bình thường (tính vào giới hạn ngày)",
@@ -33,6 +35,8 @@ class AppRulesActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_app_rules)
         store = Store(this)
+        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "app_rules")
+        listContainer = findViewById(R.id.listContainer)
         val pm = packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val apps = pm.queryIntentActivities(intent, 0)
@@ -40,10 +44,7 @@ class AppRulesActivity : Activity() {
             .distinctBy { it.first }.sortedBy { it.second }
         pkgs = apps.map { it.first }
         labels = apps.map { it.second }
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, rowTexts())
-        val list = findViewById<ListView>(R.id.listApps)
-        list.adapter = adapter
-        list.setOnItemClickListener { _, _, pos, _ -> showRuleDialog(pos) }
+        refresh()
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<TextView>(R.id.tvHint).text =
             "Bấm vào một app để đặt quy tắc riêng. App đã đặt quy tắc sẽ áp dụng ngay, không cần khởi động lại."
@@ -59,14 +60,15 @@ class AppRulesActivity : Activity() {
         }
     }
 
-    private fun rowTexts(): MutableList<String> {
-        return labels.mapIndexed { i, label -> "$label — ${ruleText(pkgs[i])}" }.toMutableList()
-    }
-
     private fun refresh() {
-        adapter.clear()
-        adapter.addAll(rowTexts())
-        adapter.notifyDataSetChanged()
+        listContainer.removeAllViews()
+        val btnBack = findViewById<Button>(R.id.btnBack)
+        val rows = labels.mapIndexed { i, label ->
+            ListRows.add(this, listContainer, label, ruleText(pkgs[i])) {
+                showRuleDialog(i)
+            }
+        }
+        ListRows.linkFocus(rows, btnBack)
     }
 
     private fun showRuleDialog(pos: Int) {

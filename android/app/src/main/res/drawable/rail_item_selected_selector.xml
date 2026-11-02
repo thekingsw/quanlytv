@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rail item đang chọn: bình thường nền accent, focus thêm viền trắng + vòng sáng -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:drawable="@drawable/rail_item_selected_focus" />
+    <item android:drawable="@drawable/rail_item_selected" />
+</selector>

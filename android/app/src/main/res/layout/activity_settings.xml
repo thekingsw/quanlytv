@@ -1,284 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- redesign 2.2 giai đoạn 3 — khung rail+pane theo design-pack/design/tv-settings.html.
+     Khung 960x540, lề an toàn 48dp ngang / 27dp dọc, rail 250dp + pane thẻ phải.
+     v2.4: rail bọc ScrollView (thêm mục sau này không mất mục dưới);
+     pane Tổng quan thành dashboard trực quan (3 thẻ số + thanh tiến độ +
+     biểu đồ 7 ngày + khóa đêm / giờ thời sự), nội dung cuộn, nút Quay lại ghim đáy. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/bg_dark">
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:padding="16dp">
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Cài đặt Khóa TV" style="@style/TvTitle" />
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Đổi mã PIN" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Mã PIN mặc định: 1234" style="@style/TvBody"
-            android:textColor="@color/text_muted" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <EditText android:id="@+id/etOldPin"
-                android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
-                android:background="@drawable/card_bg" android:padding="12dp"
-                android:hint="PIN cũ" android:inputType="numberPassword"
-                android:textSize="18sp" android:textColor="@color/text_primary"
-                android:textColorHint="#888888" android:layout_margin="4dp" />
-            <EditText android:id="@+id/etNewPin"
-                android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
-                android:background="@drawable/card_bg" android:padding="12dp"
-                android:hint="PIN mới" android:inputType="numberPassword"
-                android:textSize="18sp" android:textColor="@color/text_primary"
-                android:textColorHint="#888888" android:layout_margin="4dp" />
-            <Button android:id="@+id/btnChangePin" style="@style/TvButton"
-                android:layout_width="wrap_content" android:text="Đổi PIN"
-                android:layout_margin="4dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <!-- Rail trái: SettingsRail.build() dựng tiêu đề + mục vào đây;
+             ScrollView để thêm mục mới không mất mục dưới. -->
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <!-- Pane phải: dashboard Tổng quan -->
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="20dp">
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Tổng quan" style="@style/TvTitle" />
+                    <TextView android:id="@+id/tvStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="ĐANG MỞ" android:textSize="16sp" android:textStyle="bold"
+                        android:letterSpacing="0.05"
+                        android:textColor="@color/on_open"
+                        android:background="@drawable/pill_open"
+                        android:paddingLeft="18dp" android:paddingRight="18dp"
+                        android:paddingTop="6dp" android:paddingBottom="6dp" />
+                </LinearLayout>
+
+                <!-- 3 thẻ số liệu -->
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Đã xem" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatUsed"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="0 phút"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp"
+                        android:layout_marginLeft="8dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Còn lại" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatRemaining"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="—"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp"
+                        android:layout_marginLeft="8dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Phút thưởng" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatBonus"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="0 phút"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Thanh tiến độ hôm nay -->
+                <ProgressBar android:id="@+id/progressUsed"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent" android:layout_height="14dp"
+                    android:layout_marginTop="16dp"
+                    android:minHeight="14dp" android:maxHeight="14dp"
+                    android:max="100" android:progress="0"
+                    android:progressDrawable="@drawable/progress_home" />
+                <TextView android:id="@+id/tvUsed"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:text=""
+                    android:textSize="16sp" android:textColor="@color/text_muted" />
+
+                <!-- Biểu đồ 7 ngày -->
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="7 ngày qua · phút"
+                    android:textSize="18sp" android:textColor="@color/text_muted" />
+                <LinearLayout android:id="@+id/chartContainer"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="8dp" />
+                <TextView android:id="@+id/tvChartEmpty"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:visibility="gone"
+                    android:text="Chưa đủ dữ liệu 7 ngày qua"
+                    android:textSize="18sp" android:textColor="@color/text_muted" />
+
+                <!-- Khóa đêm / giờ thời sự -->
+                <TextView android:id="@+id/tvNightLock"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp" android:text=""
+                    android:textSize="18sp" android:textColor="@color/text" />
+                <TextView android:id="@+id/tvNewsSlot"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:text=""
+                    android:textSize="18sp" android:textColor="@color/text" />
+            </LinearLayout>
+            </ScrollView>
+
+            <Button android:id="@+id/btnBack" style="@style/TvButtonGhost"
+                android:layout_width="match_parent" android:text="Quay lại"
+                android:layout_marginTop="12dp" />
         </LinearLayout>
     </LinearLayout>
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Lịch khóa theo ngày" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Mỗi lịch chọn ngày + giờ khóa từ–đến, gộp được nhiều lịch, khóa qua đêm cũng được."
-            style="@style/TvBody" android:textColor="@color/text_muted" />
-        <TextView android:id="@+id/tvSchedules"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnSchedules" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Quản lý lịch khóa"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Giới hạn ngày theo ngày" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Mỗi ngày một mức riêng, ví dụ ngày học 60', cuối tuần 120'."
-            style="@style/TvBody" android:textColor="@color/text_muted" />
-        <TextView android:id="@+id/tvDailyLimits"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnDailyLimits" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Đặt giới hạn từng ngày"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Giới hạn từng app" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Ví dụ YouTube 30'/ngày, app học không tính giờ, game chặn hẳn."
-            style="@style/TvBody" android:textColor="@color/text_muted" />
-        <TextView android:id="@+id/tvAppRules"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnAppRules" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Chọn app để đặt giới hạn"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Phút thưởng" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:id="@+id/tvBonus"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Phút thưởng chỉ trừ khi đã hết giờ ngày, không hết hạn qua ngày mới."
-            style="@style/TvBody" android:textColor="@color/text_muted"
-            android:layout_marginTop="8dp" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <Button android:id="@+id/btnBonus5" style="@style/TvButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
-                android:text="Thưởng +5'" />
-            <Button android:id="@+id/btnBonus10" style="@style/TvButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
-                android:text="Thưởng +10'" />
-            <Button android:id="@+id/btnBonus15" style="@style/TvButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
-                android:text="Thưởng +15'" />
-            <Button android:id="@+id/btnBonus30" style="@style/TvButton"
-                android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
-                android:text="Thưởng +30'" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khung giờ thời sự" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Trong khung này TV chỉ mở được app thời sự. Giờ và phút chỉnh riêng, mỗi lần bấm ±1; giữ nút để tăng/giảm liên tục." style="@style/TvBody"
-            android:textColor="@color/text_muted" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Bắt đầu:" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginEnd="8dp" />
-            <Button android:id="@+id/btnNewsStartHourMinus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="−" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:id="@+id/tvNewsStartHour"
-                android:layout_width="44dp" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
-                android:gravity="center" />
-            <Button android:id="@+id/btnNewsStartHourPlus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="+" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="giờ" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginStart="2dp" android:layout_marginEnd="8dp" />
-            <Button android:id="@+id/btnNewsStartMinMinus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="−" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:id="@+id/tvNewsStartMin"
-                android:layout_width="44dp" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
-                android:gravity="center" />
-            <Button android:id="@+id/btnNewsStartMinPlus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="+" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="phút" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginStart="2dp" />
-        </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:layout_marginTop="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Kết thúc:" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginEnd="8dp" />
-            <Button android:id="@+id/btnNewsEndHourMinus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="−" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:id="@+id/tvNewsEndHour"
-                android:layout_width="44dp" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
-                android:gravity="center" />
-            <Button android:id="@+id/btnNewsEndHourPlus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="+" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="giờ" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginStart="2dp" android:layout_marginEnd="8dp" />
-            <Button android:id="@+id/btnNewsEndMinMinus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="−" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:id="@+id/tvNewsEndMin"
-                android:layout_width="44dp" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="20sp" android:textStyle="bold"
-                android:gravity="center" />
-            <Button android:id="@+id/btnNewsEndMinPlus" style="@style/TvButton"
-                android:layout_width="52dp" android:text="+" android:textSize="22sp"
-                android:layout_margin="2dp" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="phút" style="@style/TvBody" android:textSize="18sp"
-                android:gravity="center_vertical" android:layout_marginStart="2dp" />
-        </LinearLayout>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="App thời sự:" style="@style/TvBody" android:textSize="18sp"
-            android:layout_marginTop="8dp" />
-        <Spinner android:id="@+id/spNews"
-            android:layout_width="match_parent" android:layout_height="52dp"
-            android:background="@drawable/card_bg" android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Màn hình khóa (ảnh nền + lời nhắc)" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Lời nhắc hiện cùng ảnh nền bên trái màn hình khóa. Ảnh tiện nhất là tải từ điện thoại qua trang web."
-            style="@style/TvBody" android:textColor="@color/text_muted" />
-        <EditText android:id="@+id/etLockMessage"
-            android:layout_width="match_parent" android:layout_height="52dp"
-            android:background="@drawable/card_bg" android:padding="12dp"
-            android:textSize="18sp" android:textColor="@color/text_primary"
-            android:textColorHint="#888888" android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnSaveLockMessage" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Lưu lời nhắc"
-            android:layout_marginTop="8dp" />
-        <TextView android:id="@+id/tvLockBgState"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnPickLockBg" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Chọn ảnh nền từ TV"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnRemoveLockBg" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Xóa ảnh nền riêng"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khóa thủ công" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:id="@+id/tvManual"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp" />
-        <Button android:id="@+id/btnManual" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Bật / tắt khóa thủ công"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnResetUsed" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Reset số phút đã xem hôm nay"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Hiển thị icon" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:id="@+id/tvIconState"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Icon ẩn thì trẻ khó thấy app. Bố vẫn mở được qua Trợ năng, màn hình khóa, hoặc ADB."
-            style="@style/TvBody" android:textColor="@color/text_muted"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnIconToggle" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Hiện icon"
-            android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnOpenMain" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Mở màn hình chính"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Trợ năng" style="@style/TvSection" android:layout_marginTop="8dp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="8dp">
-        <TextView android:id="@+id/tvAccess"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="" style="@style/TvBody" android:textSize="18sp"
-            android:textColor="#FFEB3B" />
-        <Button android:id="@+id/btnAccessSettings" style="@style/TvButton"
-            android:layout_width="match_parent" android:text="Mở cài đặt Trợ năng của TV"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Chống gỡ (tùy chọn, xem HUONG_DAN.md): dùng ADB đặt app làm Device Owner, nếu không trẻ vẫn gỡ được từ Cài đặt &gt; Ứng dụng."
-        style="@style/TvBody" android:textColor="@color/text_muted"
-        android:layout_marginTop="8dp" />
-    <Button android:id="@+id/btnBack" style="@style/TvButton"
-        android:layout_width="match_parent" android:text="Quay lại"
-        android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/tvKeyHint"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="◀ ▶ ▲ ▼ Di chuyển · OK Chọn · Back Quay lại"
+        android:textSize="16sp" android:textColor="@color/text_muted" />
 </LinearLayout>
-</ScrollView>

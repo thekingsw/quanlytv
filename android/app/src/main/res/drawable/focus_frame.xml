@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Khung chọn animated: nền trong suốt, viền trắng bo tròn.
+     User 2026-10-31: khung trong suốt, trượt theo hướng bấm phím. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+    <stroke android:width="3dp" android:color="#FFFFFF" />
+    <corners android:radius="16dp" />
+</shape>

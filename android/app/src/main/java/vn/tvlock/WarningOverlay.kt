@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import android.util.Log
 
 /**
  * v1.7: banner nhắc kiểu notification — một dải nhỏ ở phía trên màn hình,
@@ -45,15 +46,26 @@ object WarningOverlay {
     }
 
     private fun showOnMain(title: String, sub: String) {
-        val w = wm ?: return
-        if (view == null) {
+        val w = wm
+        if (w == null) { Log.e("WarningOverlay", "showOnMain: wm null, chua attach?"); return }
+        val v = view
+        if (v == null) {
             val c = ctx ?: return
-            val v = LayoutInflater.from(c).inflate(R.layout.view_warning_banner, null)
-            tvTitle = v.findViewById(R.id.tvBannerTitle)
-            tvSub = v.findViewById(R.id.tvBannerSub)
-            val density = v.resources.displayMetrics.density
+            val nv = LayoutInflater.from(c).inflate(R.layout.view_warning_banner, null)
+            tvTitle = nv.findViewById(R.id.tvBannerTitle)
+            tvSub = nv.findViewById(R.id.tvBannerSub)
+            // v2.7: đặt chữ TRƯỚC khi addView — nếu không, WRAP_CONTENT
+            // sẽ đo được chiều rộng 0 (chữ đang rỗng) và banner tàng hình.
+            tvTitle?.text = title
+            tvSub?.let { s ->
+                s.text = sub
+                s.visibility = if (sub.isEmpty()) View.GONE else View.VISIBLE
+            }
+            val density = nv.resources.displayMetrics.density
+            // v2.6: banner chỉ rộng vừa khung chữ (WRAP_CONTENT) thay vì
+            // full chiều ngang — gọn lại, vẫn thấy được nội dung hai bên.
             val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -62,21 +74,23 @@ object WarningOverlay {
                 PixelFormat.TRANSLUCENT
             )
             params.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            params.y = (24 * density).toInt()
+            params.y = (27 * density).toInt()
             try {
-                w.addView(v, params)
-                view = v
-            } catch (_: Exception) {
+                w.addView(nv, params)
+                view = nv
+            } catch (e: Exception) {
+                Log.e("WarningOverlay", "addView that bai: " + e.toString())
                 view = null
-                return
             }
+            return
         }
+        // View đã có: cập nhật chữ rồi buộc đo lại (WRAP_CONTENT).
         tvTitle?.text = title
-        val s = tvSub
-        if (s != null) {
+        tvSub?.let { s ->
             s.text = sub
             s.visibility = if (sub.isEmpty()) View.GONE else View.VISIBLE
         }
+        v.requestLayout()
     }
 
     private fun hideOnMain() {

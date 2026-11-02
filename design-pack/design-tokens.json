@@ -1,0 +1,7 @@
+{"color":{"bg":"#0E1525","card":"#172035","card2":"#202C45","text":"#F3F6FB","muted":"#9FB0CC","accent":"#FFB84D","onAccent":"#1A1405","open":"#3DDC97","onOpen":"#06261A","locked":"#FF6B6B","onLocked":"#2A0A0A","track":"#26324D"},
+"radius_dp":{"card":24,"button":14,"pill":20},
+"tv":{"reference_frame_dp":"960x540","also_check_dp":"1280x720","overscan_dp":{"horizontal":48,"vertical":27},"button_height_dp":52,"button_small_dp":44,"list_row_dp":72,"keypad_key_dp":56,"rail_width_dp":250,
+"text_sp":{"hero_number":64,"lock_message":48,"title":28,"body":"20-22","caption":"16-18","min":16},
+"focus":{"border_dp":4,"border_color":"#FFFFFF","glow":"rgba(255,184,77,.45)","scale":1.06}},
+"phone":{"width_px":390,"button_height_px":"48-56","tab_bar":["Hôm nay","Lịch","Giới hạn","Cài đặt"]},
+"font":"Be Vietnam Pro (400/600/700); TV may use system sans-serif"}

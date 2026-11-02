@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Khóa TV</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar"><h1>Khóa TV</h1><span class="room">● Phòng khách</span><button id="btnLogout" class="btn-logout" hidden>Đăng xuất</button></header>
+  <!-- v2.3: màn hình nhập mã PIN web — hiện thay cho nội dung tab khi chưa đăng nhập. -->
+  <div id="loginScreen" class="login" hidden>
+    <div class="card login-card">
+      <h2>Nhập mã PIN web</h2>
+      <p class="muted">Nhập mã PIN web để mở trang điều khiển. Lần đầu sau khi cập nhật, mã này bằng mã PIN khóa TV.</p>
+      <input type="password" id="loginPin" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Mã PIN web (4–6 số)">
+      <p id="loginError" class="login-error" hidden></p>
+      <button id="btnLogin" class="btn accent wide">Mở khóa</button>
+      <p class="muted small" style="margin-top:14px"><a href="#" id="forgotLink">Quên mã PIN?</a></p>
+      <p id="forgotHelp" class="muted small" hidden>Mở app Khóa TV trên TV → Cài đặt → Mã PIN web, nhập mã PIN khóa TV để xem/đặt lại. Hoặc mở app Cài TV trên điện thoại → bấm Đặt lại mã PIN web.</p>
+    </div>
+  </div>
+  <main>
+    <section id="tab-today" class="tab active">
+      <div class="card">
+        <span id="pill" class="pill open">ĐANG MỞ</span>
+        <div id="hero" class="hero">—</div>
+        <div id="subline" class="subline">còn lại hôm nay</div>
+        <div class="track"><div id="progress" class="fill" style="width:100%"></div></div>
+      </div>
+      <div class="row2">
+        <button id="btnLock" class="btn danger">Khóa ngay</button>
+        <button id="btnUnlock" class="btn success">Mở khóa</button>
+      </div>
+      <div class="section-label">CỘNG THÊM GIỜ</div>
+      <div id="addChips" class="chips"></div>
+      <!-- v2.9: chụp màn hình TV (cần cấp quyền trên TV trước) -->
+      <div class="section-label">CHỤP MÀN HÌNH TV</div>
+      <div class="card">
+        <h2>Chụp màn hình TV</h2>
+        <p class="muted small" style="margin-top:0">Chụp đúng khung hình TV đang hiện. Cần cấp quyền 1 lần trên TV: mở app Khóa TV → Cài đặt → Chụp màn hình → Cấp quyền chụp màn hình (quyền mất sau mỗi lần khởi động lại TV).</p>
+        <button id="btnScreenshot" class="btn accent wide">Chụp màn hình TV</button>
+        <p id="screenshotError" class="muted small" hidden></p>
+        <img id="screenshotImg" style="display:none;width:100%;border-radius:12px;margin-top:12px" alt="Ảnh chụp màn hình TV">
+        <p id="screenshotTime" class="muted small" hidden></p>
+        <button id="btnScreenshotAgain" class="btn ghost wide" hidden>Chụp lại</button>
+      </div>
+      <div class="section-label">GỬI TIN NHẮN LÊN TV</div>
+      <div class="card">
+        <input id="msgText" type="text" maxlength="100" placeholder="VD: Ăn cơm thôi các con ơi!" autocomplete="off">
+        <button id="btnSendMsg" class="btn accent wide">Gửi lên TV</button>
+        <p class="muted small" style="margin-top:8px">Tin nhắn hiện lên màn hình TV vài giây, không làm gián đoạn video đang xem.</p>
+      </div>
+      <div class="card info-card">
+        <div class="info-row"><span class="muted">Giờ thời sự</span><b id="newsTime">—</b></div>
+        <div class="info-row"><span class="muted">Khóa đêm</span><b id="nightLock">—</b></div>
+        <div class="info-row"><span class="muted">Phút thưởng</span><b id="bonusPool">—</b></div>
+      </div>
+      <div class="card">
+        <h2>Báo cáo</h2>
+        <div id="reportBody" class="muted">Đang tải…</div>
+      </div>
+      <p class="muted small"><a href="/legacy">Trang cũ (bản trước 2.2)</a> · <a href="/legacy/settings">Cài đặt cũ</a></p>
+    </section>
+
+    <!-- v2.9: tab Mã thưởng riêng (trước đây thẻ này nằm ở tab Hôm nay) -->
+    <section id="tab-rewards" class="tab">
+      <h2>Mã thưởng</h2>
+      <p class="muted">Tạo mã 6 số rồi đưa cho con — con nhập mã trên màn hình khóa của TV là được cộng ngay 5 hoặc 10 phút (hiệu lực ngay như nút +5'/+10'). Mã chỉ dùng 1 lần, chưa dùng thì không hết hạn.</p>
+      <div class="card">
+        <h2>Tạo mã thưởng</h2>
+        <div class="row2">
+          <button id="btnReward5" class="btn accent">Tạo mã +5'</button>
+          <button id="btnReward10" class="btn accent">Tạo mã +10'</button>
+        </div>
+        <div id="newRewardCode" class="reward-code" hidden></div>
+        <div id="rewardList"></div>
+      </div>
+      <div class="card">
+        <h2>Số mã được nhập mỗi ngày</h2>
+        <p class="muted small" style="margin-top:0">Trong 1 ngày con chỉ được nhập tối đa số mã này. Nhập quá thì mã không bị tiêu, hôm sau nhập lại vẫn được. Đặt 0 = không giới hạn.</p>
+        <div class="lbl">Số mã mỗi ngày (0 = không giới hạn)</div>
+        <input type="number" id="rewardLimitInput" min="0" step="1" inputmode="numeric" value="0">
+        <button id="btnRewardLimitSave" class="btn success wide">Lưu số mã mỗi ngày</button>
+        <p id="rewardLimitStatus" class="muted small"></p>
+      </div>
+    </section>
+
+    <section id="tab-schedules" class="tab">
+      <h2>Lịch khóa</h2>
+      <p class="muted">Mỗi lịch chọn ngày + giờ khóa từ–đến, gộp được nhiều lịch, khóa qua đêm cũng được.</p>
+      <div id="scheduleList"></div>
+      <div class="card">
+        <h3 id="schedFormTitle">Thêm lịch khóa mới</h3>
+        <div class="lbl">Ngày áp dụng</div>
+        <div id="schedDays" class="dayboxes"></div>
+        <div class="lbl">Bắt đầu khóa</div>
+        <input type="time" id="schedStart" value="21:00">
+        <div class="lbl">Kết thúc khóa</div>
+        <input type="time" id="schedEnd" value="07:00">
+        <p class="muted small">Kết thúc sớm hơn bắt đầu = khóa qua đêm. Bắt đầu = kết thúc thì khóa cả ngày.</p>
+        <input type="hidden" id="schedId" value="">
+        <button id="schedSave" class="btn success wide">Lưu lịch này</button>
+        <button id="schedCancelEdit" class="btn ghost wide" hidden>Hủy sửa</button>
+      </div>
+    </section>
+
+    <section id="tab-limits" class="tab">
+      <h2>Giới hạn xem từng ngày</h2>
+      <p class="muted">Đặt giới hạn xem riêng cho từng ngày trong tuần.</p>
+      <div id="limitList"></div>
+    </section>
+
+    <section id="tab-settings" class="tab">
+      <h2>Cài đặt</h2>
+      <div id="settingsList"></div>
+      <div id="settingsPanel"></div>
+    </section>
+  </main>
+  <nav id="tabbar" class="tabbar"></nav>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

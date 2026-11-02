@@ -1,0 +1,15 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:background="@7F010000" android:layout_width="-1" android:layout_height="-1" android:fillViewport="true">
+  <LinearLayout android:orientation="1" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2">
+    <TextView android:layout_width="-2" android:layout_height="-2" android:text="M&#227; PIN &amp; kh&#243;a th&#7911; c&#244;ng" style="@7F070005"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="&#272;&#7893;i m&#227; PIN" style="@7F070004"/>
+    <EditText android:textSize="18.000000sp" android:textColor="@7F01000F" android:id="@7F03003C" android:background="@7F020002" android:padding="12.000000dip" android:layout_width="-1" android:layout_height="52.000000dip" android:layout_marginTop="8.000000dip" android:hint="M&#227; PIN c&#361;" android:inputType="0x00000012"/>
+    <EditText android:textSize="18.000000sp" android:textColor="@7F01000F" android:id="@7F03003B" android:background="@7F020002" android:padding="12.000000dip" android:layout_width="-1" android:layout_height="52.000000dip" android:layout_marginTop="8.000000dip" android:hint="M&#227; PIN m&#7899;i (&#237;t nh&#7845;t 4 s&#7889;)" android:inputType="0x00000012"/>
+    <Button android:id="@7F030013" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="&#272;&#7893;i m&#227; PIN" style="@7F070002"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="Kh&#243;a th&#7911; c&#244;ng" style="@7F070004"/>
+    <TextView android:textSize="18.000000sp" android:id="@7F030063" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+    <Button android:id="@7F03001E" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="B&#7853;t / t&#7855;t kh&#243;a th&#7911; c&#244;ng" style="@7F070001"/>
+    <TextView android:textSize="18.000000sp" android:id="@7F030071" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="" style="@7F070000"/>
+    <Button android:id="@7F03002F" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Reset s&#7889; ph&#250;t h&#244;m nay" style="@7F070001"/>
+    <Button android:id="@7F03000C" android:layout_width="-1" android:layout_marginTop="12.000000dip" android:text="Quay l&#7841;i" style="@7F070001"/>
+  </LinearLayout>
+</ScrollView>

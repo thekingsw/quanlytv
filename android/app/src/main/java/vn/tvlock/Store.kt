@@ -15,6 +15,24 @@ class Store(private val ctx: Context) {
         get() = prefs.getString("pin", "1234") ?: "1234"
         set(v) = prefs.edit().putString("pin", v).apply()
 
+    // ---------- v2.3: mã PIN riêng cho trang web điều khiển ----------
+    // Khác mã PIN khóa TV. Lần đầu chưa đặt thì mặc định = mã PIN khóa TV
+    // hiện tại (vào web được ngay sau khi cập nhật, không phải đặt mã
+    // mới); đổi mã PIN khóa TV sau này KHÔNG làm đổi mã PIN web.
+    var webPin: String
+        get() = prefs.getString("webPin", "") ?: ""
+        set(v) = prefs.edit().putString("webPin", v).apply()
+
+    /** Mã PIN web đang dùng: mã đã đặt, hoặc mã PIN khóa TV nếu chưa đặt
+     *  (lưu lại để lần sau dùng luôn giá trị này). */
+    fun webPinOrDefault(): String {
+        val w = webPin
+        if (w.isNotEmpty()) return w
+        val d = pin
+        webPin = d
+        return d
+    }
+
     // ---------- v4: flexible lock schedules ----------
     // Days: 0 = Thứ 2 ... 6 = Chủ nhật. A schedule locks the TV on its days
     // between startMin and endMin. startMin == endMin means "locked all day"
@@ -222,6 +240,9 @@ class Store(private val ctx: Context) {
 
     fun lockBgFile(): java.io.File = java.io.File(ctx.filesDir, "lock_bg.jpg")
 
+    /** v2.1: file tạm cho ảnh nền đang sửa nhưng chưa Áp dụng. */
+    fun lockBgTempFile(): java.io.File = java.io.File(ctx.filesDir, "preview_bg.jpg")
+
     fun hasLockBg(): Boolean = lockBgFile().exists()
 
     fun deleteLockBg() {
@@ -230,7 +251,11 @@ class Store(private val ctx: Context) {
 
     /** Giải mã ảnh, thu nhỏ về tối đa 1920px rồi lưu JPEG (85%) làm ảnh nền
      * màn hình khóa. Trả false khi dữ liệu không phải ảnh hợp lệ. */
-    fun saveLockBgBytes(bytes: ByteArray): Boolean {
+    fun saveLockBgBytes(bytes: ByteArray): Boolean = saveLockBgBytesTo(bytes, lockBgFile())
+
+    /** v2.1: lưu ảnh nền đã thu nhỏ vào một file chỉ định (file tạm khi
+     *  đang sửa, file chính khi Áp dụng). */
+    fun saveLockBgBytesTo(bytes: ByteArray, file: java.io.File): Boolean {
         return try {
             if (bytes.size > 8 * 1024 * 1024) return false
             val bounds = android.graphics.BitmapFactory.Options().also { it.inJustDecodeBounds = true }
@@ -249,7 +274,7 @@ class Store(private val ctx: Context) {
                 if (scaled != bmp) bmp.recycle()
                 bmp = scaled
             }
-            java.io.FileOutputStream(lockBgFile()).use {
+            java.io.FileOutputStream(file).use {
                 bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it)
             }
             bmp.recycle()
@@ -260,6 +285,53 @@ class Store(private val ctx: Context) {
     var manualLocked: Boolean
         get() = prefs.getBoolean("manualLocked", false)
         set(v) = prefs.edit().putBoolean("manualLocked", v).apply()
+
+    // ---------- v2.0: chống tắt Trợ năng (như CleanTV) ----------
+    // Quyền WRITE_SECURE_SETTINGS (cấp một lần qua ADB bằng
+    // `pm grant vn.tvlock android.permission.WRITE_SECURE_SETTINGS` —
+    // Cài TV 1.5 cấp tự động sau khi cài) cho app tự ghi Settings.Secure.
+    // Khi Trợ năng bị tắt trong Cài đặt TV, GuardService (tick 1 giây)
+    // tự ghi lại dịch vụ của mình vào danh sách và bật lên.
+    var antiDisable: Boolean
+        get() = prefs.getBoolean("antiDisable", true)
+        set(v) = prefs.edit().putBoolean("antiDisable", v).apply()
+
+    fun accessServiceComponent(): String =
+        android.content.ComponentName(ctx, GuardAccessibilityService::class.java).flattenToString()
+
+    fun hasWriteSecureSettings(): Boolean =
+        ctx.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    fun isAccessEnabled(): Boolean = try {
+        val cur = android.provider.Settings.Secure.getString(
+            ctx.contentResolver,
+            android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+        cur.split(":").contains(accessServiceComponent())
+    } catch (_: Exception) { false }
+
+    /** Tự bật lại Trợ năng nếu đang tắt và app có quyền ghi cài đặt hệ
+     *  thống. Trả về true nếu sau lệnh này Trợ năng đang bật. Không ném lỗi. */
+    fun ensureAccessEnabled(): Boolean {
+        if (isAccessEnabled()) return true
+        if (!hasWriteSecureSettings()) return false
+        return try {
+            val cr = ctx.contentResolver
+            val cur = android.provider.Settings.Secure.getString(
+                cr, android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+            val comp = accessServiceComponent()
+            val next = when {
+                cur.isBlank() || cur == "null" -> comp
+                cur.split(":").contains(comp) -> cur
+                else -> "$cur:$comp"
+            }
+            android.provider.Settings.Secure.putString(
+                cr, android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, next)
+            android.provider.Settings.Secure.putString(
+                cr, android.provider.Settings.Secure.ACCESSIBILITY_ENABLED, "1")
+            isAccessEnabled()
+        } catch (_: Exception) { false }
+    }
 
     var unlockUntilMs: Long
         get() = prefs.getLong("unlockUntilMs", 0L)
@@ -296,6 +368,138 @@ class Store(private val ctx: Context) {
             clearWarnings()
         }
     }
+
+    // ---------- v2.8: mã thưởng dùng một lần ----------
+    // Bố tạo mã 6 số trên web, đưa cho con; con nhập mã trên màn hình khóa
+    // thì được cộng phút.
+    // v2.9 ĐẢO QUYẾT ĐỊNH v2.8: mã thưởng KHÔNG cộng vào quỹ thưởng
+    // (addBonus) nữa mà cộng bằng addMinutes — giống nút +5'/+10' sau PIN
+    // (mở tạm qua unlockUntilMs, hiệu lực ngay lập tức). Lý do: mã thưởng
+    // chỉ nhập được khi màn hình đang khóa nên hiệu lực ngay mới đúng.
+    // ĐỪNG "sửa ngược" lại thành addBonus nếu không có yêu cầu mới.
+    // Mã dùng xong xóa ngay, chưa dùng thì không hết hạn.
+    data class RewardCode(val code: String, val minutes: Int, val createdAt: Long)
+
+    private fun rewardCodesJson(): JSONArray {
+        return try { JSONArray(prefs.getString("rewardCodes", "[]") ?: "[]") }
+        catch (_: Exception) { JSONArray() }
+    }
+
+    private fun saveRewardCodes(list: List<RewardCode>) {
+        val arr = JSONArray()
+        for (c in list) {
+            val o = JSONObject()
+            o.put("code", c.code)
+            o.put("minutes", c.minutes)
+            o.put("createdAt", c.createdAt)
+            arr.put(o)
+        }
+        prefs.edit().putString("rewardCodes", arr.toString()).apply()
+    }
+
+    fun activeRewardCodes(): List<RewardCode> {
+        val out = mutableListOf<RewardCode>()
+        val arr = rewardCodesJson()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(RewardCode(o.optString("code", ""), o.optInt("minutes", 0), o.optLong("createdAt", 0L)))
+        }
+        return out.filter { it.code.length == 6 }.sortedBy { it.createdAt }
+    }
+
+    /** Mã dễ đoán thì không sinh: một chữ số lặp (000000, 111111...),
+     *  dãy tăng/giảm liên tục (123456, 654321, 012345, 987654...). */
+    private fun isGuessableCode(code: String): Boolean {
+        if (code.length != 6 || !code.all { it.isDigit() }) return true
+        if (code.toSet().size == 1) return true
+        val d = code.map { it - '0' }
+        if (d.zipWithNext().all { (a, b) -> b == a + 1 }) return true
+        if (d.zipWithNext().all { (a, b) -> b == a - 1 }) return true
+        return false
+    }
+
+    /** Sinh mã 6 số mới (5 hoặc 10 phút): không trùng mã đang còn hiệu
+     *  lực, không trùng mã PIN khóa TV, không dễ đoán. */
+    fun generateRewardCode(minutes: Int): RewardCode {
+        val min = if (minutes == 5) 5 else 10
+        val existing = activeRewardCodes().map { it.code }.toSet()
+        val rnd = java.util.Random()
+        var code = ""
+        var tries = 0
+        do {
+            code = (1..6).joinToString("") { rnd.nextInt(10).toString() }
+            tries++
+        } while (tries < 200 && (code in existing || code == pin || isGuessableCode(code)))
+        val rc = RewardCode(code, min, System.currentTimeMillis())
+        saveRewardCodes(activeRewardCodes() + rc)
+        return rc
+    }
+
+    /** Đổi mã: đúng thì XÓA mã ngay khỏi danh sách và trả số phút của mã;
+     *  sai thì trả 0. Mã không hết hạn nên không kiểm tra thời gian. */
+    fun redeemRewardCode(code: String): Int {
+        val list = activeRewardCodes()
+        val found = list.firstOrNull { it.code == code } ?: return 0
+        saveRewardCodes(list.filter { it.code != code })
+        return found.minutes
+    }
+
+    /** Bố thu hồi một mã trên web (con không dùng được nữa). */
+    fun deleteRewardCode(code: String) {
+        saveRewardCodes(activeRewardCodes().filter { it.code != code })
+    }
+
+    // ---------- v2.8: chống đoán mò mã thưởng ----------
+    // Mã thưởng đưa cho trẻ nên trẻ biết định dạng và có thể ngồi đoán —
+    // sai 5 lần liên tiếp thì khóa nhập mã 5 phút. Chỉ áp cho mã thưởng
+    // (mã PIN khóa TV không có cơ chế này từ trước).
+    var rewardCodeFails: Int
+        get() = prefs.getInt("rewardCodeFails", 0)
+        set(v) = prefs.edit().putInt("rewardCodeFails", v).apply()
+
+    var rewardCodeLockedUntilMs: Long
+        get() = prefs.getLong("rewardCodeLockedUntilMs", 0L)
+        set(v) = prefs.edit().putLong("rewardCodeLockedUntilMs", v).apply()
+
+    // ---------- v2.9: số mã thưởng được nhập mỗi ngày ----------
+    // 0 = không giới hạn. Đếm reset khi sang ngày mới — cùng cơ chế
+    // lazy-reset theo ngày như usedTodayMin (resetUsedIfNewDay), nhưng
+    // dùng trường ngày riêng để không phụ thuộc vào lần reset nào khác:
+    // lần đọc đầu tiên của ngày mới tự đưa đếm về 0.
+    var dailyRewardCodeLimit: Int
+        get() = prefs.getInt("dailyRewardCodeLimit", 0)
+        set(v) = prefs.edit().putInt("dailyRewardCodeLimit", v.coerceAtLeast(0)).apply()
+
+    private var rewardCodesUsedDate: String
+        get() = prefs.getString("rewardCodesUsedDate", "") ?: ""
+        set(v) = prefs.edit().putString("rewardCodesUsedDate", v).apply()
+
+    private var rewardCodesUsedTodayRaw: Int
+        get() = prefs.getInt("rewardCodesUsedToday", 0)
+        set(v) = prefs.edit().putInt("rewardCodesUsedToday", v).apply()
+
+    /** Số mã đã nhập hôm nay — tự reset về 0 khi sang ngày mới. Mọi
+     *  chỗ đọc/tăng đếm đều qua hàm này, không đọc trực tiếp field. */
+    fun rewardCodesUsedToday(): Int {
+        if (rewardCodesUsedDate != todayStr()) {
+            rewardCodesUsedDate = todayStr()
+            rewardCodesUsedTodayRaw = 0
+        }
+        return rewardCodesUsedTodayRaw
+    }
+
+    /** Ghi nhận 1 mã đã đổi thành công hôm nay (chỉ gọi sau khi redeem
+     *  thành công — từ chối vì quá limit thì KHÔNG gọi, mã vẫn còn). */
+    fun incrementRewardCodesUsedToday() {
+        rewardCodesUsedTodayRaw = rewardCodesUsedToday() + 1
+    }
+
+    // ---------- v2.9: đã từng cấp quyền chụp màn hình (MediaProjection) ----------
+    // Chỉ để hiển thị trạng thái "Cần cấp lại sau khi khởi động lại TV"
+    // (projection thật thì mất khi khởi động lại, không tự có lại được).
+    var screenshotGrantedOnce: Boolean
+        get() = prefs.getBoolean("screenshotGrantedOnce", false)
+        set(v) = prefs.edit().putBoolean("screenshotGrantedOnce", v).apply()
 
     // ---------- v3: per-app rules ----------
     data class AppRule(val mode: String, val minutes: Int)
@@ -562,19 +766,29 @@ class Store(private val ctx: Context) {
         if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0)
             return "Hết giờ xem — đã hết cả phút thưởng"
         if (limit > 0 && usedTodayMin >= limit) return "Hết giờ xem"
-        if (isInNewsSlot(nowMs)) return "Giờ thời sự — chỉ xem thời sự"
         return "Đã khóa"
     }
 
     /**
-     * Per-app block check. Priority: news slot > PIN temp-unlock > per-app
-     * blocked/limit > manual lock / lock window / daily limit (bonus exhausted).
-     * Returns null when the app may run.
+     * Per-app block check. Priority: v2.9 news exemption > PIN
+     * temp-unlock > per-app blocked/limit > manual lock / lock window /
+     * daily limit (bonus exhausted). Returns null when the app may run.
+     *
+     * v2.9: trong khung giờ thời sự, app thời sự đã chọn được MIỄN TRỪ
+     * TUYỆT ĐỐI — không bị chặn vì bất kỳ lý do gì (giới hạn ngày, giới
+     * hạn từng app, lịch khóa, khóa tay). Kiểm tra này phải đứng TRƯỚC
+     * mọi lý do chặn khác, kể cả quy tắc per-app của chính app đó.
+     *
+     * v2.10: khung giờ thời sự KHÔNG còn độc quyền — các app khác ngoài
+     * app thời sự tuân theo quy tắc bình thường (hết giờ ngày, lịch khóa,
+     * khóa tay, giới hạn từng app) thay vì bị chặn chỉ vì đang trong khung
+     * thời sự. Tức là trong khung thời sự mà còn giờ xem và không vướng
+     * lịch khóa thì mở app khác bình thường.
      */
     fun blockReason(pkg: String, nowMs: Long, label: String): String? {
         resetUsedIfNewDay()
-        if (isInNewsSlot(nowMs) && newsPkg.isNotEmpty() && pkg != newsPkg)
-            return "Giờ thời sự — chỉ xem thời sự"
+        // v2.9: app thời sự trong khung giờ thời sự — miễn trừ tuyệt đối.
+        if (isNewsExempt(pkg, nowMs)) return null
         if (nowMs < unlockUntilMs) return null
         val rule = appRule(pkg)
         if (rule.mode == "blocked") return "App $label đã bị chặn"
@@ -656,6 +870,23 @@ class Store(private val ctx: Context) {
         lastPkgStartMs = nowMs
     }
 
+    /**
+     * v2.11: có đang tính giờ xem ngay lúc này không — chỉ khi biết rõ app
+     * đang mở và app đó bị tính giờ (không loại trừ, không miễn trừ thời sự,
+     * không phải app "free"). Khi false (vd vừa khởi động TV, Trợ năng chưa
+     * kịp báo app nào thì lastPkg còn rỗng), các hạn tính theo giờ xem
+     * (giới hạn ngày / giới hạn từng app) là số liệu cũ đóng băng — tick
+     * không đếm tiếp nên không được hiện đếm ngược cho chúng (sẽ ra con số
+     * đứng yên như lỗi "còn 9s" lúc 18:58 ngày 29/10).
+     */
+    fun isCountingNow(nowMs: Long): Boolean {
+        val pkg = lastPkg
+        if (pkg.isEmpty() || isExcluded(pkg)) return false
+        if (isNewsExempt(pkg, nowMs)) return false
+        if (appRule(pkg).mode == "free") return false
+        return true
+    }
+
     fun fmt(min: Int): String = String.format(Locale.US, "%02d:%02d", min / 60, min % 60)
 
     fun addMinutes(minutes: Int) {
@@ -695,5 +926,214 @@ class Store(private val ctx: Context) {
         }
         manualLocked = false
         clearWarnings()
+    }
+
+    // ---------- v3.0: màn hình chính 2-trong-1 ----------
+    // CHỈ thêm key mới — không đổi tên prefs file "tvlock", không đổi key cũ,
+    // để cài đè lên bản 2.11 giữ nguyên mọi cài đặt khóa.
+
+    // --- Ảnh nền màn hình chính (home_bg.jpg, tái dùng bộ downscale của ảnh khóa) ---
+    fun homeBgFile(): java.io.File = java.io.File(ctx.filesDir, "home_bg.jpg")
+    fun hasHomeBg(): Boolean = homeBgFile().exists()
+    fun deleteHomeBg() {
+        try { homeBgFile().delete() } catch (_: Exception) { }
+    }
+    fun saveHomeBgBytes(bytes: ByteArray): Boolean = saveLockBgBytesTo(bytes, homeBgFile())
+
+    /** v4.0: lưu ảnh nền màn hình chính gửi từ web điện thoại — thu nhỏ
+     *  rồi lưu vào thư mục slideshow, trả về tên file (null nếu lỗi). */
+    fun saveWallpaperBytes(bytes: ByteArray): String? {
+        return try {
+            val dir = wallpaperDir()
+            dir.mkdirs()
+            val f = java.io.File(dir, "wp_${System.currentTimeMillis()}.jpg")
+            if (saveLockBgBytesTo(bytes, f)) f.name else null
+        } catch (_: Exception) { null }
+    }
+
+    // --- Kiểu icon ứng dụng: "default" (icon gốc) | "circle" (cắt tròn) ---
+    var iconStyle: String
+        get() = prefs.getString("iconStyle", "default") ?: "default"
+        set(v) = prefs.edit().putString("iconStyle", v).apply()
+    fun iconStyleName(): String = if (iconStyle == "circle") "Tròn" else "Mặc định"
+
+    // --- Thành phố cho thời tiết (Open-Meteo) ---
+    var weatherCity: String
+        get() = prefs.getString("weatherCity", "hanoi") ?: "hanoi"
+        set(v) = prefs.edit().putString("weatherCity", v).apply()
+    fun weatherCityName(): String = when (weatherCity) {
+        "danang" -> "Đà Nẵng"
+        "hcmc" -> "TP.HCM"
+        else -> "Hà Nội"
+    }
+    fun weatherCityCoords(): Pair<Double, Double> = when (weatherCity) {
+        "danang" -> 16.0544 to 108.2022
+        "hcmc" -> 10.8231 to 106.6297
+        else -> 21.0278 to 105.8342
+    }
+
+    // --- Cache thời tiết: JSON {"t":nhiệt độ,"d":mô tả,"c":thành phố,"ts":ms} ---
+    var weatherCacheJson: String
+        get() = prefs.getString("weatherCache", "") ?: ""
+        set(v) = prefs.edit().putString("weatherCache", v).apply()
+
+    // --- App yêu thích trên màn hình chính: danh sách package theo thứ tự ghim ---
+    fun homeFavorites(): MutableList<String> {
+        val out = mutableListOf<String>()
+        try {
+            val a = JSONArray(prefs.getString("homeFavorites", "[]"))
+            for (i in 0 until a.length()) out.add(a.getString(i))
+        } catch (_: Exception) { }
+        return out
+    }
+    private fun saveHomeFavorites(list: List<String>) {
+        val a = JSONArray()
+        list.forEach { a.put(it) }
+        prefs.edit().putString("homeFavorites", a.toString()).apply()
+    }
+    fun addHomeFavorite(pkg: String) {
+        val l = homeFavorites()
+        if (!l.contains(pkg)) { l.add(pkg); saveHomeFavorites(l) }
+    }
+    fun removeHomeFavorite(pkg: String) {
+        val l = homeFavorites()
+        if (l.remove(pkg)) saveHomeFavorites(l)
+    }
+    fun isHomeFavorite(pkg: String): Boolean = homeFavorites().contains(pkg)
+
+    // --- App bị ẩn khỏi màn hình chính: tập package ---
+    fun homeHidden(): MutableSet<String> {
+        return try {
+            val out = mutableSetOf<String>()
+            val a = JSONArray(prefs.getString("homeHidden", "[]"))
+            for (i in 0 until a.length()) out.add(a.getString(i))
+            out
+        } catch (_: Exception) { mutableSetOf() }
+    }
+    fun setHomeHidden(pkg: String, hide: Boolean) {
+        val s = homeHidden()
+        if (hide) s.add(pkg) else s.remove(pkg)
+        val a = JSONArray()
+        s.forEach { a.put(it) }
+        prefs.edit().putString("homeHidden", a.toString()).apply()
+    }
+
+    /** v4.0: thứ tự app tùy chỉnh trong lưới launcher (user 2026-11-02 —
+     *  di chuyển app tự do, không theo mặc định A-Z). */
+    fun homeAppOrder(): List<String> {
+        return try {
+            val a = JSONArray(prefs.getString("homeAppOrder", "[]") ?: "[]")
+            List(a.length()) { a.optString(it) }.filter { it.isNotEmpty() }
+        } catch (_: Exception) { emptyList() }
+    }
+    fun setHomeAppOrder(order: List<String>) {
+        val a = JSONArray()
+        order.forEach { a.put(it) }
+        prefs.edit().putString("homeAppOrder", a.toString()).apply()
+    }
+
+    // ============ v4.0: launcher v2 — widget, countdown, push ============
+
+    // Widget bật/tắt (mặc định bật hết; camera là placeholder).
+    var widgetTinker: Boolean
+        get() = prefs.getBoolean("wTinker", true)
+        set(v) = prefs.edit().putBoolean("wTinker", v).apply()
+    var widgetFare: Boolean
+        get() = prefs.getBoolean("wFare", true)
+        set(v) = prefs.edit().putBoolean("wFare", v).apply()
+    var widgetCountdown: Boolean
+        get() = prefs.getBoolean("wCountdown", true)
+        set(v) = prefs.edit().putBoolean("wCountdown", v).apply()
+    var widgetFamily: Boolean
+        get() = prefs.getBoolean("wFamily", true)
+        set(v) = prefs.edit().putBoolean("wFamily", v).apply()
+    var widgetCamera: Boolean
+        get() = prefs.getBoolean("wCamera", true)
+        set(v) = prefs.edit().putBoolean("wCamera", v).apply()
+
+    // Đếm ngược (mặc định: Đà Nẵng 1/6/2027).
+    var countdownLabel: String
+        get() = prefs.getString("cdLabel", "Đà Nẵng") ?: "Đà Nẵng"
+        set(v) = prefs.edit().putString("cdLabel", v).apply()
+    var countdownDate: String // yyyy-MM-dd
+        get() = prefs.getString("cdDate", "2027-06-01") ?: "2027-06-01"
+        set(v) = prefs.edit().putString("cdDate", v).apply()
+
+    /** Số ngày còn lại tới mốc đếm ngược (âm = đã qua). */
+    fun countdownDays(): Long {
+        return try {
+            val p = countdownDate.split("-").map { it.toInt() }
+            val cal = java.util.Calendar.getInstance()
+            val today = java.util.Calendar.getInstance()
+            today.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            today.set(java.util.Calendar.MINUTE, 0)
+            today.set(java.util.Calendar.SECOND, 0)
+            today.set(java.util.Calendar.MILLISECOND, 0)
+            cal.set(p[0], p[1] - 1, p[2], 0, 0, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            (cal.timeInMillis - today.timeInMillis) / 86400000L
+        } catch (_: Exception) { 0L }
+    }
+
+    // Khung giờ cho phép popup (mặc định 7:00–21:00).
+    var pushStartHour: Int
+        get() = prefs.getInt("pushStart", 7)
+        set(v) = prefs.edit().putInt("pushStart", v).apply()
+    var pushEndHour: Int
+        get() = prefs.getInt("pushEnd", 21)
+        set(v) = prefs.edit().putInt("pushEnd", v).apply()
+
+    fun inPushHours(nowMs: Long = System.currentTimeMillis()): Boolean {
+        val h = java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
+            .get(java.util.Calendar.HOUR_OF_DAY)
+        val s = pushStartHour; val e = pushEndHour
+        return if (s <= e) h in s until e else (h >= s || h < e)
+    }
+
+    // Chế độ popup: "always" | "home" | "silent".
+    var popupMode: String
+        get() = prefs.getString("popupMode", "always") ?: "always"
+        set(v) = prefs.edit().putString("popupMode", v).apply()
+    fun popupModeName(): String = when (popupMode) {
+        "home" -> "Chỉ ở màn hình chính"
+        "silent" -> "Im lặng (chỉ chuông)"
+        else -> "Luôn bật"
+    }
+
+    // Inbox: cache tin nhắn + số chưa đọc + mốc poll.
+    var inboxLastPoll: Long
+        get() = prefs.getLong("inboxLastPoll", 0L)
+        set(v) = prefs.edit().putLong("inboxLastPoll", v).apply()
+    var inboxLastSeenTs: Long
+        get() = prefs.getLong("inboxLastSeen", 0L)
+        set(v) = prefs.edit().putLong("inboxLastSeen", v).apply()
+    var inboxUnread: Int
+        get() = prefs.getInt("inboxUnread", 0)
+        set(v) = prefs.edit().putInt("inboxUnread", v).apply()
+    var inboxCacheJson: String
+        get() = prefs.getString("inboxCache", "[]") ?: "[]"
+        set(v) = prefs.edit().putString("inboxCache", v).apply()
+    var familyCacheJson: String
+        get() = prefs.getString("familyCache", "[]") ?: "[]"
+        set(v) = prefs.edit().putString("familyCache", v).apply()
+
+    // Slideshow ảnh nền (phút; 0 = tắt).
+    var wallpaperIntervalMin: Int
+        get() = prefs.getInt("wpInterval", 30)
+        set(v) = prefs.edit().putInt("wpInterval", v).apply()
+    // Nguồn ảnh nền màn hình chính: "default" (10 ảnh phong cảnh kèm app)
+    // hoặc "custom" (ảnh anh tải từ điện thoại). Mặc định dùng ảnh kèm app
+    // cho đẹp ngay, không còn nền đen sì.
+    var wallpaperSource: String
+        get() = prefs.getString("wpSource", "default") ?: "default"
+        set(v) = prefs.edit().putString("wpSource", if (v == "custom") "custom" else "default").apply()
+    fun wallpaperDir(): java.io.File = java.io.File(ctx.filesDir, "home_wallpapers")
+    fun wallpaperFiles(): List<java.io.File> {
+        val d = wallpaperDir()
+        if (!d.isDirectory) return emptyList()
+        return d.listFiles { f -> f.isFile &&
+            (f.name.endsWith(".jpg", true) || f.name.endsWith(".jpeg", true) ||
+             f.name.endsWith(".png", true) || f.name.endsWith(".webp", true)) }
+            ?.sortedBy { it.name } ?: emptyList()
     }
 }

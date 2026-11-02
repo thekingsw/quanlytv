@@ -1,0 +1,70 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="12" android:versionName="2.1" android:compileSdkVersion="34" android:compileSdkVersionCodename="14" package="vn.tvlock" platformBuildVersionCode="34" platformBuildVersionName="14">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34"/>
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+  <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+  <uses-feature android:name="android.software.leanback" android:required="false"/>
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+  <application android:theme="@android:0103022E" android:label="Kh&#243;a TV" android:icon="@7F050000" android:allowBackup="true" android:supportsRtl="true">
+    <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="0">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+      </intent-filter>
+    </activity>
+    <activity-alias android:label="Kh&#243;a TV" android:icon="@7F050000" android:name=".LauncherAlias" android:enabled="false" android:exported="true" android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+        <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
+      </intent-filter>
+    </activity-alias>
+    <activity android:name=".LockActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".SettingsActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".AppRulesActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".WarningActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".SchedulesActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".ScheduleEditActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".DailyLimitsActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".LockScreenActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".NewsSlotActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".PinActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".BonusActivity" android:exported="false" android:screenOrientation="0"/>
+    <activity android:name=".AccessActivity" android:exported="false" android:screenOrientation="0"/>
+    <service android:name=".GuardService" android:exported="false" android:foregroundServiceType="0x40000000">
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="TV time limit guard and remote control web server"/>
+    </service>
+    <service android:label="Kh&#243;a TV" android:name=".GuardAccessibilityService" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService"/>
+      </intent-filter>
+      <meta-data android:name="android.accessibilityservice" android:resource="@7F080000"/>
+    </service>
+    <receiver android:name=".BootReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+      </intent-filter>
+    </receiver>
+    <receiver android:name=".UpdateReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+      </intent-filter>
+    </receiver>
+    <receiver android:name=".AntiDisableReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="vn.tvlock.SET_ANTIDISABLE"/>
+      </intent-filter>
+    </receiver>
+    <receiver android:label="Kh&#243;a TV" android:name=".DeviceOwnerReceiver" android:permission="android.permission.BIND_DEVICE_ADMIN" android:exported="false">
+      <intent-filter>
+        <action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>
+      </intent-filter>
+      <meta-data android:name="android.app.device_admin" android:resource="@7F080001"/>
+    </receiver>
+  </application>
+</manifest>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4.0: một dòng trong trung tâm thông báo. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/tvNotifItemTitle"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="" android:textSize="20sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+        <TextView
+            android:id="@+id/tvNotifItemTime"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" android:textSize="14sp"
+            android:textColor="@color/text_muted" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tvNotifItemBody"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="" android:textSize="16sp"
+        android:textColor="@color/text_primary" />
+</LinearLayout>

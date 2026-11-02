@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.7: giao diện tin nhắn gửi lên TV (Toast) — gọn vừa khung chữ,
+     nền card 50% trong suốt + viền hổ phách, chữ trắng đậm 20sp.
+     Dùng Toast thay cho overlay Trợ năng vì overlay không hiển thị được
+     trên TV này (không tạo được cửa sổ TYPE_ACCESSIBILITY_OVERLAY). -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tvMessageText"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:background="@drawable/warning_banner_bg_overlay"
+    android:paddingLeft="24dp" android:paddingRight="24dp"
+    android:paddingTop="12dp" android:paddingBottom="12dp"
+    android:text="" android:textSize="20sp" android:textStyle="bold"
+    android:textColor="@color/text_primary" android:gravity="center" />

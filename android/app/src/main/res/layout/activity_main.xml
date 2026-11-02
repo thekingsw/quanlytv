@@ -1,112 +1,173 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v1.4: bọc ScrollView + thu gọn lề, để màn hình chính vừa 1 trang trên TV 55". -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- redesign 2.2 giai đoạn 2 — theo design-pack/design/tv-home.html.
+     Khung 960x540, lề an toàn 48dp ngang / 27dp dọc, vừa 1 trang (không ScrollView):
+     27 + ~34 (hàng đầu) + 16 + ~320 (2 thẻ) + 16 + 52 (hàng nút) + 8 + ~40
+     (dòng web 2 dòng 16sp) + 27 = 540dp. Hàng thẻ co giãn theo layout_weight. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/bg_dark" android:fillViewport="true">
-<LinearLayout
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:padding="16dp"
-    android:gravity="center_horizontal">
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Khóa TV" style="@style/TvTitle" android:gravity="center" />
-
-    <TextView android:id="@+id/tvStatus"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="ĐANG MỞ" android:textSize="24sp" android:textColor="@color/text_primary"
-        android:textStyle="bold" android:gravity="center"
-        android:background="@drawable/pill_open"
-        android:paddingLeft="24dp" android:paddingRight="24dp"
-        android:paddingTop="8dp" android:paddingBottom="8dp"
-        android:layout_marginTop="10dp" />
-
+    <!-- Hàng đầu: tiêu đề + ngày giờ -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:background="@drawable/card_bg"
-        android:padding="12dp" android:layout_marginTop="12dp">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:paddingRight="8dp">
-            <TextView android:id="@+id/tvUsed"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Khóa TV" style="@style/TvTitle" />
+        <TextView android:id="@+id/tvDateTime"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="" android:textSize="20sp" android:textColor="@color/text_muted" />
+    </LinearLayout>
+
+    <!-- Hàng chính: 2 thẻ, gap 20dp -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <!-- Thẻ trái (flex 1.5): trạng thái + số lớn + tiến độ -->
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1.5" android:background="@drawable/card_bg"
+            android:orientation="vertical" android:padding="28dp">
+
+            <TextView android:id="@+id/tvStatus"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="18sp" />
+                android:text="ĐANG MỞ" android:textSize="16sp" android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:textColor="@color/on_open"
+                android:background="@drawable/pill_open"
+                android:paddingLeft="18dp" android:paddingRight="18dp"
+                android:paddingTop="6dp" android:paddingBottom="6dp" />
+
+            <TextView android:id="@+id/tvRemaining"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="1 giờ 12 phút" android:textSize="64sp" android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:singleLine="true"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="40sp"
+                android:autoSizeMaxTextSize="64sp"
+                android:autoSizeStepGranularity="2sp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="còn lại hôm nay" android:textSize="22sp"
+                android:textColor="@color/text_muted" />
+
+            <!-- Đẩy thanh tiến độ + dòng dưới xuống sát đáy thẻ -->
+            <View android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ProgressBar android:id="@+id/progressUsed"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent" android:layout_height="14dp"
+                android:minHeight="14dp" android:maxHeight="14dp"
+                android:max="100" android:progress="40"
+                android:progressDrawable="@drawable/progress_home" />
+
+            <LinearLayout android:id="@+id/tvUsedLine"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" android:orientation="horizontal">
+                <TextView android:id="@+id/tvUsedLeft"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Đã xem 48 phút" android:textSize="18sp"
+                    android:textColor="@color/text_muted" />
+                <TextView android:id="@+id/tvUsedRight"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Giới hạn 2 giờ" android:textSize="18sp"
+                    android:textColor="@color/text_muted" />
+            </LinearLayout>
         </LinearLayout>
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:paddingLeft="8dp">
-            <TextView android:id="@+id/tvTimes"
+
+        <!-- Thẻ phải (flex 1): Hôm nay -->
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="20dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical" android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Hôm nay" android:textSize="20sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Giờ thời sự" android:textSize="16sp"
+                android:textColor="@color/text_muted" />
+            <TextView android:id="@+id/tvNewsSlot"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="18sp" />
-            <TextView android:id="@+id/tvNews"
+                android:text="19:00 – 19:30" android:textSize="22sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Khóa đêm" android:textSize="16sp"
+                android:textColor="@color/text_muted" />
+            <TextView android:id="@+id/tvNightLock"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="" style="@style/TvBody" android:textSize="18sp"
-                android:layout_marginTop="6dp" />
+                android:text="21:00 – 06:30" android:textSize="22sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Phút thưởng" android:textSize="16sp"
+                android:textColor="@color/text_muted" />
+            <TextView android:id="@+id/tvBonus"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="0 phút" android:textSize="22sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Hàng nút dưới: 1 hàng, cao 52dp, gap 10dp.
+         Nút dài (Khóa ngay / Mở khóa / Cài đặt) weight lớn hơn để chữ 20sp không bị cắt.
+         nextFocus trái/phải theo hàng; lên/xuống không có view focusable khác nên để mặc định. -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" android:orientation="horizontal">
+
+        <Button android:id="@+id/btnLock" style="@style/TvButtonDanger"
+            android:layout_width="0dp" android:layout_weight="1.3"
+            android:layout_marginRight="10dp" android:text="Khóa ngay"
+            android:nextFocusRight="@id/btnUnlock" />
+        <Button android:id="@+id/btnUnlock" style="@style/TvButtonSuccess"
+            android:layout_width="0dp" android:layout_weight="1.3"
+            android:layout_marginRight="10dp" android:text="Mở khóa"
+            android:nextFocusLeft="@id/btnLock"
+            android:nextFocusRight="@id/btnAdd5" />
+        <Button android:id="@+id/btnAdd5" style="@style/TvButtonGhost"
+            android:layout_width="0dp" android:layout_weight="1"
+            android:layout_marginRight="10dp" android:text="+5"
+            android:nextFocusLeft="@id/btnUnlock"
+            android:nextFocusRight="@id/btnAdd10" />
+        <Button android:id="@+id/btnAdd10" style="@style/TvButtonGhost"
+            android:layout_width="0dp" android:layout_weight="1"
+            android:layout_marginRight="10dp" android:text="+10"
+            android:nextFocusLeft="@id/btnAdd5"
+            android:nextFocusRight="@id/btnAdd15" />
+        <Button android:id="@+id/btnAdd15" style="@style/TvButtonGhost"
+            android:layout_width="0dp" android:layout_weight="1"
+            android:layout_marginRight="10dp" android:text="+15"
+            android:nextFocusLeft="@id/btnAdd10"
+            android:nextFocusRight="@id/btnAdd30" />
+        <Button android:id="@+id/btnAdd30" style="@style/TvButtonGhost"
+            android:layout_width="0dp" android:layout_weight="1"
+            android:layout_marginRight="10dp" android:text="+30"
+            android:nextFocusLeft="@id/btnAdd15"
+            android:nextFocusRight="@id/btnSettings" />
+        <Button android:id="@+id/btnSettings" style="@style/TvButtonGhost"
+            android:layout_width="0dp" android:layout_weight="1.2"
+            android:text="Cài đặt"
+            android:nextFocusLeft="@id/btnAdd30" />
+    </LinearLayout>
+
+    <!-- Địa chỉ web — design không vẽ nhưng là chỗ duy nhất cho người dùng biết
+         địa chỉ điều khiển từ điện thoại; giữ lại 16sp muted, căn giữa. -->
     <TextView android:id="@+id/tvWeb"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="" android:textSize="16sp" android:textColor="#90CAF9"
-        android:gravity="center" android:layout_marginTop="10dp" />
-
-    <TextView android:id="@+id/tvYesterday"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="" android:textSize="16sp" android:textColor="@color/text_muted"
-        android:gravity="center" android:layout_marginTop="6dp" />
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="12dp">
-        <Button android:id="@+id/btnLock" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="Khóa ngay"
-            android:nextFocusDown="@id/btnAdd5" />
-        <Button android:id="@+id/btnUnlock" style="@style/TvButtonPrimary"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="Mở khóa"
-            android:nextFocusDown="@id/btnAdd10" />
-    </LinearLayout>
-
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Cho thêm giờ (cần nhập PIN):" style="@style/TvBody"
-        android:textSize="18sp" android:layout_marginTop="12dp" />
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="6dp">
-        <Button android:id="@+id/btnAdd5" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="+5 phút"
-            android:nextFocusUp="@id/btnLock" android:nextFocusDown="@id/btnSettings" />
-        <Button android:id="@+id/btnAdd10" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="+10 phút"
-            android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnSettings" />
-        <Button android:id="@+id/btnAdd15" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="+15 phút"
-            android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnNews" />
-        <Button android:id="@+id/btnAdd20" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="+20 phút"
-            android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnAccess" />
-        <Button android:id="@+id/btnAdd30" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="+30 phút"
-            android:nextFocusUp="@id/btnUnlock" android:nextFocusDown="@id/btnAccess" />
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="6dp">
-        <Button android:id="@+id/btnSettings" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="Cài đặt"
-            android:nextFocusUp="@id/btnAdd5" />
-        <Button android:id="@+id/btnNews" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="Mở app thời sự"
-            android:nextFocusUp="@id/btnAdd15" />
-        <Button android:id="@+id/btnAccess" style="@style/TvButton"
-            android:layout_width="0dp" android:layout_weight="1"
-            android:layout_margin="3dp" android:text="Bật Trợ năng"
-            android:nextFocusUp="@id/btnAdd30" />
-    </LinearLayout>
+        android:gravity="center" />
 </LinearLayout>
-</ScrollView>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.9: màn Cài đặt → Chụp màn hình — rail+pane theo mẫu activity_access.xml. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Chụp màn hình" style="@style/TvTitle" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/tvCaptureState"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:textColor="@color/accent" android:layout_marginTop="8dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Bố bấm nút dưới rồi đồng ý ở hộp thoại hệ thống thì web trên điện thoại mới chụp được màn hình TV (nút Chụp màn hình TV ở tab Hôm nay). Sau khi khởi động lại TV, quyền này mất và phải cấp lại bằng tay — không có cách tự động."
+                    style="@style/TvBody" android:textColor="@color/text_muted"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnGrantCapture" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Cấp quyền chụp màn hình"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnStopCapture" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Tắt chụp màn hình"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvKeyHint"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="◀ ▶ ▲ ▼ Di chuyển · OK Chọn · Back Quay lại"
+        android:textSize="16sp" android:textColor="@color/text_muted" />
+</LinearLayout>

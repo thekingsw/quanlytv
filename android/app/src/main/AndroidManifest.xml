@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="vn.tvlock"
-    android:versionCode="9"
-    android:versionName="1.8">
+    android:versionCode="27"
+    android:versionName="4.0">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" />
 
@@ -12,8 +12,17 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- v2.9: chụp màn hình TV (MediaProjection) — service chụp màn hình
+         chạy foreground với loại mediaProjection; quyền đồng ý vẫn do
+         người dùng bấm ở hộp thoại hệ thống (không tự xin được). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- v2.0: chống tắt Trợ năng — app tự ghi lại dịch vụ của mình vào
+         Settings.Secure khi bị tắt. Quyền này chỉ cấp được qua ADB
+         (`pm grant`, Cài TV 1.5 cấp tự động sau khi cài); app thường
+         không tự xin được quyền này. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -22,6 +31,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Khóa TV"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
@@ -48,6 +58,31 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity-alias>
+        <!-- v3.0: màn hình chính 2-trong-1 (kiểu Apple TV) — intent HOME
+             để đặt làm launcher mặc định. KHÔNG thêm LAUNCHER: giữ trick
+             ẩn icon như hiện tại, trẻ con không cần thấy icon "Khóa TV".
+             exported=true là bắt buộc khi có intent-filter (Android 12+).
+             singleTask: bấm HOME khi đang ở home thì onNewIntent bỏ qua. -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- v3.0: cài đặt màn hình chính + danh sách app đã ẩn. -->
+        <activity
+            android:name=".HomeSettingsActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".HiddenAppsActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
         <activity
             android:name=".LockActivity"
             android:exported="false"
@@ -64,6 +99,25 @@
             android:name=".WarningActivity"
             android:exported="false"
             android:screenOrientation="landscape" />
+        <!-- v2.7: màn hình tin nhắn gửi lên TV — nền trong suốt để vẫn
+             thấy video phía sau, tự tắt sau 5 giây. -->
+        <activity
+            android:name=".MessageActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- v4.0: popup thông báo từ hộp thư — thẻ góc phải trên, trong
+             suốt, tự tắt 15 giây; OK mở chi tiết, Back bỏ qua. -->
+        <activity
+            android:name=".NotificationPopupActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- v4.0: trung tâm thông báo — liệt kê tin từ hộp thư. -->
+        <activity
+            android:name=".NotificationCenterActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
         <activity
             android:name=".SchedulesActivity"
             android:exported="false"
@@ -77,6 +131,42 @@
             android:exported="false"
             android:screenOrientation="landscape" />
 
+        <!-- v2.1: Cài đặt tách thành menu + các màn hình riêng. -->
+        <activity
+            android:name=".LockScreenActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".NewsSlotActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".PinActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".BonusActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".AccessActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
+        <!-- v2.3: quản lý mã PIN web (chỉ mở sau khi nhập đúng mã PIN
+             khóa TV ở LockActivity mode "webpin"). -->
+        <activity
+            android:name=".WebPinActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
+        <!-- v2.9: cấp quyền chụp màn hình TV (MediaProjection) để web
+             chụp được màn hình TV. -->
+        <activity
+            android:name=".ScreenCaptureActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
         <service
             android:name=".GuardService"
             android:exported="false"
@@ -85,6 +175,13 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="TV time limit guard and remote control web server" />
         </service>
+
+        <!-- v2.9: dịch vụ chụp màn hình — giữ MediaProjection sống để
+             web chụp bất cứ lúc nào sau khi đã cấp quyền 1 lần. -->
+        <service
+            android:name=".ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
 
         <service
             android:name=".GuardAccessibilityService"
@@ -104,6 +201,48 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v1.9: app vừa được cập nhật (cài đè APK) thì khởi động lại
+             GuardService ngay — Android không tự chạy lại service sau
+             khi cập nhật, trước đây phải mở màn hình chính một lần. -->
+        <receiver
+            android:name=".UpdateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v2.0: bật/tắt "chống tắt Trợ năng" từ xa qua ADB (app Cài TV).
+             Exported để shell (`am broadcast`) gọi được. -->
+        <receiver
+            android:name=".AntiDisableReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="vn.tvlock.SET_ANTIDISABLE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v2.3: đặt lại mã PIN web từ xa qua ADB (app Cài TV) — quên
+             mã PIN web thì đặt lại = mã PIN khóa TV. Exported để shell
+             (`am broadcast`) gọi được, như AntiDisableReceiver. -->
+        <receiver
+            android:name=".WebPinResetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="vn.tvlock.RESET_WEBPIN" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v2.4: gỡ quyền Device Owner của chính app qua ADB (tab Lệnh ADB
+             của Cài TV) — xem DeviceOwnerRemoveReceiver.kt. -->
+        <receiver
+            android:name=".DeviceOwnerRemoveReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="vn.tvlock.REMOVE_DEVICE_OWNER" />
             </intent-filter>
         </receiver>
 

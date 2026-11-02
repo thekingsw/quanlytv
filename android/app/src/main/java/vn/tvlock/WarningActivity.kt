@@ -1,6 +1,7 @@
 package vn.tvlock
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -28,6 +29,24 @@ class WarningActivity : Activity() {
         findViewById<Button>(R.id.btnWarnOk).setOnClickListener { finish() }
         // v1.7: dự phòng khi overlay không vẽ được — không giành focus để
         // điều khiển vẫn ở app đang xem; bấm Back là tắt bảng này.
+        handler.postDelayed(dismiss, 20000)
+    }
+
+    /**
+     * v2.11: GuardService gọi showBanner mỗi giây trong lúc đếm ngược, và
+     * launchWarning dùng FLAG_ACTIVITY_CLEAR_TOP nên các lần gọi sau rơi vào
+     * onNewIntent của instance đang hiện — trước đây không override nên chữ
+     * trên bảng đứng yên mãi ở con số đầu tiên (lỗi "còn 9s" lúc 18:58 ngày
+     * 29/10). Giờ cập nhật chữ theo intent mới và đếm lại 20 giây tự tắt.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        findViewById<TextView>(R.id.tvWarnTitle).text =
+            intent.getStringExtra("message") ?: "Sắp hết giờ xem"
+        findViewById<TextView>(R.id.tvWarnSub).text =
+            intent.getStringExtra("sub") ?: ""
+        handler.removeCallbacks(dismiss)
         handler.postDelayed(dismiss, 20000)
     }
 

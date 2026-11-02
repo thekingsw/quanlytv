@@ -1,0 +1,20 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:background="@7F010000" android:layout_width="-1" android:layout_height="-1" android:fillViewport="true">
+  <LinearLayout android:orientation="1" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2">
+    <TextView android:layout_width="-2" android:layout_height="-2" android:text="M&#224;n h&#236;nh kh&#243;a" style="@7F070005"/>
+    <TextView android:textColor="@7F01000D" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="S&#7917;a xong b&#7845;m Xem tr&#432;&#7899;c &#273;&#7875; xem m&#224;n h&#236;nh kh&#243;a s&#7869; hi&#7879;n th&#7871; n&#224;o, r&#7891;i b&#7845;m &#193;p d&#7909;ng m&#7899;i &#273;&#7893;i tr&#234;n TV." style="@7F070000"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="L&#7901;i nh&#7855;c (hi&#7879;n c&#249;ng &#7843;nh n&#7873;n b&#234;n tr&#225;i)" style="@7F070004"/>
+    <EditText android:textSize="18.000000sp" android:textColor="@7F01000F" android:id="@7F03003A" android:background="@7F020002" android:padding="12.000000dip" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:singleLine="true" android:maxLength="140"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="&#7842;nh n&#7873;n" style="@7F070004"/>
+    <TextView android:textSize="18.000000sp" android:id="@7F030061" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+    <LinearLayout android:orientation="0" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="8.000000dip">
+      <Button android:id="@7F03002B" android:layout_width="0.000000dip" android:layout_margin="3.000000dip" android:text="Ch&#7885;n &#7843;nh m&#7899;i" android:layout_weight="1.000000" style="@7F070001"/>
+      <Button android:id="@7F03002E" android:layout_width="0.000000dip" android:layout_margin="3.000000dip" android:text="X&#243;a &#7843;nh n&#7873;n" android:layout_weight="1.000000" style="@7F070001"/>
+    </LinearLayout>
+    <LinearLayout android:orientation="0" android:layout_width="-1" android:layout_height="-2" android:layout_marginTop="6.000000dip">
+      <Button android:id="@7F03002D" android:layout_width="0.000000dip" android:layout_margin="3.000000dip" android:text="Xem tr&#432;&#7899;c" android:layout_weight="1.000000" style="@7F070001"/>
+      <Button android:id="@7F03000B" android:layout_width="0.000000dip" android:layout_margin="3.000000dip" android:text="&#193;p d&#7909;ng" android:layout_weight="1.000000" style="@7F070002"/>
+    </LinearLayout>
+    <Button android:id="@7F030016" android:layout_width="-1" android:layout_marginTop="6.000000dip" android:text="H&#7911;y thay &#273;&#7893;i" style="@7F070001"/>
+    <Button android:id="@7F03000C" android:layout_width="-1" android:layout_marginTop="6.000000dip" android:text="Quay l&#7841;i" style="@7F070001"/>
+  </LinearLayout>
+</ScrollView>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 2026-10-31: khung animated trượt làm chỉ báo focus chính nên nền
+         tĩnh để trong suốt (giữ hiệu ứng phóng to focus_scale). -->
+    <item android:state_focused="true" android:drawable="@android:color/transparent" />
+    <item android:drawable="@android:color/transparent" />
+</selector>

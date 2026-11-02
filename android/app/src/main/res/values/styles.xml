@@ -1,43 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- v1.4: thu nhỏ toàn cục cho TV 55" (viewport ~540dp cao).
-         Nút 64->52dp, phím PIN 72->56dp, chữ tiêu đề 36->30sp. -->
+    <!-- Theme 2.2 theo design-tokens.json.
+         Nút TV 4 biến thể, mỗi biến thể có selector riêng (focus/pressed)
+         + StateListAnimator phóng 1.06 khi focus. -->
+
+    <!-- Base = ghost (nền card2, chữ text) để layout cũ vẫn build được. -->
     <style name="TvButton" parent="@android:style/Widget.Button">
-        <item name="android:layout_height">52dp</item>
-        <item name="android:background">@drawable/btn_selector</item>
+        <item name="android:layout_height">@dimen/button_height</item>
+        <item name="android:background">@drawable/btn_ghost_selector</item>
         <item name="android:textColor">@color/btn_text</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:paddingLeft">16dp</item>
         <item name="android:paddingRight">16dp</item>
         <item name="android:paddingTop">6dp</item>
         <item name="android:paddingBottom">6dp</item>
         <item name="android:focusable">true</item>
         <item name="android:gravity">center</item>
+        <item name="android:stateListAnimator">@animator/focus_scale</item>
     </style>
+
+    <style name="TvButtonGhost" parent="TvButton" />
 
     <style name="TvButtonPrimary" parent="TvButton">
         <item name="android:background">@drawable/btn_primary_selector</item>
+        <item name="android:textColor">@color/on_accent</item>
+    </style>
+
+    <style name="TvButtonSuccess" parent="TvButton">
+        <item name="android:background">@drawable/btn_success_selector</item>
+        <item name="android:textColor">@color/on_open</item>
+    </style>
+
+    <style name="TvButtonDanger" parent="TvButton">
+        <item name="android:background">@drawable/btn_danger_selector</item>
+        <item name="android:textColor">@color/on_locked</item>
     </style>
 
     <style name="TvKeyButton" parent="TvButton">
-        <item name="android:layout_height">56dp</item>
-        <item name="android:textSize">26sp</item>
+        <item name="android:layout_height">@dimen/keypad_key</item>
+        <item name="android:textSize">24sp</item>
     </style>
 
     <style name="TvTitle">
-        <item name="android:textSize">30sp</item>
+        <item name="android:textSize">28sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="TvBody">
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <!-- SectionHeader: tiêu đề 28sp bold + phụ đề 18sp muted -->
     <style name="TvSection">
-        <item name="android:textSize">19sp</item>
-        <item name="android:textColor">@color/focus_accent</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textColor">@color/text_primary</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TvSubtitle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_muted</item>
     </style>
 </resources>

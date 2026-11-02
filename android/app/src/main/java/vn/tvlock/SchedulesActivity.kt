@@ -3,33 +3,29 @@ package vn.tvlock
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.ListView
+import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
  * v4: flexible lock schedules. Each schedule picks weekdays + a from-to
  * time range; several schedules combine (any match locks the TV).
  * Overnight ranges (e.g. 19:00 -> 10:00) span to the next day.
+ *
+ * Giai đoạn 3 (redesign 2.2): rail+pane; danh sách lịch dựng bằng ListRow
+ * trong listContainer thay cho ListView thô. Logic giữ nguyên.
  */
 class SchedulesActivity : Activity() {
     private lateinit var store: Store
-    private lateinit var adapter: ArrayAdapter<String>
     private var schedules = listOf<Store.LockSchedule>()
+    private lateinit var listContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_schedules)
         store = Store(this)
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf())
-        val list = findViewById<ListView>(R.id.listSchedules)
-        list.adapter = adapter
-        list.setOnItemClickListener { _, _, pos, _ ->
-            val i = Intent(this, ScheduleEditActivity::class.java)
-            i.putExtra("id", schedules[pos].id)
-            startActivity(i)
-        }
+        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "schedules")
+        listContainer = findViewById(R.id.listContainer)
         findViewById<Button>(R.id.btnAddSchedule).setOnClickListener {
             startActivity(Intent(this, ScheduleEditActivity::class.java))
         }
@@ -46,12 +42,22 @@ class SchedulesActivity : Activity() {
 
     private fun refresh() {
         schedules = store.lockSchedules()
-        adapter.clear()
+        listContainer.removeAllViews()
+        val btnAdd = findViewById<Button>(R.id.btnAddSchedule)
         if (schedules.isEmpty()) {
-            adapter.add("Chưa có lịch khóa nào — TV không bị khóa theo giờ.")
-        } else {
-            adapter.addAll(schedules.map { store.scheduleSummary(it) })
+            ListRows.add(this, listContainer,
+                "Chưa có lịch khóa nào — TV không bị khóa theo giờ.", "", null)
+            return
         }
-        adapter.notifyDataSetChanged()
+        val rows = schedules.map { s ->
+            val daysTxt = if (s.days.size == 7) "Hằng ngày"
+                else s.days.sorted().joinToString(", ") { store.dayNames()[it] }
+            ListRows.add(this, listContainer, daysTxt, store.scheduleTimeText(s)) {
+                val i = Intent(this, ScheduleEditActivity::class.java)
+                i.putExtra("id", s.id)
+                startActivity(i)
+            }
+        }
+        ListRows.linkFocus(rows, btnAdd)
     }
 }

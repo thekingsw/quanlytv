@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- redesign 2.2 giai đoạn 3 — rail+pane; nội dung pane cuộn trong ScrollView.
+     Giữ nguyên mọi id (tvBonus, btnBonus5/10/15/30, btnBack). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Phút thưởng" style="@style/TvTitle" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/tvBonus"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:layout_marginTop="4dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="12dp">
+                    <Button android:id="@+id/btnBonus5" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +5'" />
+                    <Button android:id="@+id/btnBonus10" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +10'" />
+                    <Button android:id="@+id/btnBonus15" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +15'" />
+                    <Button android:id="@+id/btnBonus30" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +30'" />
+                </LinearLayout>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Bấm nút rồi nhập mã PIN trên màn hình khóa để thưởng. Khác với nút +5 phút ở màn hình chính (mở khóa ngay 5 phút): phút thưởng chỉ có tác dụng khi đã hết giờ ngày."
+                    style="@style/TvBody" android:textColor="@color/text_muted"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvKeyHint"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="◀ ▶ ▲ ▼ Di chuyển · OK Chọn · Back Quay lại"
+        android:textSize="16sp" android:textColor="@color/text_muted" />
+</LinearLayout>

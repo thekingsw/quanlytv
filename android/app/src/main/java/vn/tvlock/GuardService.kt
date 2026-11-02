@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 
 class GuardService : Service() {
     private lateinit var store: Store
@@ -18,6 +19,17 @@ class GuardService : Service() {
     override fun onCreate() {
         super.onCreate()
         store = Store(this)
+        // v2.6: lastPkg được lưu bền (SharedPreferences) và chỉ cập nhật
+        // khi đổi app (qua Trợ năng). Sau khi service khởi động lại (cập
+        // nhật app), lastPkg có thể còn là "vn.tvlock" từ trước dù màn hình
+        // thực tế đã là launcher — tick sẽ tưởng màn hình khóa đang hiện
+        // và không mở lại. Xóa để tick nhận đúng và hiện màn hình khóa
+        // ngay khi bị khóa.
+        store.lastPkg = ""
+        // v2.4: nếu app đã là Device Owner (đặt từ bản cũ, hoặc vừa cập nhật
+        // đè lên bản đã đặt), đảm bảo chặn gỡ được bật — onEnabled của
+        // DeviceOwnerReceiver chỉ chạy lúc mới đặt, không chạy khi cập nhật.
+        DeviceOwnerPolicy.ensureBlocked(this)
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) {
             val ch = NotificationChannel("guard", "Khóa TV", NotificationManager.IMPORTANCE_LOW)
@@ -40,6 +52,15 @@ class GuardService : Service() {
 
     private fun tick() {
         val now = System.currentTimeMillis()
+        // v4.0: poll hộp thư mỗi 10 phút (600 tick).
+        if (++pollTickCounter >= 600) {
+            pollTickCounter = 0
+            pollInbox()
+        }
+        // v2.0: chống tắt Trợ năng — ai tắt Trợ năng trong Cài đặt TV
+        // thì bật lại ngay trong tích tắc này. Chỉ làm được khi app đã
+        // được cấp quyền WRITE_SECURE_SETTINGS (Cài TV cấp sau khi cài).
+        if (store.antiDisable) store.ensureAccessEnabled()
         store.tick(now)
         if (now < store.unlockUntilMs || store.isLockedNow(now)) {
             // Đang khóa / đang mở tạm: không nhắc nữa, gỡ banner nếu còn.
@@ -47,6 +68,25 @@ class GuardService : Service() {
             countdownActive = false
             bannerShown = false
             updateNotification()
+            // v2.6: khóa qua web phải hiện màn hình khóa NGAY — trước đây
+            // tick return sớm nên màn hình khóa chỉ hiện khi đổi app (qua
+            // Trợ năng). Chỉ hiện khi app khóa chưa ở foreground (tránh
+            // mở lại liên tục); đang mở tạm (unlockUntilMs) thì không hiện.
+            // v2.9: app thời sự trong khung giờ thời sự được miễn trừ
+            // tuyệt đối — đang xem thời sự trong khung thì KHÔNG hiện màn
+            // khóa dù đang khóa tay hay trong lịch khóa.
+            if (store.isLockedNow(now) && store.lastPkg != packageName &&
+                !store.isNewsExempt(store.lastPkg, now)) {
+                val i = Intent(this, LockActivity::class.java)
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                i.putExtra("reason", store.lockReason(now))
+                i.putExtra("mode", "lock")
+                // v2.9: màn khóa này là khóa toàn TV (không phải chặn
+                // riêng 1 app) — để LockActivity tự tắt về Home khi TV
+                // hết khóa (vd hết khung khóa, mở khóa trên web).
+                i.putExtra("wholeLock", true)
+                try { startActivity(i) } catch (_: Exception) { }
+            }
             return
         }
         val pkg = store.lastPkg
@@ -74,6 +114,39 @@ class GuardService : Service() {
     private var bannerShownAtMs = 0L
     private var lastNotifText = ""
 
+    // ============ v4.0: poll hộp thư Tinker ============
+    private var pollTickCounter = 590 // poll lần đầu sau ~10s chạy service
+
+    private fun pollInbox() {
+        // Không poll khi đang khóa (tin nhắn chờ trong chuông).
+        val now = System.currentTimeMillis()
+        InboxClient.pollAndCache(store) { msgs ->
+            if (msgs.isNullOrEmpty()) return@pollAndCache
+            routeInboxPopup(msgs.maxByOrNull { it.createdAt } ?: return@pollAndCache, now)
+        }
+    }
+
+    /** Quyết định có popup thẻ thông báo không (theo cài đặt của user). */
+    private fun routeInboxPopup(msg: InboxClient.Message, now: Long) {
+        // Đang khóa → chỉ chuông, không popup.
+        if (store.isLockedNow(now)) return
+        // Ngoài khung giờ → chỉ chuông.
+        if (!store.inPushHours(now)) return
+        when (store.popupMode) {
+            "silent" -> return
+            "home" -> {
+                // Chỉ popup khi đang ở màn hình chính (app vn.tvlock).
+                if (store.lastPkg != packageName) return
+            }
+        }
+        val i = Intent(this, NotificationPopupActivity::class.java)
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        i.putExtra("title", msg.title)
+        i.putExtra("body", msg.body)
+        i.putExtra("type", msg.type)
+        try { startActivity(i) } catch (_: Exception) { }
+    }
+
     /** Hạn gần nhất còn chạy (số giây, nhãn) — hạn ngày, hạn app, giờ khóa. */
     private fun nearestDeadline(now: Long): Pair<Int, String>? {
         var best: Pair<Int, String>? = null
@@ -83,12 +156,22 @@ class GuardService : Service() {
                 if (cur == null || sec < cur.first) best = sec to label
             }
         }
-        consider(store.secondsUntilDailyLimit(now), "hết giờ xem")
-        val pkg = store.lastPkg
-        if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
-            consider(store.secondsUntilAppLimit(pkg, now), "hết giờ cho app ${store.appLabel(pkg)}")
+        // v2.11: chỉ xét các hạn tính theo giờ xem khi đang thực sự tính giờ
+        // (isCountingNow) — nếu không, con số là dữ liệu cũ đóng băng (vd vừa
+        // khởi động TV, lastPkg còn rỗng) và đếm ngược sẽ đứng yên một chỗ.
+        // Hạn theo giờ giấc (lịch khóa) thì luôn xét vì không phụ thuộc đếm giờ.
+        if (store.isCountingNow(now)) {
+            consider(store.secondsUntilDailyLimit(now), "hết giờ xem")
+            val pkg = store.lastPkg
+            if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
+                consider(store.secondsUntilAppLimit(pkg, now), "hết giờ cho app ${store.appLabel(pkg)}")
+            }
         }
         consider(store.secondsUntilNextLock(now), "đến giờ khóa TV")
+        // Mở tạm bằng mã thưởng: hết hạn là khóa luôn nên cũng phải đếm
+        // ngược 10 giây cuối (user 2026-11-02).
+        val unlockMs = store.unlockUntilMs
+        if (unlockMs > now) consider(((unlockMs - now) / 1000).toInt(), "hết giờ mở tạm")
         return best
     }
 
@@ -97,7 +180,8 @@ class GuardService : Service() {
      * giờ thì banner tự gỡ. Banner nhắc 5'/1' tự tắt sau 20 giây. */
     private fun updateCountdown(now: Long) {
         val deadline = nearestDeadline(now)
-        if (deadline != null && deadline.first in 1..60) {
+        // v2.6: đếm ngược từng giây chỉ 10 giây cuối (trước đây 60 giây).
+        if (deadline != null && deadline.first in 1..10) {
             val (sec, label) = deadline
             countdownActive = true
             val s = if (sec == 1) "1 giây" else "$sec giây"
@@ -110,7 +194,8 @@ class GuardService : Service() {
             WarningBus.hide()
             return
         }
-        if (bannerShown && System.currentTimeMillis() - bannerShownAtMs > 20000) {
+        // v2.6: banner nhắc 5'/1' chỉ hiện 5 giây (trước đây 20 giây).
+        if (bannerShown && System.currentTimeMillis() - bannerShownAtMs > 5000) {
             bannerShown = false
             WarningBus.hide()
         }
@@ -135,10 +220,22 @@ class GuardService : Service() {
      * (vn.tvlock is excluded from watch time).
      */
     private fun warnIfNeeded(now: Long) {
-        // v1.5: bỏ điều kiện "đang ở màn hình của app thì không nhắc" — màn hình
-        // khóa đã được chặn bởi isLockedNow/unlockUntilMs bên dưới, còn đang ở
-        // màn hình chính/cài đặt thì nhắc vẫn có ích (đặc biệt lúc anh test).
-        if (now < store.unlockUntilMs || store.isLockedNow(now)) return
+        // Mở tạm bằng mã thưởng / nút +giờ (unlockUntilMs): phải nhắc 5'..1'
+        // trước khi hết hạn vì hết là khóa luôn — trước đây return sớm nên
+        // không hề có cảnh báo, bụp một cái là khóa (user 2026-11-02).
+        val unlockMs = store.unlockUntilMs
+        if (unlockMs > now) {
+            val remMin = ((unlockMs - now + 59999) / 60000).toInt()
+            if (remMin in 1..5 && !store.warned("tempunlock", remMin)) {
+                store.markWarned("tempunlock", remMin)
+                showBanner(
+                    "Còn $remMin phút nữa là hết giờ mở tạm",
+                    "Nhập mã thưởng mới hoặc nhờ bố cộng giờ nhé!"
+                )
+            }
+            return
+        }
+        if (store.isLockedNow(now)) return
         val pkg = store.lastPkg
         // 1) Current app's own limit.
         if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
@@ -185,6 +282,23 @@ class GuardService : Service() {
         bannerShown = true
         bannerShownAtMs = System.currentTimeMillis()
         if (!WarningBus.show(message, sub)) launchWarning(message, sub)
+    }
+
+    /** v2.7: gửi tin nhắn lên TV — mở MessageActivity (thẻ tin nhắn giữa
+     *  màn hình, nền trong suốt để vẫn thấy video phía sau, tự tắt sau
+     *  5 giây rồi quay lại app đang xem). Dùng Activity vì cả hai cơ chế
+     *  không chắn video đều không hiển thị được trên TV này: overlay
+     *  Trợ năng (TYPE_ACCESSIBILITY_OVERLAY) không tạo được cửa sổ,
+     *  còn Toast hệ thống bị chặn (không ném lỗi nhưng cũng không hiện).
+     *  Đánh đổi: video tạm dừng trong 5 giây hiện tin nhắn. Gọi từ
+     *  WebServer (trang web trên điện thoại). */
+    fun showMessage(text: String) {
+        val i = Intent(this, MessageActivity::class.java)
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        i.putExtra("text", text)
+        try { startActivity(i) } catch (e: Exception) {
+            Log.e("GuardService", "showMessage: khong mo duoc MessageActivity: $e")
+        }
     }
 
     private fun launchWarning(message: String, sub: String) {

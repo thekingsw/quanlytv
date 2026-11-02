@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v3.0: cài đặt màn hình chính — rail+pane như các màn cài đặt khác. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Màn hình chính" style="@style/TvTitle" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Ảnh nền (slideshow)" style="@style/TvSection" />
+                <TextView android:id="@+id/tvHomeBgState"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:layout_marginTop="8dp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/btnPickHomeBg"
+                        android:layout_width="wrap_content" android:layout_height="52dp"
+                        android:background="@drawable/btn_primary_selector"
+                        android:text="Thêm ảnh" android:textColor="@color/text"
+                        android:textSize="18sp" android:minWidth="160dp" />
+                    <Button android:id="@+id/btnRemoveHomeBg"
+                        android:layout_width="wrap_content" android:layout_height="52dp"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/btn_ghost_selector"
+                        android:text="Xóa hết" android:textColor="@color/text"
+                        android:textSize="18sp" android:minWidth="160dp" />
+                </LinearLayout>
+                <Button android:id="@+id/btnWpInterval"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Đổi ảnh mỗi" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnWpSource"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Nguồn ảnh nền" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Widget" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnWidgetTinker"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Widget Tinker" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnWidgetFare"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Widget vé máy bay" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnWidgetCountdown"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Widget đếm ngược" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnWidgetFamily"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Widget gia đình" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnWidgetCamera"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Widget camera" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Đếm ngược" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnCountdown"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Mốc đếm ngược" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Thông báo đẩy" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnPushHours"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Khung giờ popup" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+                <Button android:id="@+id/btnPopupMode"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Chế độ popup" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Kiểu icon ứng dụng" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnIconStyle"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Kiểu icon ứng dụng" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Thời tiết" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnCity"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Thành phố thời tiết" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Ứng dụng đã ẩn" style="@style/TvSection"
+                    android:layout_marginTop="16dp" />
+                <Button android:id="@+id/btnHiddenApps"
+                    android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:text="Xem / hiện lại app đã ẩn" android:textColor="@color/text"
+                    android:textSize="18sp" android:minWidth="320dp" />
+            </LinearLayout>
+            </ScrollView>
+
+            <Button android:id="@+id/btnBack"
+                android:layout_width="wrap_content" android:layout_height="52dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/btn_ghost_selector"
+                android:text="Quay lại" android:textColor="@color/text"
+                android:textSize="18sp" android:minWidth="160dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

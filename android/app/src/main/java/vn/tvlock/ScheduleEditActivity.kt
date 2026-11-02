@@ -30,6 +30,7 @@ class ScheduleEditActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_schedule_edit)
         store = Store(this)
+        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "schedules")
         scheduleId = intent.getStringExtra("id")
         tvStartHour = findViewById(R.id.tvStartHour)
         tvStartMin = findViewById(R.id.tvStartMin)
@@ -57,10 +58,11 @@ class ScheduleEditActivity : Activity() {
 
         // v1.6: giờ và phút chỉnh riêng — nút giờ ±1 giờ, nút phút ±1 phút,
         // giữ nút là tự tăng/giảm liên tục (HoldRepeat, như giữ phím volume).
-        bindHourMin(R.id.btnStartHourMinus, R.id.btnStartHourPlus, R.id.btnStartMinMinus, R.id.btnStartMinPlus,
-            { startMin }) { startMin = it }
-        bindHourMin(R.id.btnEndHourMinus, R.id.btnEndHourPlus, R.id.btnEndMinMinus, R.id.btnEndMinPlus,
-            { endMin }) { endMin = it }
+        // Giai đoạn 3: bind chung qua TimeStepper (thay bindHourMin trùng lặp).
+        TimeStepper.bind(this, R.id.btnStartHourMinus, R.id.btnStartHourPlus, R.id.btnStartMinMinus, R.id.btnStartMinPlus,
+            { startMin }, { startMin = it }) { refresh() }
+        TimeStepper.bind(this, R.id.btnEndHourMinus, R.id.btnEndHourPlus, R.id.btnEndMinMinus, R.id.btnEndMinPlus,
+            { endMin }, { endMin = it }) { refresh() }
         findViewById<Button>(R.id.btnAllDay).setOnClickListener {
             startMin = 0; endMin = 1439; refresh()
         }
@@ -77,15 +79,6 @@ class ScheduleEditActivity : Activity() {
         }
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
         refresh()
-    }
-
-    /** Giờ ±1 giờ (giữ nguyên phút), phút ±1 phút (tràn sang giờ bên cạnh). */
-    private fun bindHourMin(hourMinusId: Int, hourPlusId: Int, minMinusId: Int, minPlusId: Int,
-                            get: () -> Int, set: (Int) -> Unit) {
-        HoldRepeat.attach(findViewById(hourMinusId)) { set((get() - 60 + 1440) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(hourPlusId)) { set((get() + 60) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(minMinusId)) { set((get() - 1 + 1440) % 1440); refresh() }
-        HoldRepeat.attach(findViewById(minPlusId)) { set((get() + 1) % 1440); refresh() }
     }
 
     private fun refresh() {

@@ -3,19 +3,21 @@ package vn.tvlock
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.ListView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 
 /**
  * v4: daily limit per weekday (0=Mon..6=Sun). Each day picks one of
  * 30/60/90/120/180/240 minutes or "Không giới hạn" (-1).
+ *
+ * Giai đoạn 3 (redesign 2.2): rail+pane; 7 ngày dựng bằng ListRow trong
+ * listContainer thay cho ListView thô. Dialog + logic giữ nguyên.
  */
 class DailyLimitsActivity : Activity() {
     private lateinit var store: Store
-    private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var listContainer: LinearLayout
 
     private val options = arrayOf(
         "5 phút", "10 phút", "15 phút", "30 phút", "60 phút", "90 phút", "120 phút",
@@ -27,10 +29,8 @@ class DailyLimitsActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_daily_limits)
         store = Store(this)
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf())
-        val list = findViewById<ListView>(R.id.listDays)
-        list.adapter = adapter
-        list.setOnItemClickListener { _, _, pos, _ -> showLimitDialog(pos) }
+        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "daily_limits")
+        listContainer = findViewById(R.id.listContainer)
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<TextView>(R.id.tvHint).text =
             "Bấm vào một ngày để đặt giới hạn xem của ngày đó. " +
@@ -44,9 +44,15 @@ class DailyLimitsActivity : Activity() {
     }
 
     private fun refresh() {
-        adapter.clear()
-        adapter.addAll((0..6).map { "${store.dayNames()[it]}: ${store.limitText(store.limitForDay(it))}" })
-        adapter.notifyDataSetChanged()
+        listContainer.removeAllViews()
+        val btnBack = findViewById<Button>(R.id.btnBack)
+        val rows = (0..6).map { day ->
+            ListRows.add(this, listContainer,
+                store.dayNames()[day], store.limitText(store.limitForDay(day))) {
+                showLimitDialog(day)
+            }
+        }
+        ListRows.linkFocus(rows, btnBack)
     }
 
     private fun showLimitDialog(day: Int) {

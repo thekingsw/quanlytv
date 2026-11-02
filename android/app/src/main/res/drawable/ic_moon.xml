@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Giai đoạn 4: icon mặt trăng cho màn khóa (không có ảnh nền riêng).
+     Lưỡi liềm = hình tròn accent 72dp + hình tròn màu nền đè lên phía trái,
+     lệch ra ngoài trên/dưới (-8dp) để mép cong ôm sát.
+     Theo design/tv-lock.html: box-shadow -18px inset = vết tối ở mép trái,
+     lưỡi liềm hiện bên phải — nên oval nền dùng android:right="20dp". -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/accent" />
+            <size android:width="72dp" android:height="72dp" />
+        </shape>
+    </item>
+    <item android:right="20dp" android:top="-8dp" android:bottom="-8dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/bg" />
+        </shape>
+    </item>
+</layer-list>

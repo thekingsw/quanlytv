@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4.0: màn hình chính v2 — dày đặc theo mockup: đồng hồ + âm lịch,
+     widget, 7 yêu thích, lưới app 8 cột, chuông thông báo. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#0F1626">
+
+    <!-- Ảnh nền slideshow -->
+    <ImageView
+        android:id="@+id/bgView"
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+    <!-- Lớp phủ tối để chữ nổi trên mọi ảnh nền (gradient: đậm trên/dưới) -->
+    <View
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="@drawable/home_scrim" />
+
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingLeft="24dp" android:paddingRight="24dp"
+        android:paddingTop="16dp" android:paddingBottom="12dp">
+
+        <!-- Thanh trên: đồng hồ + âm lịch | thời tiết, chuông, cài đặt -->
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextClock
+                    android:id="@+id/tvClock"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:format12Hour="HH:mm"
+                    android:textSize="36sp" android:textStyle="bold"
+                    android:focusable="false" android:focusableInTouchMode="false"
+                    android:shadowColor="#CC000000" android:shadowDx="0"
+                    android:shadowDy="2" android:shadowRadius="8"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:focusable="false" android:focusableInTouchMode="false"
+                    android:shadowColor="#CC000000" android:shadowDx="0"
+                    android:shadowDy="2" android:shadowRadius="6"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:id="@+id/tvLunar"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="13sp"
+                    android:focusable="false" android:focusableInTouchMode="false"
+                    android:shadowColor="#CC000000" android:shadowDx="0"
+                    android:shadowDy="2" android:shadowRadius="6"
+                    android:textColor="#FFC857" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvWeatherPill"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/card_bg"
+                android:paddingLeft="14dp" android:paddingRight="14dp"
+                android:paddingTop="8dp" android:paddingBottom="8dp"
+                android:focusable="false" android:focusableInTouchMode="false"
+                android:text="--°" android:textSize="16sp"
+                android:textColor="@color/text_primary" />
+
+            <Button
+                android:id="@+id/btnBell"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:text="🔔" android:textSize="20sp"
+                android:background="@drawable/btn_ghost_selector"
+                android:focusable="true" />
+
+            <Button
+                android:id="@+id/btnHomeSettings"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="⚙" android:textSize="20sp"
+                android:background="@drawable/btn_ghost_selector"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Hàng widget -->
+        <HorizontalScrollView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+            <LinearLayout
+                android:id="@+id/widgetRow"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <!-- Yêu thích -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Yêu thích" android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_muted"
+            android:shadowColor="#CC000000" android:shadowDx="0"
+            android:shadowDy="2" android:shadowRadius="6" />
+        <HorizontalScrollView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+            <LinearLayout
+                android:id="@+id/favRow"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+        <TextView
+            android:id="@+id/favHint"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Giữ OK trên một app để ghim vào yêu thích"
+            android:textSize="15sp" android:textColor="@color/text_muted"
+            android:shadowColor="#CC000000" android:shadowDx="0"
+            android:shadowDy="2" android:shadowRadius="6"
+            android:visibility="gone" />
+
+        <!-- Tất cả ứng dụng -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Tất cả ứng dụng" android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_muted"
+            android:shadowColor="#CC000000" android:shadowDx="0"
+            android:shadowDy="2" android:shadowRadius="6" />
+        <GridView
+            android:id="@+id/appGrid"
+            android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:numColumns="8"
+            android:verticalSpacing="6dp"
+            android:horizontalSpacing="8dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center" />
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Không có ứng dụng nào."
+            android:textSize="16sp" android:textColor="@color/text_muted"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Khung chọn animated: trong suốt, trượt theo hướng phím (user 2026-10-31).
+         Là con cuối của FrameLayout nên vẽ đè lên trên cùng. -->
+    <View
+        android:id="@+id/focusFrame"
+        android:layout_width="0dp" android:layout_height="0dp"
+        android:background="@drawable/focus_frame"
+        android:visibility="gone" />
+</FrameLayout>

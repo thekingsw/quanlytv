@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cho phep HTTP (cleartext) rieng cho inbox Tinker tren tailnet.
+     Luu y: luu luong van duoc WireGuard cua Tailscale ma hoa tren duong truyen,
+     chi la HTTP khong co TLS rieng. Khong mo cleartext cho cac host khac. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">100.92.107.114</domain>
+    </domain-config>
+</network-security-config>

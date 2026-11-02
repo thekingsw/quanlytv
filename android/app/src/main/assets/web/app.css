@@ -1,0 +1,308 @@
+/* Khóa TV — web điện thoại 2.2. Token lấy từ design-tokens.json.
+   Mobile-first 360–430px, không cuộn ngang, nút cao tối thiểu 48px. */
+:root {
+  --bg: #0E1525;
+  --card: #172035;
+  --card2: #202C45;
+  --text: #F3F6FB;
+  --muted: #9FB0CC;
+  --accent: #FFB84D;
+  --onAccent: #1A1405;
+  --open: #3DDC97;
+  --onOpen: #06261A;
+  --locked: #FF6B6B;
+  --onLocked: #2A0A0A;
+  --track: #26324D;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 20px 16px 110px;
+  min-height: 100vh;
+}
+
+h1 { font-size: 22px; font-weight: 700; margin: 0; }
+h2 { font-size: 20px; font-weight: 700; margin: 0 0 12px; }
+h3 { font-size: 18px; font-weight: 700; margin: 0 0 10px; }
+
+a { color: var(--accent); }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 44px;
+  margin-bottom: 14px;
+}
+.room { font-size: 14px; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.lbl { font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+.lbl:first-child { margin-top: 0; }
+
+.tab { display: none; }
+.tab.active { display: block; }
+
+/* --- Trang Hôm nay --- */
+.pill {
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.pill.open { background: var(--open); color: var(--onOpen); }
+.pill.locked { background: var(--locked); color: var(--onLocked); }
+
+.hero { font-size: 44px; font-weight: 700; margin-top: 6px; line-height: 1.15; }
+.subline { font-size: 16px; color: var(--muted); margin-top: 4px; }
+
+.track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--track);
+  margin-top: 12px;
+  overflow: hidden;
+}
+.fill { height: 10px; border-radius: 5px; background: var(--open); transition: width .4s; }
+.fill.locked { background: var(--locked); }
+
+.row2 { display: flex; gap: 10px; margin-bottom: 14px; }
+.row2 .btn { flex: 1; height: 56px; }
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 4px 0 8px;
+}
+
+.chips { display: flex; gap: 8px; margin-bottom: 14px; }
+.chips .btn { flex: 1; height: 48px; padding: 0; font-size: 16px; }
+
+.info-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.info-row { display: flex; justify-content: space-between; gap: 12px; }
+.info-row b { text-align: right; }
+
+.bar { background: var(--track); border-radius: 8px; height: 16px; margin: 4px 0 10px; overflow: hidden; }
+.bar > div { background: var(--accent); height: 16px; border-radius: 8px; }
+
+/* --- Nút --- */
+.btn {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--card2);
+}
+.btn:active { opacity: .8; }
+.btn:disabled { opacity: .5; }
+.btn.danger { background: var(--locked); color: var(--onLocked); }
+.btn.success { background: var(--open); color: var(--onOpen); }
+.btn.accent { background: var(--accent); color: var(--onAccent); }
+.btn.ghost { background: var(--card2); color: var(--text); }
+.btn.wide { width: 100%; margin-top: 10px; }
+.btn.small { min-height: 44px; font-size: 16px; flex: 1; }
+
+/* --- Form --- */
+input, select {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  font-family: inherit;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--track);
+  background: var(--card2);
+  color: var(--text);
+  margin-bottom: 4px;
+}
+input[type="time"] { font-size: 18px; }
+input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--accent); }
+
+/* --- Hàng danh sách --- */
+.rowcard {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.rowmain { font-size: 16px; }
+.rowsub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.rowactions { display: flex; gap: 8px; margin-top: 10px; }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--card);
+  border: 0;
+  color: var(--text);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-family: inherit;
+  text-align: left;
+  min-height: 56px;
+  cursor: pointer;
+}
+.setting-row .chev { margin-left: auto; color: var(--muted); font-size: 22px; }
+
+/* v4.0: tiêu đề nhóm trong menu cài đặt (Khóa TV / Màn hình chính). */
+.group-head {
+  padding: 14px 4px 8px;
+  font-size: 17px;
+  color: var(--text);
+}
+.group-head:first-child { padding-top: 2px; }
+.group-head .muted { font-size: 13px; }
+
+.dayboxes { display: flex; flex-wrap: wrap; gap: 8px; }
+.dayboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 16px;
+  min-height: 48px;
+}
+
+/* --- Xem trước màn hình khóa (giữ hành vi 2.1) --- */
+.lock-preview {
+  display: flex;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 16/9;
+  margin-bottom: 6px;
+}
+.pv-left { flex: 1.15; position: relative; background: #222; min-width: 0; }
+.pv-left img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pv-msg {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  font-size: 16px; font-weight: 700;
+  text-shadow: 0 2px 6px #000;
+}
+.pv-right {
+  flex: 1;
+  background: #1E1E1E;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.pv-right .pv-hint { font-size: 12px; color: #B0B0B0; }
+.keyrow { display: flex; gap: 6px; }
+.key {
+  width: 34px; height: 34px;
+  border: 2px solid #666;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+/* --- Mã thưởng cho con (v2.8) --- */
+.reward-code {
+  font-size: 36px; font-weight: 700; letter-spacing: 10px; text-align: center;
+  color: var(--accent); background: var(--card2); border-radius: 14px;
+  padding: 14px; margin: 12px 0 4px;
+}
+.reward-code small {
+  display: block; font-size: 14px; letter-spacing: 0;
+  color: var(--muted); font-weight: 400; margin-top: 6px;
+}
+
+/* --- Tab dưới --- */
+.tabbar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: var(--card);
+  display: flex;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+.tabbtn {
+  flex: 1;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 10px 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.tabbtn.active { color: var(--accent); }
+.tabicon { font-size: 20px; line-height: 1; }
+
+/* --- Màn hình nhập mã PIN web (v2.3) --- */
+.login { padding-top: 40px; }
+.login-card { text-align: center; }
+.login-card input { text-align: center; font-size: 24px; letter-spacing: 8px; }
+.login-error { color: var(--locked); font-size: 16px; margin: 8px 0; }
+.btn-logout {
+  background: none;
+  border: 1px solid var(--track);
+  color: var(--muted);
+  border-radius: 10px;
+  font-size: 14px;
+  padding: 8px 12px;
+  min-height: 36px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* --- Toast --- */
+.toast {
+  position: fixed;
+  left: 16px; right: 16px;
+  bottom: 96px;
+  background: var(--card2);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 16px;
+  text-align: center;
+  z-index: 20;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+.toast.ok { border: 2px solid var(--open); }
+.toast.err { border: 2px solid var(--locked); }

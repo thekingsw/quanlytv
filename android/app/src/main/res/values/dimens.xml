@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Design tokens 2.2 — nguồn chân lý: design-pack/design-tokens.json -->
+
+    <!-- Bo góc -->
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="radius_button">14dp</dimen>
+    <dimen name="radius_pill">20dp</dimen>
+    <dimen name="radius_row">16dp</dimen>
+    <dimen name="radius_rail_item">12dp</dimen>
+
+    <!-- Chiều cao -->
+    <dimen name="button_height">52dp</dimen>
+    <dimen name="button_small_height">44dp</dimen>
+    <dimen name="list_row_height">72dp</dimen>
+    <dimen name="keypad_key">56dp</dimen>
+    <dimen name="rail_width">250dp</dimen>
+
+    <!-- Lề an toàn TV -->
+    <dimen name="margin_safe_horizontal">48dp</dimen>
+    <dimen name="margin_safe_vertical">27dp</dimen>
+
+    <!-- Focus -->
+    <dimen name="focus_border">4dp</dimen>
+</resources>

@@ -1,0 +1,18 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:background="@7F010000" android:layout_width="-1" android:layout_height="-1" android:fillViewport="true">
+  <LinearLayout android:orientation="1" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2">
+    <TextView android:layout_width="-2" android:layout_height="-2" android:text="Tr&#7907; n&#259;ng &amp; hi&#7875;n th&#7883;" style="@7F070005"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="Tr&#7907; n&#259;ng" style="@7F070004"/>
+    <TextView android:textSize="18.000000sp" android:textColor="#FFFFEB3B" android:id="@7F030057" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+    <Button android:id="@7F030001" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="M&#7903; c&#224;i &#273;&#7863;t Tr&#7907; n&#259;ng c&#7911;a TV" style="@7F070001"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="Ch&#7889;ng t&#7855;t" style="@7F070004"/>
+    <TextView android:textSize="18.000000sp" android:id="@7F030058" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+    <TextView android:textColor="@7F01000D" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="Ch&#7889;ng t&#7855;t: ai t&#7855;t Tr&#7907; n&#259;ng trong C&#224;i &#273;&#7863;t TV th&#236; app t&#7921; b&#7853;t l&#7841;i trong 1 gi&#226;y. C&#7847;n quy&#7873;n ghi c&#224;i &#273;&#7863;t h&#7879; th&#7889;ng (C&#224;i TV c&#7845;p sau khi c&#224;i). T&#7855;t ch&#7889;ng t&#7855;t r&#7891;i m&#7899;i t&#7855;t &#273;&#432;&#7907;c Tr&#7907; n&#259;ng." style="@7F070000"/>
+    <Button android:id="@7F030009" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="T&#7855;t ch&#7889;ng t&#7855;t" style="@7F070001"/>
+    <TextView android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="12.000000dip" android:text="Hi&#7875;n th&#7883; icon" style="@7F070004"/>
+    <TextView android:textSize="18.000000sp" android:id="@7F030060" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="" style="@7F070000"/>
+    <TextView android:textColor="@7F01000D" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text="Icon &#7849;n th&#236; tr&#7867; kh&#243; th&#7845;y app. B&#7889; v&#7851;n m&#7903; &#273;&#432;&#7907;c qua Tr&#7907; n&#259;ng, m&#224;n h&#236;nh kh&#243;a, ho&#7863;c ADB." style="@7F070000"/>
+    <Button android:id="@7F03001B" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="Hi&#7879;n icon" style="@7F070001"/>
+    <Button android:id="@7F030029" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="M&#7903; m&#224;n h&#236;nh ch&#237;nh" style="@7F070001"/>
+    <Button android:id="@7F03000C" android:layout_width="-1" android:layout_marginTop="12.000000dip" android:text="Quay l&#7841;i" style="@7F070001"/>
+  </LinearLayout>
+</ScrollView>

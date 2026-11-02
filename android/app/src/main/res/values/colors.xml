@@ -1,17 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_dark">#121212</color>
-    <color name="card_bg">#1E1E1E</color>
-    <color name="border">#333333</color>
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_muted">#B0B0B0</color>
-    <color name="focus_accent">#FFB300</color>
-    <color name="focus_accent_pressed">#FF8F00</color>
-    <color name="open_green">#2E7D32</color>
-    <color name="open_green_light">#66BB6A</color>
-    <color name="open_green_dark">#1B5E20</color>
-    <color name="locked_red">#C62828</color>
-    <color name="btn_bg">#2A2A2A</color>
-    <color name="btn_border">#444444</color>
-    <color name="text_on_accent">#000000</color>
+    <!-- Design tokens 2.2 — nguồn chân lý: design-pack/design-tokens.json -->
+    <color name="bg">#0E1525</color>
+    <color name="card">#172035</color>
+    <color name="card2">#202C45</color>
+    <color name="text">#F3F6FB</color>
+    <color name="muted">#9FB0CC</color>
+    <color name="accent">#FFB84D</color>
+    <color name="on_accent">#1A1405</color>
+    <color name="open">#3DDC97</color>
+    <color name="on_open">#06261A</color>
+    <color name="locked">#FF6B6B</color>
+    <color name="on_locked">#2A0A0A</color>
+    <color name="track">#26324D</color>
+
+    <!-- Màu pressed (tối hơn từng biến thể nút) -->
+    <color name="accent_pressed">#E8A33D</color>
+    <color name="open_pressed">#2BC47F</color>
+    <color name="locked_pressed">#E85D5D</color>
+    <color name="ghost_pressed">#2A3A5C</color>
+
+    <!-- Vòng sáng focus: hổ phách 45% -->
+    <color name="focus_glow">#73FFB84D</color>
+    <color name="focus_border">#FFFFFF</color>
+
+    <!-- Màu chữ mục rail chưa chọn (#C9D3E6 theo design/tv-settings.html) -->
+    <color name="rail_item_text">#C9D3E6</color>
+
+    <!-- Tên rõ nghĩa cho code/layout -->
+    <color name="text_primary">#F3F6FB</color>
+    <color name="text_muted">#9FB0CC</color>
+    <color name="open_green">#3DDC97</color>
+    <color name="locked_red">#FF6B6B</color>
+
+    <!-- Tên cũ (giữ để layout/drawable cũ vẫn build được) — đã map sang token mới -->
+    <color name="bg_dark">#0E1525</color>
+    <color name="card_bg">#172035</color>
+    <color name="border">#26324D</color>
+    <color name="focus_accent">#FFB84D</color>
+    <color name="focus_accent_pressed">#E8A33D</color>
+    <color name="open_green_light">#3DDC97</color>
+    <color name="open_green_dark">#2BC47F</color>
+    <color name="btn_bg">#202C45</color>
+    <color name="btn_border">#26324D</color>
+    <color name="text_on_accent">#1A1405</color>
+    <!-- @color/btn_text từng là ColorStateList riêng (res/color/btn_text.xml:
+         focus/pressed → text_on_accent, mặc định → text_primary) — hợp với
+         nút cũ (focus nền hổ phách nên chữ phải tối). Với theme 2.2, nền nút
+         khi focus vẫn giữ màu biến thể nên chữ không đổi màu nữa; gộp thành
+         màu thường = text, xóa file res/color/btn_text.xml. -->
+    <color name="btn_text">#F3F6FB</color>
 </resources>

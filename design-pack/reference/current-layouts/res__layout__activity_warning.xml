@@ -1,0 +1,7 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:background="#CC121212" android:layout_width="-1" android:layout_height="-1">
+  <LinearLayout android:layout_gravity="0x00000031" android:orientation="1" android:background="@7F020002" android:padding="16.000000dip" android:layout_width="-1" android:layout_height="-2" android:layout_marginLeft="48.000000dip" android:layout_marginTop="32.000000dip" android:layout_marginRight="48.000000dip">
+    <TextView android:textSize="26.000000sp" android:textStyle="0x00000001" android:textColor="@7F01000F" android:gravity="0x00000011" android:id="@7F030073" android:layout_width="-2" android:layout_height="-2" android:text="C&#242;n 5 ph&#250;t n&#7919;a l&#224; h&#7871;t gi&#7901; xem"/>
+    <TextView android:textSize="17.000000sp" android:textColor="@7F01000D" android:gravity="0x00000011" android:id="@7F030072" android:layout_width="-2" android:layout_height="-2" android:layout_marginTop="8.000000dip" android:text=""/>
+    <Button android:id="@7F030038" android:layout_width="-1" android:layout_marginTop="8.000000dip" android:text="&#272;&#227; hi&#7875;u" style="@7F070001"/>
+  </LinearLayout>
+</FrameLayout>

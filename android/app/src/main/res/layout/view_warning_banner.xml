@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- v1.7: banner nhắc kiểu notification — dải nhỏ phía trên màn hình, vẽ bằng
      WindowManager overlay (không phải Activity) nên không pause app đang xem,
-     không cướp focus, không nhận chạm. -->
+     không cướp focus, không nhận chạm.
+     v2.6: gọn lại vừa khung chữ (wrap_content thay vì match_parent), nền
+     50% trong suốt để vẫn thấy nội dung phía sau, chữ nhỏ lại một chút. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
     android:layout_marginLeft="48dp" android:layout_marginRight="48dp"
-    android:orientation="vertical" android:background="@drawable/card_bg"
-    android:padding="12dp">
+    android:orientation="vertical" android:background="@drawable/warning_banner_bg_overlay"
+    android:paddingLeft="20dp" android:paddingRight="20dp"
+    android:paddingTop="10dp" android:paddingBottom="10dp">
     <TextView android:id="@+id/tvBannerTitle"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="" android:textSize="22sp" android:textStyle="bold"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="" android:textSize="20sp" android:textStyle="bold"
         android:textColor="@color/text_primary" android:gravity="center" />
     <TextView android:id="@+id/tvBannerSub"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="" android:textSize="16sp"
         android:textColor="@color/text_muted" android:gravity="center"
         android:layout_marginTop="4dp" />

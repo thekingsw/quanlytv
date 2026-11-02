@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- redesign 2.2 giai đoạn 3 — rail+pane; nội dung pane cuộn trong ScrollView.
+     Giữ nguyên mọi id (etLockMessage, tvLockBgState, các nút Pick/Remove/Preview/Apply/Discard/Back). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Màn hình khóa" style="@style/TvTitle" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Sửa xong bấm Xem trước để xem màn hình khóa sẽ hiện thế nào, rồi bấm Áp dụng mới đổi trên TV."
+                    style="@style/TvSubtitle" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Lời nhắc (hiện cùng ảnh nền bên trái)" style="@style/TvSection"
+                    android:layout_marginTop="12dp" />
+                <EditText android:id="@+id/etLockMessage"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="18sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp"
+                    android:maxLength="140" android:singleLine="true" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Ảnh nền" style="@style/TvSection" android:layout_marginTop="12dp" />
+                <TextView android:id="@+id/tvLockBgState"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:layout_marginTop="8dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/btnPickLockBg" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Chọn ảnh mới" />
+                    <Button android:id="@+id/btnRemoveLockBg" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Xóa ảnh nền" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="6dp">
+                    <Button android:id="@+id/btnPreview" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Xem trước" />
+                    <Button android:id="@+id/btnApply" style="@style/TvButtonPrimary"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Áp dụng" />
+                </LinearLayout>
+
+                <Button android:id="@+id/btnDiscard" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Hủy thay đổi"
+                    android:layout_marginTop="6dp" />
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvKeyHint"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="◀ ▶ ▲ ▼ Di chuyển · OK Chọn · Back Quay lại"
+        android:textSize="16sp" android:textColor="@color/text_muted" />
+</LinearLayout>

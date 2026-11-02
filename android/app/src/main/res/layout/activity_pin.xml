@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- redesign 2.2 giai đoạn 3 — rail+pane; nội dung pane cuộn trong ScrollView.
+     Giữ nguyên mọi id (etOldPin, etNewPin, btnChangePin, tvManual, btnManual,
+     tvUsedToday, btnResetUsed, btnBack). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <ScrollView android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width" android:layout_height="match_parent"
+            android:scrollbars="vertical" android:fadeScrollbars="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/railContainer"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:layout_marginLeft="24dp"
+            android:background="@drawable/card_bg" android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Mã PIN &amp; khóa thủ công" style="@style/TvTitle" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Đổi mã PIN" style="@style/TvSection" android:layout_marginTop="4dp" />
+                <EditText android:id="@+id/etOldPin"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:layout_marginTop="8dp" android:hint="Mã PIN cũ"
+                    android:inputType="numberPassword"
+                    android:textSize="18sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp" />
+                <EditText android:id="@+id/etNewPin"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:layout_marginTop="8dp" android:hint="Mã PIN mới (ít nhất 4 số)"
+                    android:inputType="numberPassword"
+                    android:textSize="18sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp" />
+                <Button android:id="@+id/btnChangePin" style="@style/TvButtonPrimary"
+                    android:layout_width="match_parent" android:text="Đổi mã PIN"
+                    android:layout_marginTop="8dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Khóa thủ công" style="@style/TvSection" android:layout_marginTop="12dp" />
+                <TextView android:id="@+id/tvManual"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnManual" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Bật / tắt khóa thủ công"
+                    android:layout_marginTop="8dp" />
+
+                <TextView android:id="@+id/tvUsedToday"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBody" android:textSize="18sp"
+                    android:layout_marginTop="12dp" />
+                <Button android:id="@+id/btnResetUsed" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Reset số phút hôm nay"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvKeyHint"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="◀ ▶ ▲ ▼ Di chuyển · OK Chọn · Back Quay lại"
+        android:textSize="16sp" android:textColor="@color/text_muted" />
+</LinearLayout>
