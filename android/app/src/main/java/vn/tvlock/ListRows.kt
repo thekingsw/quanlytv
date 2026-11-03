@@ -6,14 +6,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * Giai đoạn 3 (redesign 2.2): dựng ListRow (list_row.xml, 72dp) bằng code
- * vào một LinearLayout — thay cho ListView + ArrayAdapter thô ở các màn
- * Schedules / DailyLimits / AppRules.
+ * v2: dựng ListRow (list_row.xml, 52dp) bằng code vào một LinearLayout.
  *
  * Row focusable + focus rõ (row_selector: nền card2, focus thì viền trắng
- * 4dp + vòng sáng hổ phách, phóng 1.06 như nút). [linkFocus] nối
- * nextFocusUp/Down giữa các row và nút nằm dưới danh sách, vì LinearLayout
- * không tự xử lý D-pad như ListView.
+ * 3dp + vòng sáng hổ phách, phóng 1.03). [linkFocus] nối nextFocusUp/Down
+ * giữa các row và nút nằm dưới danh sách, vì LinearLayout không tự xử lý
+ * D-pad như ListView.
  */
 object ListRows {
 
@@ -24,7 +22,7 @@ object ListRows {
         container: LinearLayout,
         title: String,
         detail: String,
-        onClick: (() -> Unit)?
+        onClick: (() -> Unit)? = null
     ): View {
         val row = activity.layoutInflater.inflate(R.layout.list_row, container, false)
         row.id = View.generateViewId()
@@ -48,6 +46,11 @@ object ListRows {
         }
         container.addView(row)
         return row
+    }
+
+    /** Cập nhật text chi tiết của row (dùng sau khi đổi setting, không cần recreate). */
+    fun setDetail(row: View, detail: String) {
+        row.findViewById<TextView>(R.id.rowDetail).text = detail
     }
 
     /** Nối nextFocusUp/Down: row[i] ↑ row[i-1], ↓ row[i+1] (row cuối ↓ nút

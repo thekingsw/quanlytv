@@ -11,6 +11,12 @@
         android:layout_width="match_parent" android:layout_height="match_parent"
         android:scaleType="centerCrop"
         android:visibility="gone" />
+    <!-- Lớp phủ đen mờ điều chỉnh được (mặc định 30%) -->
+    <View
+        android:id="@+id/bgDimView"
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:background="#000000"
+        android:alpha="0.3" />
     <!-- Lớp phủ tối để chữ nổi trên mọi ảnh nền (gradient: đậm trên/dưới) -->
     <View
         android:layout_width="match_parent" android:layout_height="match_parent"
@@ -61,6 +67,17 @@
             </LinearLayout>
 
             <TextView
+                android:id="@+id/tvTimeChip"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/chip_time_bg"
+                android:paddingLeft="14dp" android:paddingRight="14dp"
+                android:paddingTop="8dp" android:paddingBottom="8dp"
+                android:focusable="false" android:focusableInTouchMode="false"
+                android:textSize="16sp" android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvWeatherPill"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
@@ -71,19 +88,40 @@
                 android:text="--°" android:textSize="16sp"
                 android:textColor="@color/text_primary" />
 
-            <Button
-                android:id="@+id/btnBell"
+            <FrameLayout
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginEnd="12dp"
-                android:text="🔔" android:textSize="20sp"
-                android:background="@drawable/btn_ghost_selector"
-                android:focusable="true" />
+                android:layout_marginEnd="12dp">
 
-            <Button
+                <ImageButton
+                    android:id="@+id/btnBell"
+                    android:layout_width="48dp" android:layout_height="48dp"
+                    android:src="@drawable/ic_bell"
+                    android:scaleType="centerInside"
+                    android:padding="12dp"
+                    android:background="@drawable/btn_ghost_selector"
+                    android:contentDescription="Thông báo"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/tvBellBadge"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:minWidth="20dp" android:minHeight="20dp"
+                    android:gravity="center"
+                    android:paddingLeft="5dp" android:paddingRight="5dp"
+                    android:textSize="12sp" android:textColor="#FFFFFF"
+                    android:background="@drawable/badge_bg"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <ImageButton
                 android:id="@+id/btnHomeSettings"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="⚙" android:textSize="20sp"
+                android:layout_width="48dp" android:layout_height="48dp"
+                android:src="@drawable/ic_gear"
+                android:scaleType="centerInside"
+                android:padding="12dp"
                 android:background="@drawable/btn_ghost_selector"
+                android:contentDescription="Cài đặt màn hình chính"
                 android:focusable="true" />
         </LinearLayout>
 
@@ -95,7 +133,8 @@
             <LinearLayout
                 android:id="@+id/widgetRow"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:orientation="horizontal" />
+                android:orientation="horizontal"
+                android:baselineAligned="false" />
         </HorizontalScrollView>
 
         <!-- Yêu thích -->

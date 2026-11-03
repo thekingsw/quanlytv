@@ -1,4 +1,4 @@
-/* Khóa TV — web điện thoại 2.2. Token lấy từ design-tokens.json.
+/* Khóa TV — web điện thoại v2. Token lấy từ design-tokens.json.
    Mobile-first 360–430px, không cuộn ngang, nút cao tối thiểu 48px. */
 :root {
   --bg: #0E1525;
@@ -47,6 +47,10 @@ a { color: var(--accent); }
   margin-bottom: 14px;
 }
 .room { font-size: 14px; color: var(--muted); }
+/* v2: trạng thái kết nối TV (thay nhãn "Phòng khách" cứng). */
+.conn { font-size: 14px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.on { background: var(--open); }
 
 .card {
   background: var(--card);
@@ -175,6 +179,22 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; margin: 0; ac
   cursor: pointer;
 }
 .setting-row .chev { margin-left: auto; color: var(--muted); font-size: 22px; }
+/* v2: dòng quy tắc 56px, giá trị hiện tại bên phải. */
+.rule-row { min-height: 56px; }
+.rule-value { margin-left: auto; color: var(--muted); font-size: 15px; text-align: right; white-space: nowrap; }
+.rule-row .chev { margin-left: 8px; }
+/* v2: gửi tin lên TV một dòng. */
+.msg-row { display: flex; gap: 10px; align-items: stretch; }
+.msg-row input { flex: 1; min-width: 0; margin-bottom: 0; }
+.msg-row .btn { flex: none; }
+/* v2: thẻ báo cáo thu gọn. */
+.report-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.report-head .btn { flex: none; }
+/* v2: danh sách mã thưởng thu gọn. */
+.rw-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--track); }
+.rw-left { flex: 1; min-width: 0; }
+.rw-code { font-size: 20px; letter-spacing: 4px; color: var(--accent); margin-right: 8px; }
+.rw-row .btn { flex: none; }
 
 /* v4.0: tiêu đề nhóm trong menu cài đặt (Khóa TV / Màn hình chính). */
 .group-head {
@@ -271,7 +291,8 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; margin: 0; ac
   cursor: pointer;
 }
 .tabbtn.active { color: var(--accent); }
-.tabicon { font-size: 20px; line-height: 1; }
+.tabicon { font-size: 20px; line-height: 1; display: flex; align-items: center; }
+.tabbtn span:last-child { font-size: 12px; }
 
 /* --- Màn hình nhập mã PIN web (v2.3) --- */
 .login { padding-top: 40px; }

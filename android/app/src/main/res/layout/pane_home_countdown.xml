@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: pane Đếm ngược -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Đếm ngược" style="@style/TvTitleV2" />
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Mốc đếm ngược hiển thị trên màn hình chính"
+        style="@style/TvCaptionV2" android:layout_marginTop="4dp" />
+    <LinearLayout android:id="@+id/homeCountdownRows"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:layout_marginTop="8dp" />
+</merge>

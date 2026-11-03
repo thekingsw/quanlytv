@@ -12,14 +12,17 @@ import android.widget.Toast
  *  đúng mã PIN khóa TV ở LockActivity (mode "webpin"), nên mã PIN web
  *  hiện công khai ở đây. Dùng để xem/đổi mã khi quên mã PIN web. */
 class WebPinActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var tvWebPin: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_webpin)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "webpin")
+        settingsFrame = SettingsFrame.bind(this, "webpin")
+        layoutInflater.inflate(R.layout.pane_webpin, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         tvWebPin = findViewById(R.id.tvWebPin)
 
         findViewById<Button>(R.id.btnChangeWebPin).setOnClickListener {
@@ -49,5 +52,11 @@ class WebPinActivity : Activity() {
 
     private fun refresh() {
         tvWebPin.text = store.webPinOrDefault()
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

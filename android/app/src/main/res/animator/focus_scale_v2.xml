@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: focus scale 1.03 (nhẹ hơn 1.06 của launcher) cho các màn Cài đặt -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <set>
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:valueTo="1.06"
+                android:duration="100" />
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:valueTo="1.06"
+                android:duration="100" />
+        </set>
+    </item>
+    <item>
+        <set>
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:valueTo="1.0"
+                android:duration="100" />
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:valueTo="1.0"
+                android:duration="100" />
+        </set>
+    </item>
+</selector>

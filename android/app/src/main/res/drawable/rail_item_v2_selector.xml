@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: mục rail 4 trạng thái — selected (vạch accent trái) x focused (viền trắng) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- selected + focused -->
+    <item android:state_selected="true" android:state_focused="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/focus_glow" />
+                    <corners android:radius="13dp" />
+                </shape>
+            </item>
+            <item android:left="3dp" android:top="3dp" android:right="3dp" android:bottom="3dp">
+                <layer-list>
+                    <item>
+                        <shape android:shape="rectangle">
+                            <solid android:color="@color/card2" />
+                            <stroke android:width="3dp" android:color="@color/focus_border" />
+                            <corners android:radius="10dp" />
+                        </shape>
+                    </item>
+                    <item android:width="4dp" android:gravity="left|center_vertical"
+                        android:top="6dp" android:bottom="6dp">
+                        <shape android:shape="rectangle">
+                            <solid android:color="@color/accent" />
+                            <corners android:radius="2dp" />
+                        </shape>
+                    </item>
+                </layer-list>
+            </item>
+        </layer-list>
+    </item>
+    <!-- selected, không focus -->
+    <item android:state_selected="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/card2" />
+                    <corners android:radius="@dimen/radius_rail_item" />
+                </shape>
+            </item>
+            <item android:width="4dp" android:gravity="left|center_vertical"
+                android:top="6dp" android:bottom="6dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/accent" />
+                    <corners android:radius="2dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <!-- focused, không selected -->
+    <item android:state_focused="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/focus_glow" />
+                    <corners android:radius="13dp" />
+                </shape>
+            </item>
+            <item android:left="3dp" android:top="3dp" android:right="3dp" android:bottom="3dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/card2" />
+                    <stroke android:width="3dp" android:color="@color/focus_border" />
+                    <corners android:radius="10dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <!-- mặc định -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="@dimen/radius_rail_item" />
+        </shape>
+    </item>
+</selector>

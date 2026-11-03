@@ -16,6 +16,7 @@ import android.widget.Toast
  * listContainer thay cho ListView thô. Dialog + logic giữ nguyên.
  */
 class DailyLimitsActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var listContainer: LinearLayout
 
@@ -27,9 +28,11 @@ class DailyLimitsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_daily_limits)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "daily_limits")
+        settingsFrame = SettingsFrame.bind(this, "daily_limits")
+        layoutInflater.inflate(R.layout.pane_daily_limits, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         listContainer = findViewById(R.id.listContainer)
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<TextView>(R.id.tvHint).text =
@@ -48,9 +51,9 @@ class DailyLimitsActivity : Activity() {
         val btnBack = findViewById<Button>(R.id.btnBack)
         val rows = (0..6).map { day ->
             ListRows.add(this, listContainer,
-                store.dayNames()[day], store.limitText(store.limitForDay(day))) {
+                store.dayNames()[day], store.limitText(store.limitForDay(day)), onClick = {
                 showLimitDialog(day)
-            }
+            })
         }
         ListRows.linkFocus(rows, btnBack)
     }
@@ -69,5 +72,11 @@ class DailyLimitsActivity : Activity() {
             }
             .setNegativeButton("Hủy", null)
             .show()
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

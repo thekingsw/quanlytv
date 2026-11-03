@@ -978,6 +978,12 @@ class Store(private val ctx: Context) {
         set(v) = prefs.edit().putString("weatherCache", v).apply()
 
     // --- App yêu thích trên màn hình chính: danh sách package theo thứ tự ghim ---
+    // v4.1: nhớ ô app chọn lần cuối — bấm Home từ app khác về / sau khi
+    // ẩn-di chuyển app thì focus về đúng chỗ.
+    var homeLastPkg: String
+        get() = prefs.getString("homeLastPkg", "") ?: ""
+        set(v) = prefs.edit().putString("homeLastPkg", v).apply()
+
     fun homeFavorites(): MutableList<String> {
         val out = mutableListOf<String>()
         try {
@@ -1079,15 +1085,23 @@ class Store(private val ctx: Context) {
     var pushStartHour: Int
         get() = prefs.getInt("pushStart", 7)
         set(v) = prefs.edit().putInt("pushStart", v).apply()
+    var pushStartMinute: Int
+        get() = prefs.getInt("pushStartMin", 0)
+        set(v) = prefs.edit().putInt("pushStartMin", v).apply()
     var pushEndHour: Int
         get() = prefs.getInt("pushEnd", 21)
         set(v) = prefs.edit().putInt("pushEnd", v).apply()
+    var pushEndMinute: Int
+        get() = prefs.getInt("pushEndMin", 0)
+        set(v) = prefs.edit().putInt("pushEndMin", v).apply()
 
     fun inPushHours(nowMs: Long = System.currentTimeMillis()): Boolean {
-        val h = java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
-            .get(java.util.Calendar.HOUR_OF_DAY)
-        val s = pushStartHour; val e = pushEndHour
-        return if (s <= e) h in s until e else (h >= s || h < e)
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
+        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+            cal.get(java.util.Calendar.MINUTE)
+        val s = pushStartHour * 60 + pushStartMinute
+        val e = pushEndHour * 60 + pushEndMinute
+        return if (s <= e) nowMin in s until e else (nowMin >= s || nowMin < e)
     }
 
     // Chế độ popup: "always" | "home" | "silent".

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: nội dung pane (tách từ activity_webpin.xml) — dùng trong SettingsFrame -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Mã PIN web" style="@style/TvTitleV2" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Mã PIN web hiện tại — dùng để mở trang điều khiển trên điện thoại. Mặc định bằng mã PIN khóa TV; đổi mã PIN khóa TV không làm đổi mã này."
+                    style="@style/TvBodyV2" android:textSize="16sp" android:layout_marginTop="4dp" />
+                <TextView android:id="@+id/tvWebPin"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" android:textSize="48sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginTop="12dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Đổi mã PIN web" style="@style/TvTitleV2" android:layout_marginTop="12dp" />
+                <EditText android:id="@+id/etNewWebPin"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:layout_marginTop="8dp" android:hint="Mã PIN web mới (4–6 số)"
+                    android:inputType="numberPassword"
+                    android:textSize="16sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp" />
+                <Button android:id="@+id/btnChangeWebPin" style="@style/TvButtonPrimary"
+                    android:layout_width="match_parent" android:text="Đổi mã PIN web"
+                    android:layout_marginTop="8dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Quên mã PIN web?" style="@style/TvTitleV2" android:layout_marginTop="12dp" />
+                <Button android:id="@+id/btnResetWebPin" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Đặt lại = mã PIN khóa TV"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        
+</merge>

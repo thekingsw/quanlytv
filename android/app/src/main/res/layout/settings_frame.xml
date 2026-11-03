@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: khung Cài đặt 2 cấp dùng chung — hàng trên (tiêu đề + tab nhóm +
+     gợi ý phím), dưới: rail 200dp + pane. Mỗi Activity cài đặt include
+     layout này rồi đặt nội dung vào @id/paneContainer. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg"
+    android:paddingLeft="@dimen/margin_safe_horizontal"
+    android:paddingRight="@dimen/margin_safe_horizontal"
+    android:paddingTop="@dimen/margin_safe_vertical"
+    android:paddingBottom="@dimen/margin_safe_vertical">
+
+    <!-- Hàng trên 40dp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/top_bar_height"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cài đặt"
+            style="@style/TvTitleV2"
+            android:layout_marginRight="24dp" />
+
+        <LinearLayout
+            android:id="@+id/groupTabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:text="◀▶ nhóm · ▲▼ mục · OK · Back"
+            style="@style/TvCaptionV2" />
+    </LinearLayout>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="12dp" />
+
+    <!-- Dưới: rail + pane -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <ScrollView
+            android:id="@+id/railScroll"
+            android:layout_width="@dimen/rail_width"
+            android:layout_height="match_parent"
+            android:scrollbars="none"
+            android:layout_marginRight="16dp">
+
+            <LinearLayout
+                android:id="@+id/railContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/paneContainer"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/pane_bg"
+            android:padding="@dimen/pane_padding" />
+    </LinearLayout>
+</LinearLayout>

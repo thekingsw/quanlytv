@@ -14,6 +14,7 @@ import android.widget.Toast
 /** v2.1: Trợ năng + chống tắt + hiển thị icon — tách ra màn hình riêng
  *  (trước đây nằm trong Cài đặt, làm trang Cài đặt dài). */
 class AccessActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var tvAccess: TextView
     private lateinit var tvAntiDisable: TextView
@@ -23,9 +24,11 @@ class AccessActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_access)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "access")
+        settingsFrame = SettingsFrame.bind(this, "access")
+        layoutInflater.inflate(R.layout.pane_access, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         tvAccess = findViewById(R.id.tvAccess)
         tvAntiDisable = findViewById(R.id.tvAntiDisable)
         tvIconState = findViewById(R.id.tvIconState)
@@ -95,5 +98,11 @@ class AccessActivity : Activity() {
             val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
             enabled.contains(packageName)
         } catch (_: Exception) { false }
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: nội dung pane (tách từ activity_screen_capture.xml) — dùng trong SettingsFrame -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Chụp màn hình" style="@style/TvTitleV2" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/tvCaptureState"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBodyV2" android:textSize="16sp"
+                    android:textColor="@color/accent" android:layout_marginTop="8dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Bố bấm nút dưới rồi đồng ý ở hộp thoại hệ thống thì web trên điện thoại mới chụp được màn hình TV (nút Chụp màn hình TV ở tab Hôm nay). Sau khi khởi động lại TV, quyền này mất và phải cấp lại bằng tay — không có cách tự động."
+                    style="@style/TvBodyV2" android:textColor="@color/text_muted"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnGrantCapture" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Cấp quyền chụp màn hình"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnStopCapture" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Tắt chụp màn hình"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        
+</merge>

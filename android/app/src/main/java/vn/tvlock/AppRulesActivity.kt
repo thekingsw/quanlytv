@@ -17,6 +17,7 @@ import android.widget.Toast
  * listContainer thay cho ListView thô. Dialog + logic giữ nguyên.
  */
 class AppRulesActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private var pkgs = listOf<String>()
     private var labels = listOf<String>()
@@ -33,9 +34,11 @@ class AppRulesActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_app_rules)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "app_rules")
+        settingsFrame = SettingsFrame.bind(this, "app_rules")
+        layoutInflater.inflate(R.layout.pane_app_rules, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         listContainer = findViewById(R.id.listContainer)
         val pm = packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -64,9 +67,9 @@ class AppRulesActivity : Activity() {
         listContainer.removeAllViews()
         val btnBack = findViewById<Button>(R.id.btnBack)
         val rows = labels.mapIndexed { i, label ->
-            ListRows.add(this, listContainer, label, ruleText(pkgs[i])) {
+            ListRows.add(this, listContainer, label, ruleText(pkgs[i]), onClick = {
                 showRuleDialog(i)
-            }
+            })
         }
         ListRows.linkFocus(rows, btnBack)
     }
@@ -101,5 +104,11 @@ class AppRulesActivity : Activity() {
             }
             .setNegativeButton("Hủy", null)
             .show()
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

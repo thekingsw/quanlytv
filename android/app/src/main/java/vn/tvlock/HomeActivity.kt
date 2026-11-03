@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,7 +18,7 @@ import android.view.ViewTreeObserver
 import android.view.animation.OvershootInterpolator
 import android.widget.AbsListView
 import android.widget.BaseAdapter
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.AdapterView
 import android.widget.GridView
 import android.widget.ImageView
@@ -43,11 +44,15 @@ class HomeActivity : Activity() {
 
     private lateinit var store: Store
     private lateinit var bgView: ImageView
+    private lateinit var bgDimView: View
     private lateinit var tvDate: TextView
     private lateinit var tvLunar: TextView
     private lateinit var tvWeatherPill: TextView
-    private lateinit var btnBell: Button
-    private lateinit var btnHomeSettings: Button
+    private lateinit var tvTimeChip: TextView
+    private var timeChipTick = 0
+    private lateinit var btnBell: ImageButton
+    private lateinit var btnHomeSettings: ImageButton
+    private lateinit var tvBellBadge: TextView
     private lateinit var widgetRow: LinearLayout
     private lateinit var favRow: LinearLayout
     private lateinit var favHint: TextView
@@ -58,6 +63,31 @@ class HomeActivity : Activity() {
     private var frameAnimator: ValueAnimator? = null
     private val gridAdapter = AppAdapter()
 
+    /** Placeholder khi icon app chưa tải xong (tải nền). */
+    private val appIconPlaceholder: Drawable by lazy {
+        resources.getDrawable(android.R.drawable.sym_def_app_icon, theme)
+    }
+
+    /** Gắn icon cho ô app: có trong cache thì hiện ngay, chưa có thì hiện
+     *  placeholder rồi tải nền; view tái chế thì bỏ kết quả cũ (so tag). */
+    private fun bindAppIcon(iconView: RoundedIconView, app: TvApp) {
+        iconView.roundMode = store.iconStyle == "rounded"
+        val cached = AppIconCache.peek(app.pkg)
+        if (cached != null) {
+            iconView.tag = null
+            iconView.setImageDrawable(cached)
+            return
+        }
+        iconView.tag = app.pkg
+        iconView.setImageDrawable(appIconPlaceholder)
+        AppIconCache.load(packageManager, app) { d ->
+            if (d != null && iconView.tag == app.pkg) {
+                iconView.tag = null
+                iconView.setImageDrawable(d)
+            }
+        }
+    }
+
     private val handler = Handler(Looper.getMainLooper())
     private var wallpaperIdx = 0
     private var wallpaperLastSwitch = 0L
@@ -66,22 +96,43 @@ class HomeActivity : Activity() {
         override fun run() {
             checkLocked()
             rotateWallpaperIfDue()
+            if (++timeChipTick >= 30) {
+                timeChipTick = 0
+                refreshTimeChip()
+            }
             handler.postDelayed(this, 1000)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
         store = Store(this)
+        // v4.1: đang khóa thì hiện màn khóa ngay, không vẽ UI home —
+        // bấm HOME khi khóa không được thấy trang chính dù chỉ 1 giây.
+        val now = System.currentTimeMillis()
+        if (store.isLockedNow(now)) {
+            val i = Intent(this, LockActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            i.putExtra("reason", store.lockReason(now))
+            i.putExtra("mode", "lock")
+            i.putExtra("wholeLock", true)
+            LockActivity.showLock(this, i)
+            finish()
+            return
+        }
+        setContentView(R.layout.activity_home)
         // v4.0: migrate ảnh nền đơn (v3.0) sang thư mục slideshow.
         migrateSingleBg()
         bgView = findViewById(R.id.bgView)
+        bgDimView = findViewById(R.id.bgDimView)
+        applyWallpaperDim()
         tvDate = findViewById(R.id.tvDate)
         tvLunar = findViewById(R.id.tvLunar)
         tvWeatherPill = findViewById(R.id.tvWeatherPill)
+        tvTimeChip = findViewById(R.id.tvTimeChip)
         btnBell = findViewById(R.id.btnBell)
         btnHomeSettings = findViewById(R.id.btnHomeSettings)
+        tvBellBadge = findViewById(R.id.tvBellBadge)
         widgetRow = findViewById(R.id.widgetRow)
         favRow = findViewById(R.id.favRow)
         favHint = findViewById(R.id.favHint)
@@ -162,12 +213,24 @@ class HomeActivity : Activity() {
 
     /** Di chuyển khung chọn tới view đang focus. animate=true thì trượt
      *  mượt (thấy hướng di chuyển), false thì nhảy ngay (dùng khi cuộn). */
+    private var suppressFrameJump = false
+
     private fun moveFocusFrame(v: View?, animate: Boolean) {
         frameAnimator?.cancel()
+        if (suppressFrameJump) return
         if (v == null || v === focusFrame || v.visibility != View.VISIBLE) {
             focusFrame.visibility = View.GONE
             return
         }
+        // v4.1: view chưa qua layout (mới tạo trong lúc GridView relayout
+        // sau notifyDataSetChanged khi di chuyển app) có tọa độ (0,0) —
+        // bỏ qua, giữ khung ở chỗ cũ thay vì nhảy nhầm lên góc trên
+        // (chỗ đồng hồ) rồi mới nhảy xuống.
+        if (!v.isLaidOut) return
+        // v4.1: thêm lớp chặn tọa độ (0,0) đáng ngờ — view đã layout từ
+        // pass trước nhưng đang được rebind, tọa độ chưa cập nhật.
+        val locChk = IntArray(2); v.getLocationOnScreen(locChk)
+        if (locChk[0] == 0 && locChk[1] == 0) return
         // Chỉ hiện khung cho view trong màn hình chính (bỏ qua dialog...).
         var p: View? = v
         var inside = false
@@ -330,6 +393,19 @@ class HomeActivity : Activity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // v4.1: bấm HOME liên tục khi đang khóa — system gọi onNewIntent
+        // thay vì onCreate, phải check khóa ở đây nữa.
+        val now = System.currentTimeMillis()
+        if (store.isLockedNow(now)) {
+            val i = Intent(this, LockActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            i.putExtra("reason", store.lockReason(now))
+            i.putExtra("mode", "lock")
+            i.putExtra("wholeLock", true)
+            LockActivity.showLock(this, i)
+            finish()
+            return
+        }
     }
 
     override fun onResume() {
@@ -337,14 +413,21 @@ class HomeActivity : Activity() {
         refreshDate()
         refreshLunar()
         refreshWeather()
+        refreshTimeChip()
         refreshBell()
         refreshWidgets()
         refreshApps()
         showWallpaper()
+        applyWallpaperDim()
         checkLocked()
-        // Lần đầu mở chưa có focus thì đặt vào chuông — từ đó bấm XUỐNG là
-        // đi xuống các vùng theo đúng thứ tự trên-màn-hình, dễ đoán.
-        if (currentFocus == null) btnBell.requestFocus()
+        // Lần đầu mở chưa có focus: về đúng ô app lần trước (nếu còn),
+        // chưa từng mở thì đặt vào chuông — từ đó bấm XUỐNG đi đúng thứ tự.
+        if (currentFocus == null) {
+            val last = store.homeLastPkg
+            val pos = gridAdapter.items.indexOfFirst { it.pkg == last }
+            if (last.isNotEmpty() && pos >= 0) focusGridAt(pos)
+            else if (last.isEmpty() || !focusFavCell(last)) btnBell.requestFocus()
+        }
         handler.postDelayed(tick, 1000)
         // Làm mới tin nhắn từ cache (GuardService poll nền mỗi 10 phút).
         InboxClient.pollAndCache(store) { refreshWidgets(); refreshBell() }
@@ -352,18 +435,20 @@ class HomeActivity : Activity() {
 
     override fun onPause() {
         handler.removeCallbacks(tick)
+        // Nhớ ô app đang chọn — bấm Home từ app khác về thì về đúng chỗ.
+        currentSelectedPkg()?.let { store.homeLastPkg = it }
         super.onPause()
     }
 
     private fun checkLocked() {
         val now = System.currentTimeMillis()
-        if (store.isLockedNow(now) && !LockActivity.isShowing) {
+        if (store.isLockedNow(now)) {
             val i = Intent(this, LockActivity::class.java)
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             i.putExtra("reason", store.lockReason(now))
             i.putExtra("mode", "lock")
             i.putExtra("wholeLock", true)
-            try { startActivity(i) } catch (_: Exception) { }
+            LockActivity.showLock(this, i)
         }
     }
 
@@ -389,7 +474,41 @@ class HomeActivity : Activity() {
 
     private fun refreshBell() {
         val n = store.inboxUnread
-        btnBell.text = if (n > 0) "🔔 $n" else "🔔"
+        tvBellBadge.visibility = if (n > 0) View.VISIBLE else View.GONE
+        if (n > 0) tvBellBadge.text = if (n > 99) "99+" else n.toString()
+    }
+
+    /** Chip giờ còn lại — bên trái pill thời tiết, cùng chiều cao.
+     *  Xanh "Còn X giờ Y phút" khi đang mở, đỏ "Đã khóa" khi TV khóa.
+     *  Ẩn khi tắt công tắc hoặc không có giới hạn giờ. */
+    private fun showTimeChip(): Boolean =
+        getSharedPreferences("tvlock", MODE_PRIVATE).getBoolean("showTimeChip", true)
+
+    private fun refreshTimeChip() {
+        if (!showTimeChip()) {
+            tvTimeChip.visibility = View.GONE
+            return
+        }
+        val now = System.currentTimeMillis()
+        val bg = tvTimeChip.background as android.graphics.drawable.GradientDrawable
+        if (store.isLockedNow(now)) {
+            tvTimeChip.text = "Đã khóa"
+            bg.setColor(getColor(R.color.locked))
+            tvTimeChip.setTextColor(getColor(R.color.on_locked))
+            tvTimeChip.visibility = View.VISIBLE
+            return
+        }
+        val secs = store.secondsUntilDailyLimit(now)
+        if (secs == Int.MAX_VALUE || secs < 0) {
+            tvTimeChip.visibility = View.GONE
+            return
+        }
+        val h = secs / 3600
+        val m = (secs % 3600) / 60
+        tvTimeChip.text = if (h > 0) "Còn $h giờ $m phút" else "Còn $m phút"
+        bg.setColor(getColor(R.color.open))
+        tvTimeChip.setTextColor(getColor(R.color.on_open))
+        tvTimeChip.visibility = View.VISIBLE
     }
 
     // ---------- Widget ----------
@@ -476,6 +595,16 @@ class HomeActivity : Activity() {
     // ---------- App ----------
 
     private fun refreshApps() {
+        // v4.1: nhớ ô đang chọn TRƯỚC khi dựng lại danh sách — để sau khi
+        // ẩn/di chuyển app, bấm Home về, focus về đúng chỗ thay vì nhảy
+        // về đầu hoặc mất hẳn.
+        val gridWasFocused = grid.hasFocus()
+        val favPkg = focusedFavPkg()
+        val keepPkg = (if (gridWasFocused)
+            gridAdapter.items.getOrNull(grid.selectedItemPosition)?.pkg else favPkg)
+            ?: store.homeLastPkg.takeIf { it.isNotEmpty() }
+        val keepPos = grid.selectedItemPosition.coerceAtLeast(0)
+
         val all = loadAllApps(packageManager)
         val hidden = store.homeHidden()
         // v4.0: thứ tự tùy chỉnh (di chuyển app) — app chưa có trong
@@ -497,18 +626,60 @@ class HomeActivity : Activity() {
             gridAdapter.items = visible
             gridAdapter.notifyDataSetChanged()
         }
+        // Khôi phục focus đã nhớ — CHỈ khi trước đó focus đang ở vùng app
+        // (lưới/yêu thích), để không giật focus khi đang ở chuông/widget.
+        if (gridWasFocused || favPkg != null) {
+            var restored = false
+            if (!gridWasFocused && keepPkg != null) restored = focusFavCell(keepPkg)
+            if (!restored && keepPkg != null) {
+                val pos = gridAdapter.items.indexOfFirst { it.pkg == keepPkg }
+                if (pos >= 0) {
+                    if (gridWasFocused) grid.setSelection(pos) else focusGridAt(pos)
+                    restored = true
+                }
+            }
+            if (!restored && gridAdapter.count > 0) {
+                // App vừa bị ẩn/gỡ: đáp xuống lưới ở vị trí gần nhất.
+                val pos = keepPos.coerceIn(0, gridAdapter.count - 1)
+                if (gridWasFocused) grid.setSelection(pos) else focusGridAt(pos)
+            }
+        }
+    }
+
+    /** pkg của ô yêu thích đang focus, null = focus không ở hàng yêu thích. */
+    private fun focusedFavPkg(): String? {
+        for (i in 0 until favRow.childCount) {
+            val c = favRow.getChildAt(i)
+            if (c.hasFocus()) return c.tag as? String
+        }
+        return null
+    }
+
+    /** Đưa focus về ô yêu thích của pkg, false = không còn ô đó. */
+    private fun focusFavCell(pkg: String): Boolean {
+        for (i in 0 until favRow.childCount) {
+            val c = favRow.getChildAt(i)
+            if (c.tag == pkg) { c.requestFocus(); return true }
+        }
+        return false
+    }
+
+    /** pkg của ô app đang chọn/focus (lưới hoặc yêu thích) — để nhớ vị trí. */
+    private fun currentSelectedPkg(): String? {
+        if (grid.hasFocus()) return gridAdapter.items.getOrNull(grid.selectedItemPosition)?.pkg
+        return focusedFavPkg()
     }
 
     private fun makeAppCell(app: TvApp): View {
         val v = LayoutInflater.from(this).inflate(R.layout.item_app, favRow, false)
+        v.tag = app.pkg
         bindAppCell(v, app)
         return v
     }
 
     private fun bindAppCell(v: View, app: TvApp) {
-        val icon = v.findViewById<CircleIconView>(R.id.appIcon)
-        icon.circleMode = store.iconStyle == "circle"
-        icon.setImageDrawable(app.icon)
+        val icon = v.findViewById<RoundedIconView>(R.id.appIcon)
+        bindAppIcon(icon, app)
         v.findViewById<TextView>(R.id.appLabel).text = app.label
         v.setOnClickListener {
             if (!openApp(this, app.pkg)) toast("Không mở được ${app.label}")
@@ -619,8 +790,17 @@ class HomeActivity : Activity() {
         java.util.Collections.swap(items, from, to)
         store.setHomeAppOrder(items.map { it.pkg })
         gridAdapter.items = items
+        // v4.1: chặn khung nhảy lung tung trong lúc GridView relayout —
+        // chỉ đặt lại khung sau khi layout xong, với tọa độ đúng.
+        suppressFrameJump = true
         gridAdapter.notifyDataSetChanged()
         grid.setSelection(to)
+        grid.post {
+            suppressFrameJump = false
+            if (moveModePkg != null) {
+                moveFocusFrame(selectedGridChild(), animate = true)
+            }
+        }
     }
 
     private inner class AppAdapter : BaseAdapter() {
@@ -642,9 +822,8 @@ class HomeActivity : Activity() {
             v.setOnLongClickListener(null)
             v.stateListAnimator = null
             val app = items[p]
-            val icon = v.findViewById<CircleIconView>(R.id.appIcon)
-            icon.circleMode = store.iconStyle == "circle"
-            icon.setImageDrawable(app.icon)
+            val icon = v.findViewById<RoundedIconView>(R.id.appIcon)
+            bindAppIcon(icon, app)
             v.findViewById<TextView>(R.id.appLabel).text = app.label
             // v4.0: view tái chế thì trả scale về 1 — zoom chỉ áp cho ô
             // đang chọn (updateGridZoom).
@@ -698,6 +877,15 @@ class HomeActivity : Activity() {
             bgView.visibility = View.VISIBLE
             wallpaperLastSwitch = System.currentTimeMillis()
         } else bgView.visibility = View.GONE
+    }
+
+    /** Độ tối ảnh nền 0-60% (mặc định 30%) — đọc từ SharedPreferences
+     *  "tvlock" (chung cơ chế lưu cài đặt, không sửa Store). */
+    private fun wallpaperDimPct(): Int =
+        getSharedPreferences("tvlock", MODE_PRIVATE).getInt("wallpaperDimPct", 30)
+
+    private fun applyWallpaperDim() {
+        bgDimView.alpha = wallpaperDimPct().coerceIn(0, 60) / 100f
     }
 
     private fun rotateWallpaperIfDue() {

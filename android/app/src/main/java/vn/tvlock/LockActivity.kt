@@ -19,8 +19,38 @@ class LockActivity : Activity() {
     // v3.0: cờ tĩnh cho HomeActivity biết màn khóa có đang hiện không —
     // chống mở chồng màn khóa (HomeActivity tick mỗi giây + GuardService
     // tick đều có thể mở). Chỉ thêm cờ, không sửa logic khóa nào khác.
+    // v4.1: showLock() — sửa race: trước đây cờ chỉ bật ở onCreate nên
+    // 2 tick cùng lọt qua khe hở và mở chồng 2-3 màn khóa. Giờ kiểm tra +
+    // hạ cờ trong cùng khối synchronized, cờ bật TRƯỚC khi startActivity.
     companion object {
         @Volatile var isShowing = false
+        private var lastLaunchMs = 0L
+
+        /** Mở màn khóa (mode lock) chống chồng. Trả false nếu vừa mở
+         *  trong 3 giây trước (chống race). Nếu đã hiện rồi (isShowing)
+         *  thì đưa lên trước thay vì bỏ qua — vd bấm HOME khi đang khóa. */
+        @Synchronized
+        fun showLock(ctx: Context, i: Intent): Boolean {
+            val now = System.currentTimeMillis()
+            // Đã hiện rồi: đưa lên trước (không tạo mới).
+            if (isShowing) {
+                return try {
+                    i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    ctx.startActivity(i)
+                    true
+                } catch (_: Exception) { false }
+            }
+            if (now - lastLaunchMs < 3000) return false
+            lastLaunchMs = now
+            isShowing = true
+            return try {
+                ctx.startActivity(i)
+                true
+            } catch (_: Exception) {
+                isShowing = false
+                false
+            }
+        }
     }
 
     private lateinit var store: Store
@@ -283,10 +313,21 @@ class LockActivity : Activity() {
             KeyEvent.KEYCODE_9, KeyEvent.KEYCODE_NUMPAD_9 -> { appendDigit("9"); return true }
             KeyEvent.KEYCODE_DEL -> { deleteDigit(); return true }
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
-                if (pinView.visibility == View.VISIBLE) { submitPin(); return true }
+                // v4.1: chặn triệt để — kể cả giữ lâu cũng không thoát được.
+                // Nếu đang nhập PIN thì submit, còn không thì nuốt luôn.
+                if (pinView.visibility == View.VISIBLE) submitPin()
+                return true
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    // v4.1: chặn long-press OK — không cho thoát màn khóa bằng cách giữ nút.
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+            return true
+        }
+        return super.onKeyLongPress(keyCode, event)
     }
 
     private fun appendDigit(d: String) {

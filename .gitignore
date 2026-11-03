@@ -9,3 +9,11 @@ android/build/
 *.iml
 .DS_Store
 **/InboxConfig.kt
+# File nhạy cảm — KHÔNG commit (user 2026-11-02)
+*.b64
+*.keystore
+*.jks
+*.p12
+*.pfx
+**/token
+**/*token*.json

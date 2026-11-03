@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: mục rail đang chọn — nền card2, chữ accent đậm, vạch accent 4dp BÊN TRÁI -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card2" />
+            <corners android:radius="@dimen/radius_rail_item" />
+        </shape>
+    </item>
+    <item
+        android:width="4dp"
+        android:gravity="left|center_vertical"
+        android:top="6dp"
+        android:bottom="6dp"
+        android:left="0dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent" />
+            <corners android:radius="2dp" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: pane Tổng quan Cài đặt (tách từ activity_settings.xml) -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false" android:clipToPadding="false">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Tổng quan" style="@style/TvTitleV2" />
+                    <TextView android:id="@+id/tvStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="ĐANG MỞ" android:textSize="16sp" android:textStyle="bold"
+                        android:letterSpacing="0.05"
+                        android:textColor="@color/on_open"
+                        android:background="@drawable/pill_open"
+                        android:paddingLeft="18dp" android:paddingRight="18dp"
+                        android:paddingTop="6dp" android:paddingBottom="6dp" />
+                </LinearLayout>
+
+                <!-- 3 thẻ số liệu -->
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Đã xem" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatUsed"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="0 phút"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp"
+                        android:layout_marginLeft="8dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Còn lại" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatRemaining"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="—"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:orientation="vertical"
+                        android:background="@drawable/row_bg" android:padding="12dp"
+                        android:layout_marginLeft="8dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Phút thưởng" android:textSize="16sp" android:textColor="@color/text_muted" />
+                        <TextView android:id="@+id/tvStatBonus"
+                            android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:text="0 phút"
+                            android:textSize="28sp" android:textStyle="bold" android:textColor="@color/text"
+                            android:maxLines="1" android:autoSizeTextType="uniform"
+                            android:autoSizeMinTextSize="20sp" android:autoSizeMaxTextSize="28sp"
+                            android:autoSizeStepGranularity="1sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Thanh tiến độ hôm nay -->
+                <ProgressBar android:id="@+id/progressUsed"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent" android:layout_height="14dp"
+                    android:layout_marginTop="16dp"
+                    android:minHeight="14dp" android:maxHeight="14dp"
+                    android:max="100" android:progress="0"
+                    android:progressDrawable="@drawable/progress_home" />
+                <TextView android:id="@+id/tvUsed"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:text=""
+                    android:textSize="16sp" android:textColor="@color/text_muted" />
+
+                <!-- Biểu đồ 7 ngày -->
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="7 ngày qua · phút"
+                    android:textSize="16sp" android:textColor="@color/text_muted" />
+                <LinearLayout android:id="@+id/chartContainer"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="8dp" />
+                <TextView android:id="@+id/tvChartEmpty"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:visibility="gone"
+                    android:text="Chưa đủ dữ liệu 7 ngày qua"
+                    android:textSize="16sp" android:textColor="@color/text_muted" />
+
+                <!-- Khóa đêm / giờ thời sự -->
+                <TextView android:id="@+id/tvNightLock"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp" android:text=""
+                    android:textSize="16sp" android:textColor="@color/text" />
+                <TextView android:id="@+id/tvNewsSlot"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:text=""
+                    android:textSize="16sp" android:textColor="@color/text" />
+            </LinearLayout>
+            </ScrollView>
+
+            <Button android:id="@+id/btnBack" style="@style/TvButtonGhost"
+                android:layout_width="match_parent" android:text="Quay lại"
+                android:layout_marginTop="12dp" />
+        
+</merge>

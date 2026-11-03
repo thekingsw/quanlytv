@@ -1,30 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v4.0: một thẻ widget trên màn hình chính. -->
+<!-- v4.1: thẻ widget màn hình chính — sửa cắt chữ:
+     - Bỏ chiều cao cố định 100dp (nguyên nhân dòng phụ bị cắt ngang);
+       thẻ cao theo nội dung, các thẻ trong hàng cao bằng nhau (match_parent).
+     - Rộng 212dp: 4 thẻ x (212+16)dp = 912dp vừa khít màn hình 960dp
+       (trừ padding 24dp mỗi bên) — sửa thẻ GIA ĐÌNH bị tràn mép phải.
+     - TextView match_parent để ellipsize cắt đúng mép thẻ.
+     - Nền rgba(14,21,37,0.55), bo 14dp, padding 12dp x 10dp. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="240dp" android:layout_height="100dp"
+    android:layout_width="212dp" android:layout_height="match_parent"
     android:layout_marginEnd="16dp"
-    android:background="@drawable/card_bg"
+    android:background="@drawable/widget_card_bg"
     android:orientation="vertical"
-    android:padding="18dp"
-    android:focusable="true"
-    android:backgroundTint="#00000000">
+    android:paddingLeft="12dp" android:paddingRight="12dp"
+    android:paddingTop="10dp" android:paddingBottom="10dp"
+    android:focusable="true">
     <TextView
         android:id="@+id/tvWidgetTitle"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
         android:text="" android:textSize="12sp" android:textStyle="bold"
-        android:textColor="#FFC857" />
+        android:textColor="#FFB84D"
+        android:maxLines="1" android:ellipsize="end" />
     <TextView
         android:id="@+id/tvWidgetMain"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="" android:textSize="16sp" android:textStyle="bold"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/text"
         android:maxLines="2" android:ellipsize="end" />
     <TextView
         android:id="@+id/tvWidgetSub"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:text="" android:textSize="12sp"
-        android:textColor="@color/text_muted"
+        android:textColor="@color/muted"
         android:maxLines="2" android:ellipsize="end" />
 </LinearLayout>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: pane Ứng dụng đã ẩn (tách từ activity_hidden_apps.xml) -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ứng dụng đã ẩn"
+        android:textColor="@color/text"
+        android:textSize="36sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Bấm vào một app để ẩn / hiện lại"
+        android:textColor="@color/muted"
+        android:textSize="16sp" />
+
+    <ListView
+        android:id="@+id/hiddenList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_weight="1"
+        android:divider="@color/card2"
+        android:dividerHeight="1dp" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/button_height_v2"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_ghost_selector"
+        android:focusable="true"
+        android:minWidth="160dp"
+        android:text="Quay lại"
+        android:textColor="@color/text"
+        android:textSize="16sp" />
+
+</merge>

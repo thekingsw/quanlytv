@@ -52,7 +52,7 @@ class GuardAccessibilityService : AccessibilityService() {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         i.putExtra("reason", reason)
         i.putExtra("mode", "lock")
-        try { startActivity(i) } catch (_: Exception) { }
+        LockActivity.showLock(this, i)
     }
 
     override fun onInterrupt() {}

@@ -15,6 +15,7 @@ import android.widget.Toast
  * End <= start means overnight (except equal, which means all day).
  */
 class ScheduleEditActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private var scheduleId: String? = null
     private val dayBoxes = mutableListOf<CheckBox>()
@@ -28,9 +29,11 @@ class ScheduleEditActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_schedule_edit)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "schedules")
+        settingsFrame = SettingsFrame.bind(this, "schedules")
+        layoutInflater.inflate(R.layout.pane_schedule_edit, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         scheduleId = intent.getStringExtra("id")
         tvStartHour = findViewById(R.id.tvStartHour)
         tvStartMin = findViewById(R.id.tvStartMin)
@@ -103,5 +106,11 @@ class ScheduleEditActivity : Activity() {
         store.upsertLockSchedule(Store.LockSchedule(id, days, startMin, endMin))
         Toast.makeText(this, "Đã lưu lịch khóa", Toast.LENGTH_SHORT).show()
         finish()
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

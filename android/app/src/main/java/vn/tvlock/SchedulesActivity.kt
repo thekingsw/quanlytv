@@ -16,15 +16,18 @@ import android.widget.TextView
  * trong listContainer thay cho ListView thô. Logic giữ nguyên.
  */
 class SchedulesActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private var schedules = listOf<Store.LockSchedule>()
     private lateinit var listContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_schedules)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "schedules")
+        settingsFrame = SettingsFrame.bind(this, "schedules")
+        layoutInflater.inflate(R.layout.pane_schedules, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         listContainer = findViewById(R.id.listContainer)
         findViewById<Button>(R.id.btnAddSchedule).setOnClickListener {
             startActivity(Intent(this, ScheduleEditActivity::class.java))
@@ -52,12 +55,18 @@ class SchedulesActivity : Activity() {
         val rows = schedules.map { s ->
             val daysTxt = if (s.days.size == 7) "Hằng ngày"
                 else s.days.sorted().joinToString(", ") { store.dayNames()[it] }
-            ListRows.add(this, listContainer, daysTxt, store.scheduleTimeText(s)) {
+            ListRows.add(this, listContainer, daysTxt, store.scheduleTimeText(s), onClick = {
                 val i = Intent(this, ScheduleEditActivity::class.java)
                 i.putExtra("id", s.id)
                 startActivity(i)
-            }
+            })
         }
         ListRows.linkFocus(rows, btnAdd)
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

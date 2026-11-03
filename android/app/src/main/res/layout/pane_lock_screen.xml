@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: nội dung pane (tách từ activity_lock_screen.xml) — dùng trong SettingsFrame -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Màn hình khóa" style="@style/TvTitleV2" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Sửa xong bấm Xem trước để xem màn hình khóa sẽ hiện thế nào, rồi bấm Áp dụng mới đổi trên TV."
+                    style="@style/TvCaptionV2" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Lời nhắc (hiện cùng ảnh nền bên trái)" style="@style/TvTitleV2"
+                    android:layout_marginTop="12dp" />
+                <EditText android:id="@+id/etLockMessage"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="16sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp"
+                    android:maxLength="140" android:singleLine="true" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Ảnh nền" style="@style/TvTitleV2" android:layout_marginTop="12dp" />
+                <TextView android:id="@+id/tvLockBgState"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBodyV2" android:textSize="16sp"
+                    android:layout_marginTop="8dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/btnPickLockBg" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Chọn ảnh mới" />
+                    <Button android:id="@+id/btnRemoveLockBg" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Xóa ảnh nền" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="6dp">
+                    <Button android:id="@+id/btnPreview" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Xem trước" />
+                    <Button android:id="@+id/btnApply" style="@style/TvButtonPrimary"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_margin="3dp" android:text="Áp dụng" />
+                </LinearLayout>
+
+                <Button android:id="@+id/btnDiscard" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Hủy thay đổi"
+                    android:layout_marginTop="6dp" />
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+            </ScrollView>
+        
+</merge>

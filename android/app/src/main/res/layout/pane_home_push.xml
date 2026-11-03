@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: pane Thông báo đẩy -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Thông báo đẩy" style="@style/TvTitleV2" />
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Khung giờ và cách hiện thông báo trên TV"
+        style="@style/TvCaptionV2" android:layout_marginTop="4dp" />
+    <LinearLayout android:id="@+id/homePushRows"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:layout_marginTop="8dp" />
+</merge>

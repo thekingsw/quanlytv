@@ -15,15 +15,18 @@ import android.widget.Toast
  *  bấm "Áp dụng" mới lưu lời nhắc + ảnh vào máy. Bấm "Hủy thay đổi"
  *  thì quay về bản đang dùng. */
 class LockScreenActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var etMessage: EditText
     private lateinit var tvBgState: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_lock_screen)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "lock_screen")
+        settingsFrame = SettingsFrame.bind(this, "lock_screen")
+        layoutInflater.inflate(R.layout.pane_lock_screen, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         etMessage = findViewById(R.id.etLockMessage)
         tvBgState = findViewById(R.id.tvLockBgState)
         etMessage.setText(store.lockMessage)
@@ -114,5 +117,11 @@ class LockScreenActivity : Activity() {
             store.hasLockBg() -> "Ảnh nền: đã đặt ảnh riêng"
             else -> "Ảnh nền: chưa có — đang dùng nền mặc định"
         }
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

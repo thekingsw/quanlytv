@@ -17,7 +17,7 @@ import java.util.Locale
 
 /**
  * Giai đoạn 3 (redesign 2.2): Cài đặt dùng khung rail+pane — rail trái
- * (SettingsRail, dựng từ SettingsRegistry), pane phải là tổng quan.
+ * (SettingsFrame, dựng từ SettingsRegistry), pane phải là tổng quan.
  *
  * v2.4: pane Tổng quan thành dashboard trực quan — 3 thẻ số liệu
  * (Đã xem / Còn lại / Phút thưởng), thanh tiến độ hôm nay, biểu đồ
@@ -25,6 +25,7 @@ import java.util.Locale
  * nút Quay lại ghim ở đáy pane.
  */
 class SettingsActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var tvStatus: TextView
     private lateinit var tvUsed: TextView
@@ -50,9 +51,11 @@ class SettingsActivity : Activity() {
             finish()
             return
         }
-        setContentView(R.layout.activity_settings)
+        setContentView(R.layout.settings_frame)
+        settingsFrame = SettingsFrame.bind(this, "")
+        layoutInflater.inflate(R.layout.pane_settings_overview, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "")
         tvStatus = findViewById(R.id.tvStatus)
         tvUsed = findViewById(R.id.tvUsed)
         progressUsed = findViewById(R.id.progressUsed)
@@ -199,5 +202,11 @@ class SettingsActivity : Activity() {
             col.addView(tvDay)
             chartContainer.addView(col)
         }
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

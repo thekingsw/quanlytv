@@ -16,6 +16,7 @@ import android.widget.Toast
  *  làm trang Cài đặt dài). Giờ và phút chỉnh riêng — nút giờ ±1 giờ,
  *  nút phút ±1 phút, giữ nút là tự tăng/giảm liên tục (HoldRepeat). */
 class NewsSlotActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var tvNewsStartHour: TextView
     private lateinit var tvNewsStartMin: TextView
@@ -26,9 +27,11 @@ class NewsSlotActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_news_slot)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "news_slot")
+        settingsFrame = SettingsFrame.bind(this, "news_slot")
+        layoutInflater.inflate(R.layout.pane_news_slot, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         tvNewsStartHour = findViewById(R.id.tvNewsStartHour)
         tvNewsStartMin = findViewById(R.id.tvNewsStartMin)
         tvNewsEndHour = findViewById(R.id.tvNewsEndHour)
@@ -96,5 +99,11 @@ class NewsSlotActivity : Activity() {
         tvNewsStartMin.text = String.format("%02d", store.newsStartMin % 60)
         tvNewsEndHour.text = String.format("%02d", store.newsEndMin / 60)
         tvNewsEndMin.text = String.format("%02d", store.newsEndMin % 60)
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

@@ -75,7 +75,11 @@ class GuardService : Service() {
             // v2.9: app thời sự trong khung giờ thời sự được miễn trừ
             // tuyệt đối — đang xem thời sự trong khung thì KHÔNG hiện màn
             // khóa dù đang khóa tay hay trong lịch khóa.
+            // v4.1: không hiện khóa khi đang ở app hệ thống được miễn trừ
+            // (vd popup cấp quyền MediaProjection của systemui) — tránh
+            // đá người dùng về màn khóa giữa chừng khi đang cài đặt.
             if (store.isLockedNow(now) && store.lastPkg != packageName &&
+                !store.isExcluded(store.lastPkg) &&
                 !store.isNewsExempt(store.lastPkg, now)) {
                 val i = Intent(this, LockActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -85,7 +89,7 @@ class GuardService : Service() {
                 // riêng 1 app) — để LockActivity tự tắt về Home khi TV
                 // hết khóa (vd hết khung khóa, mở khóa trên web).
                 i.putExtra("wholeLock", true)
-                try { startActivity(i) } catch (_: Exception) { }
+                LockActivity.showLock(this, i)
             }
             return
         }
@@ -100,7 +104,7 @@ class GuardService : Service() {
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 i.putExtra("reason", reason)
                 i.putExtra("mode", "lock")
-                try { startActivity(i) } catch (_: Exception) { }
+                LockActivity.showLock(this, i)
             }
         }
         warnIfNeeded(now)

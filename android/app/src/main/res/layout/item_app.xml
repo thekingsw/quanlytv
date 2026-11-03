@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v3.0: một ô app — dùng chung cho hàng Yêu thích và lưới. Icon là
-     CircleIconView để hỗ trợ kiểu "Tròn" / "Mặc định". -->
+<!-- v4.1: một ô app — dùng chung cho hàng Yêu thích và lưới. Icon là
+     RoundedIconView để hỗ trợ kiểu "Bo tròn" / "Mặc định". -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="96dp"
     android:layout_height="wrap_content"
@@ -11,7 +11,7 @@
     android:padding="6dp"
     android:stateListAnimator="@animator/focus_scale">
 
-    <vn.tvlock.CircleIconView
+    <vn.tvlock.RoundedIconView
         android:id="@+id/appIcon"
         android:layout_width="48dp"
         android:layout_height="48dp" />

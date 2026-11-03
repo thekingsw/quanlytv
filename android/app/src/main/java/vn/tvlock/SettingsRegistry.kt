@@ -3,51 +3,60 @@ package vn.tvlock
 import android.app.Activity
 
 /**
- * Giai đoạn 3 (redesign 2.2): danh sách các mục Cài đặt — nguồn duy nhất
- * cho rail bên TV. Thêm một mục mới chỉ cần thêm 1 dòng vào [items].
- * Giai đoạn 5 (web) dùng chung cấu trúc này cho tab Cài đặt trên điện thoại.
+ * v2: Registry cài đặt 2 cấp — nguồn duy nhất cho khung Cài đặt TV.
+ * Thêm một mục mới chỉ cần thêm 1 dòng vào [items] (có sẵn Activity đích).
+ *
+ * 3 nhóm (theo thứ tự tab): lock = Khóa TV, launcher = Màn hình chính,
+ * system = Bảo mật & công cụ.
  */
 object SettingsRegistry {
+
+    data class Group(val id: String, val title: String)
+
+    val groups: List<Group> = listOf(
+        Group("lock", "Khóa TV"),
+        Group("launcher", "Màn hình chính"),
+        Group("system", "Bảo mật & công cụ")
+    )
 
     data class Item(
         val id: String,
         val title: String,
         val activity: Class<out Activity>,
-        /** v2.3: mode truyền kèm cho Activity đích (vd "webpin" cho
-         *  LockActivity) — null thì mở Activity như thường. */
-        val extraMode: String? = null,
-        /** v4.0: nhóm hiển thị trên rail (user 2026-11-02 — gom nhóm
-         *  Khóa TV / Màn hình chính, đồng bộ với web). */
-        val group: String = "lock"
+        val group: String,
+        /** mode/section truyền kèm cho Activity đích (vd "webpin",
+         *  hoặc section của HomeSettingsActivity). */
+        val extraMode: String? = null
     )
 
-    /** Tên nhóm hiển thị trên rail. */
-    fun groupTitle(group: String): String = when (group) {
-        "launcher" -> "Màn hình chính"
-        else -> "Khóa TV"
-    }
+    fun groupTitle(group: String): String =
+        groups.firstOrNull { it.id == group }?.title ?: group
+
+    fun itemsOf(group: String): List<Item> = items.filter { it.group == group }
+
+    fun itemOf(id: String): Item? = items.firstOrNull { it.id == id }
 
     val items: List<Item> = listOf(
-        Item("schedules", "Lịch khóa", SchedulesActivity::class.java),
-        Item("daily_limits", "Giới hạn ngày", DailyLimitsActivity::class.java),
-        Item("news_slot", "Giờ thời sự", NewsSlotActivity::class.java),
-        Item("app_rules", "Giới hạn từng app", AppRulesActivity::class.java),
-        Item("lock_screen", "Màn hình khóa", LockScreenActivity::class.java),
-        Item("pin", "Mã PIN", PinActivity::class.java),
-        Item("bonus", "Phút thưởng", BonusActivity::class.java),
-        Item("access", "Trợ năng", AccessActivity::class.java),
-        // v2.3: mã PIN web — qua LockActivity mode "webpin" (nhập đúng
-        // mã PIN khóa TV mới mở được màn xem/đổi mã PIN web).
-        Item("webpin", "Mã PIN web", LockActivity::class.java, "webpin"),
-        // v3.0: màn hình chính 2-trong-1 — ảnh nền, kiểu icon, thời
-        // tiết, ứng dụng đã ẩn.
-        Item("home_screen", "Màn hình chính", HomeSettingsActivity::class.java,
-            group = "launcher"),
-        // v2.9: chụp màn hình TV (MediaProjection) — cấp quyền 1 lần
-        // trên TV để web chụp được màn hình TV.
-        Item("screenshot", "Chụp màn hình", ScreenCaptureActivity::class.java,
-            group = "launcher")
+        // ---- Nhóm Khóa TV ----
+        Item("schedules", "Lịch khóa", SchedulesActivity::class.java, "lock"),
+        Item("daily_limits", "Giới hạn ngày", DailyLimitsActivity::class.java, "lock"),
+        Item("news_slot", "Giờ thời sự", NewsSlotActivity::class.java, "lock"),
+        Item("app_rules", "Giới hạn từng app", AppRulesActivity::class.java, "lock"),
+        Item("lock_screen", "Màn hình khóa", LockScreenActivity::class.java, "lock"),
+        Item("bonus", "Phút thưởng", BonusActivity::class.java, "lock"),
+        // ---- Nhóm Màn hình chính (tách HomeSettingsActivity thành section) ----
+        Item("home_wallpaper", "Ảnh nền", HomeSettingsActivity::class.java, "launcher", "wallpaper"),
+        Item("home_widgets", "Widget", HomeSettingsActivity::class.java, "launcher", "widgets"),
+        Item("home_countdown", "Đếm ngược", HomeSettingsActivity::class.java, "launcher", "countdown"),
+        Item("home_push", "Thông báo đẩy", HomeSettingsActivity::class.java, "launcher", "push"),
+        Item("home_style", "Kiểu icon & thời tiết", HomeSettingsActivity::class.java, "launcher", "style"),
+        Item("home_hidden", "Ứng dụng đã ẩn", HomeSettingsActivity::class.java, "launcher", "hidden"),
+        // ---- Nhóm Bảo mật & công cụ ----
+        Item("pin", "Mã PIN TV", PinActivity::class.java, "system"),
+        Item("webpin", "Mã PIN web", WebPinActivity::class.java, "system"),
+        Item("access", "Trợ năng & chống tắt", AccessActivity::class.java, "system"),
+        Item("screenshot", "Chụp màn hình", ScreenCaptureActivity::class.java, "system")
     )
 
-    fun titleOf(id: String): String = items.firstOrNull { it.id == id }?.title ?: "Cài đặt"
+    fun titleOf(id: String): String = itemOf(id)?.title ?: "Cài đặt"
 }

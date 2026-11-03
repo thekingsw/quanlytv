@@ -712,7 +712,8 @@ class WebServer(private val ctx: Context, private val port: Int) {
     /** POST /api/settings-iconstyle {style: default|circle}. */
     private fun settingsIconStyle(out: OutputStream, params: Map<String, String>) {
         val st = params["style"]?.trim() ?: ""
-        if (st in setOf("default", "circle")) Store(ctx).iconStyle = st
+        if (st in setOf("default", "rounded", "circle")) Store(ctx).iconStyle =
+            if (st == "circle") "rounded" else st
         sendJson(out, 200, """{"ok":true}""")
     }
 
@@ -771,11 +772,14 @@ class WebServer(private val ctx: Context, private val port: Int) {
             sendJson(out, 404, """{"ok":false,"error":"not_found"}""")
             return
         }
-        sendBytes(out, 200, contentType, bytes)
+        // no-store: web điều khiển trên điện thoại luôn lấy bản mới nhất,
+        // tránh kẹt cache cũ gây lệch ID với app.js (đã từng gây lỗi null).
+        sendBytes(out, 200, contentType, bytes, noCache = true)
     }
 
-    private fun sendBytes(out: OutputStream, code: Int, contentType: String, bytes: ByteArray) {
-        val head = "HTTP/1.1 $code ${reasonFor(code)}\r\nContent-Type: $contentType\r\nContent-Length: ${bytes.size}\r\nConnection: close\r\n\r\n"
+    private fun sendBytes(out: OutputStream, code: Int, contentType: String, bytes: ByteArray, noCache: Boolean = false) {
+        val cacheHdr = if (noCache) "Cache-Control: no-store\r\n" else ""
+        val head = "HTTP/1.1 $code ${reasonFor(code)}\r\nContent-Type: $contentType\r\nContent-Length: ${bytes.size}\r\n${cacheHdr}Connection: close\r\n\r\n"
         out.write(head.toByteArray(Charsets.UTF_8))
         out.write(bytes)
         out.flush()

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: nội dung pane (tách từ activity_pin.xml) — dùng trong SettingsFrame -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Mã PIN &amp; khóa thủ công" style="@style/TvTitleV2" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Đổi mã PIN" style="@style/TvTitleV2" android:layout_marginTop="4dp" />
+                <EditText android:id="@+id/etOldPin"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:layout_marginTop="8dp" android:hint="Mã PIN cũ"
+                    android:inputType="numberPassword"
+                    android:textSize="16sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp" />
+                <EditText android:id="@+id/etNewPin"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:layout_marginTop="8dp" android:hint="Mã PIN mới (ít nhất 4 số)"
+                    android:inputType="numberPassword"
+                    android:textSize="16sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/card_bg" android:padding="12dp" />
+                <Button android:id="@+id/btnChangePin" style="@style/TvButtonPrimary"
+                    android:layout_width="match_parent" android:text="Đổi mã PIN"
+                    android:layout_marginTop="8dp" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Khóa thủ công" style="@style/TvTitleV2" android:layout_marginTop="12dp" />
+                <TextView android:id="@+id/tvManual"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBodyV2" android:textSize="16sp"
+                    android:layout_marginTop="8dp" />
+                <Button android:id="@+id/btnManual" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Bật / tắt khóa thủ công"
+                    android:layout_marginTop="8dp" />
+
+                <TextView android:id="@+id/tvUsedToday"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBodyV2" android:textSize="16sp"
+                    android:layout_marginTop="12dp" />
+                <Button android:id="@+id/btnResetUsed" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Reset số phút hôm nay"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        
+</merge>

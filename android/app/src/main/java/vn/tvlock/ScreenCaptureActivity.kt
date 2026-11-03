@@ -15,6 +15,7 @@ import android.widget.Toast
  *  Sau khi khởi động lại TV, projection mất và phải cấp lại bằng tay
  *  (không có cách tự động) — trạng thái đó hiện rõ ở đây. */
 class ScreenCaptureActivity : Activity() {
+    private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
     private lateinit var tvCaptureState: TextView
 
@@ -24,9 +25,11 @@ class ScreenCaptureActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_screen_capture)
+        setContentView(R.layout.settings_frame)
         store = Store(this)
-        SettingsRail.build(this, findViewById<LinearLayout>(R.id.railContainer), "screenshot")
+        settingsFrame = SettingsFrame.bind(this, "screenshot")
+        layoutInflater.inflate(R.layout.pane_screen_capture, settingsFrame!!.pane, true)
+        settingsFrame!!.onPaneReady()
         tvCaptureState = findViewById(R.id.tvCaptureState)
         findViewById<Button>(R.id.btnGrantCapture).setOnClickListener {
             val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -80,5 +83,11 @@ class ScreenCaptureActivity : Activity() {
             else ->
                 "Chưa cấp quyền — bấm nút dưới để cho phép app chụp màn hình TV."
         }
+    }
+
+    /** Back phân cấp: pane → rail → tab → thoát. */
+    override fun onBackPressed() {
+        if (settingsFrame?.onBackPressed() == true) return
+        super.onBackPressed()
     }
 }

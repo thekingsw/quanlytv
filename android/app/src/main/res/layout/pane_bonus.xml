@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2: nội dung pane (tách từ activity_bonus.xml) — dùng trong SettingsFrame -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Phút thưởng" style="@style/TvTitleV2" />
+
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/tvBonus"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" style="@style/TvBodyV2" android:textSize="16sp"
+                    android:layout_marginTop="4dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="12dp">
+                    <Button android:id="@+id/btnBonus5" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +5'" />
+                    <Button android:id="@+id/btnBonus10" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +10'" />
+                    <Button android:id="@+id/btnBonus15" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +15'" />
+                    <Button android:id="@+id/btnBonus30" style="@style/TvButton"
+                        android:layout_width="0dp" android:layout_weight="1" android:layout_margin="4dp"
+                        android:text="Thưởng +30'" />
+                </LinearLayout>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Bấm nút rồi nhập mã PIN trên màn hình khóa để thưởng. Khác với nút +5 phút ở màn hình chính (mở khóa ngay 5 phút): phút thưởng chỉ có tác dụng khi đã hết giờ ngày."
+                    style="@style/TvBodyV2" android:textColor="@color/text_muted"
+                    android:layout_marginTop="8dp" />
+
+                <Button android:id="@+id/btnBack" style="@style/TvButton"
+                    android:layout_width="match_parent" android:text="Quay lại"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+            </ScrollView>
+        
+</merge>
