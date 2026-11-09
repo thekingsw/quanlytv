@@ -24,6 +24,43 @@ jobs:
         with:
           gradle-version: "8.7"
 
+      # (2026-11-09) InboxConfig.kt bị .gitignore chặn nên clone sạch không
+      # có file này — sinh từ GitHub Secrets. Chưa đặt Secrets thì dùng
+      # giá trị rỗng để build vẫn biên dịch được (CI chỉ kiểm tra build
+      # + test, không nối tới inbox thật).
+      - name: Generate InboxConfig.kt
+        working-directory: android/app/src/main/java/vn/tvlock
+        run: |
+          cat > InboxConfig.kt <<EOF
+          package vn.tvlock
+          /** Sinh tu dong luc CI build — KHONG commit git. */
+          object InboxConfig {
+              const val TOKEN = "${INBOX_TOKEN:-}"
+              const val HOST = "${INBOX_HOST:-100.92.107.114}"
+              const val PORT = ${INBOX_PORT:-8081}
+          }
+          EOF
+        env:
+          INBOX_TOKEN: ${{ secrets.INBOX_TOKEN }}
+          INBOX_HOST: ${{ secrets.INBOX_HOST }}
+          INBOX_PORT: ${{ secrets.INBOX_PORT }}
+
+      # (2026-11-09) Khôi phục debug keystore từ Secret để APK CI ký bằng
+      # cùng khóa debug cũ (cài đè được lên bản trước). Chưa đặt Secret thì
+      # bỏ qua — build.gradle.kts để AGP tự sinh keystore mặc định.
+      - name: Restore debug keystore
+        working-directory: android/app
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_B64" ]; then
+            echo "$DEBUG_KEYSTORE_B64" > debug.keystore.b64
+          fi
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+
+      - name: Run unit tests
+        working-directory: android
+        run: gradle :app:testDebugUnitTest --stacktrace
+
       - name: Build debug APK
         working-directory: android
         run: gradle :app:assembleDebug --stacktrace
