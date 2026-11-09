@@ -38,6 +38,12 @@ Lưu ý: file workflow phải do anh tự thêm qua web GitHub (GitHub chặn ap
 tạo file workflow qua API). Các bản build CI đều ký bằng cùng một debug
 keystore cố định (`android/app/debug.keystore.b64`) nên cài đè lên nhau được.
 
+Lưu ý: đẩy code lên GitHub bằng snapshot-push chỉ nhận file text (UTF-8) —
+ảnh nền (`android/app/src/main/assets/wallpapers/*.jpg`) và ảnh chụp màn hình
+(`design-pack/screenshots/`, `docs/screenshots-launcher/`) là file nhị phân
+nên KHÔNG có trên GitHub, chỉ nằm ở máy local. Muốn thêm ảnh lên remote thì
+dùng git trên máy anh.
+
 ## Bản v4 (1.3) — lịch khóa linh hoạt theo ngày + giới hạn ngày theo ngày
 
 - **Lịch khóa theo ngày:** thay khung khóa cố định bằng danh sách lịch (`lockSchedules`): mỗi lịch chọn ngày trong tuần + giờ từ–đến, gộp nhiều lịch (lịch nào khớp thì khóa). `startMin==endMin` = khóa cả ngày; `startMin>endMin` = qua đêm (19:00→10:00 hôm sau). UI: `SchedulesActivity` (danh sách + thêm mới) và `ScheduleEditActivity` (7 checkbox ngày, giờ bắt đầu/kết thúc ±15 phút, nút Khóa cả ngày, Lưu/Xóa). Migration: khung khóa cũ 21:00–07:00 hằng ngày thành một lịch. Khung thời sự 19:00–20:00 giữ nguyên, không nằm trong danh sách lịch.
