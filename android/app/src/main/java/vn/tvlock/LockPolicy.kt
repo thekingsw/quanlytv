@@ -37,7 +37,12 @@ object LockPolicy {
         val lockedBySchedule: Boolean = false,
         val scheduleReason: String = "",
         val appRule: AppRule = AppRule(),
-        val perAppUsedMin: Int = 0
+        val perAppUsedMin: Int = 0,
+        /** Ngày khóa tay được bật ("yyyy-MM-dd"). Khóa tay chỉ có tác
+         * dụng trong ngày — sang hôm sau tự reset về mở (2026-11-09). */
+        val manualLockedDate: String = "",
+        /** Ngày hôm nay ("yyyy-MM-dd") để so với manualLockedDate. */
+        val todayDate: String = ""
     )
 
     fun minutesOfDay(nowMs: Long): Int {
@@ -65,22 +70,41 @@ object LockPolicy {
             pkg == "com.google.android.apps.tv.launcherx"
     }
 
-    /** True when the TV should be locked right now (whole-TV rules). */
+    /** Khóa tay chỉ có tác dụng trong ngày bật nó — sang hôm sau tự reset
+     * về mở (2026-11-09). Ngày trống (dữ liệu cũ chưa ghi ngày) cũng coi
+     * như hết hạn. */
+    fun isManualLockedToday(input: Input): Boolean =
+        input.manualLocked && input.manualLockedDate.isNotEmpty() &&
+            input.manualLockedDate == input.todayDate
+
+    /**
+     * HÀM DUY NHẤT quyết định khóa hay mở (2026-11-09 — gom về 1 chỗ,
+     * bỏ shouldShowLock riêng lẻ). Check lần lượt:
+     *  1. trong giờ khóa (lịch)? → khóa.
+     *  2. còn giờ xem trong ngày không? hết giờ → khóa.
+     *  3. khóa tay (trong ngày)? → khóa.
+     * Tất cả đều không → mở.
+     * Mở tạm (mã thưởng / +N phút) và app thời sự trong khung thời sự
+     * ghi đè lên trên (mở), vì đó là ngoại lệ đã có từ trước.
+     */
     fun isLockedNow(input: Input): Boolean {
-        // App thời sự trong khung giờ thời sự — miễn trừ tuyệt đối khỏi
-        // màn khóa (kể cả khi đã hết giờ xem ngày / đến lịch khóa).
-        if (isNewsExempt(input.lastPkg, input)) return false
+        // Mở tạm ghi đè mọi lý do khóa.
         if (input.nowMs < input.unlockUntilMs) return false
-        if (input.manualLocked) return true
+        // App thời sự trong khung giờ thời sự — miễn trừ tuyệt đối.
+        if (isNewsExempt(input.lastPkg, input)) return false
+        // 1. Trong giờ khóa (lịch)?
         if (input.lockedBySchedule) return true
-        // Daily limit only locks when the bonus pool is also exhausted.
+        // 2. Hết giờ xem trong ngày (không còn giờ)?
         val limit = input.dailyLimitMin
         if (limit > 0 && input.usedTodayMin >= limit && input.bonusMin <= 0) return true
+        // 3. Khóa tay (chỉ trong ngày)?
+        if (isManualLockedToday(input)) return true
+        // Tất cả đều không → mở.
         return false
     }
 
     fun lockReason(input: Input): String {
-        if (input.manualLocked && input.nowMs >= input.unlockUntilMs) return "Đã khóa"
+        if (isManualLockedToday(input) && input.nowMs >= input.unlockUntilMs) return "Đã khóa"
         if (input.lockedBySchedule) return "Đến giờ khóa (${input.scheduleReason})"
         val limit = input.dailyLimitMin
         if (limit > 0 && input.usedTodayMin >= limit && input.bonusMin <= 0)
@@ -101,32 +125,12 @@ object LockPolicy {
         if (rule.mode == "blocked") return "App $label đã bị chặn"
         if (rule.mode == "limit" && input.perAppUsedMin >= rule.minutes)
             return "Hết giờ cho app $label"
-        if (input.manualLocked) return "Đã khóa"
+        if (isManualLockedToday(input)) return "Đã khóa"
         if (input.lockedBySchedule) return "Đến giờ khóa (${input.scheduleReason})"
         val limit = input.dailyLimitMin
         if (limit > 0 && input.usedTodayMin >= limit && input.bonusMin <= 0)
             return "Hết giờ xem — đã hết cả phút thưởng"
         return null
-    }
-
-    /**
-     * The lockPoll guard: should the lock screen be (re)shown for the
-     * current foreground app? False when the TV is not locked, the lock is
-     * already showing (lastPkg == own pkg), or the app is exempt (excluded
-     * / news in its slot). An empty lastPkg still shows the lock
-     * (fail-safe: when the foreground app is unknown but the TV is locked,
-     * lock rather than leave it open) — this matches the old lockPoll.
-     * Re-showing when the lock is already up recreates LockActivity and
-     * resets its state (reward-code mode) — the "màn khóa refresh 88 lần"
-     * bug (2026-11-08).
-     */
-    fun shouldShowLock(input: Input): Boolean {
-        if (!isLockedNow(input)) return false
-        val pkg = input.lastPkg
-        if (pkg == input.ownPkg) return false
-        if (isExcluded(pkg)) return false
-        if (isNewsExempt(pkg, input)) return false
-        return true
     }
 
     /**
@@ -144,6 +148,13 @@ object LockPolicy {
     }
 
     // ---- Counting (pure arithmetic; mirrors Store.addElapsed) ----
+
+    /**
+     * Max elapsed time counted in one step (5 min). The tick is 1s, so a
+     * bigger gap means the system was suspended (TV asleep) — don't count
+     * a whole night of sleep as viewing time (2026-11-09).
+     */
+    const val MAX_COUNT_GAP_MS = 5 * 60 * 1000L
 
     data class CountInput(
         val pkg: String,
@@ -182,7 +193,10 @@ object LockPolicy {
         if (start <= 0L || input.nowMs <= start) return noChange
         if (isNewsExempt(input.pkg, input.newsPkg, input.nowMs, input.newsStartMin, input.newsEndMin))
             return noChange
-        val total = input.remainderMs + (input.nowMs - start)
+        // Clamp the gap: a suspended system (TV asleep) must not turn
+        // hours of sleep into viewing minutes.
+        val elapsed = minOf(input.nowMs - start, MAX_COUNT_GAP_MS)
+        val total = input.remainderMs + elapsed
         val mins = (total / 60000L).toInt()
         val newRemainder = total % 60000L
         if (mins <= 0) return CountResult(0, input.usedTodayMin, input.bonusMin, newRemainder, 0)

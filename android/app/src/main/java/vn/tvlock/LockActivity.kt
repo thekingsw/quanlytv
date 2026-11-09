@@ -364,7 +364,18 @@ class LockActivity : Activity() {
             submitRewardCode()
             return
         }
+        // (2026-11-09) Đang bị khóa nhập PIN do đoán mò thì từ chối ngay,
+        // không kiểm tra mã (tránh dò tiếp trong thời gian khóa).
+        val nowMs = System.currentTimeMillis()
+        if (PinGuard.isLocked(store.pinGuardState(), nowMs)) {
+            Toast.makeText(this, "Sai quá nhiều lần, thử lại sau 5 phút", Toast.LENGTH_SHORT).show()
+            pinBuf.clear()
+            updatePinDisplay()
+            return
+        }
         if (pinBuf.toString() == store.pin) {
+            // Nhập đúng thì xóa đếm sai (PinGuard dùng chung cho cả 3 loại mã).
+            store.savePinGuardState(PinGuard.recordSuccess(store.pinGuardState()))
             when (mode) {
                 "add" -> {
                     if (addMinutes > 0) {
@@ -396,15 +407,25 @@ class LockActivity : Activity() {
                 // mở kèm pinVerified để SettingsActivity không hỏi lại.
                 // v4.0: target "home" (từ bánh răng màn hình chính) thì mở
                 // thẳng cài đặt màn hình chính cho dễ tìm chỗ đặt ảnh nền.
+                // (2026-11-09) target "system": mở Cài đặt hệ thống của
+                // Android sau khi nhập PIN (nút bánh răng trên remote) —
+                // trước đây mở thẳng không cần PIN.
                 "settings" -> {
                     val target = intent.getStringExtra("target")
-                    val i = if (target == "home")
-                        Intent(this, HomeSettingsActivity::class.java)
-                    else
-                        Intent(this, SettingsActivity::class.java)
-                    i.putExtra("pinVerified", true)
-                    startActivity(i)
-                    finish()
+                    if (target == "system") {
+                        val i = Intent(android.provider.Settings.ACTION_SETTINGS)
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(i)
+                        finish()
+                    } else {
+                        val i = if (target == "home")
+                            Intent(this, HomeSettingsActivity::class.java)
+                        else
+                            Intent(this, SettingsActivity::class.java)
+                        i.putExtra("pinVerified", true)
+                        startActivity(i)
+                        finish()
+                    }
                 }
                 else -> {
                     pinView.visibility = View.GONE
@@ -413,7 +434,17 @@ class LockActivity : Activity() {
                 }
             }
         } else {
-            Toast.makeText(this, "Sai mã PIN", Toast.LENGTH_SHORT).show()
+            // Sai mã PIN: đếm lỗi qua PinGuard dùng chung (sai 5 lần liên
+            // tiếp thì khóa nhập 5 phút — trước đây PIN không có gì chặn,
+            // dò hết 4 số chỉ là vấn đề thời gian).
+            val now = System.currentTimeMillis()
+            val st = PinGuard.recordFailure(store.pinGuardState(), now)
+            store.savePinGuardState(st)
+            if (PinGuard.isLocked(st, now)) {
+                Toast.makeText(this, "Sai quá nhiều lần, thử lại sau 5 phút", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Sai mã PIN", Toast.LENGTH_SHORT).show()
+            }
             pinBuf.clear()
             updatePinDisplay()
         }
@@ -456,7 +487,8 @@ class LockActivity : Activity() {
         val now = System.currentTimeMillis()
         // ĐỔI (user 2026-10-31): trong giờ thời sự VẪN dùng được mã thưởng —
         // nhập đúng thì cộng phút xem tiếp trong giờ thời sự.
-        if (now < store.rewardCodeLockedUntilMs) {
+        // (2026-11-09) Khóa nhập mã dùng chung qua PinGuard.
+        if (PinGuard.isLocked(store.rewardGuardState(), now)) {
             Toast.makeText(this, "Sai quá nhiều lần, thử lại sau 5 phút", Toast.LENGTH_SHORT).show()
             pinBuf.clear()
             updatePinDisplay()
@@ -473,7 +505,7 @@ class LockActivity : Activity() {
         }
         val mins = store.redeemRewardCode(code)
         if (mins > 0) {
-            store.rewardCodeFails = 0
+            store.saveRewardGuardState(PinGuard.recordSuccess(store.rewardGuardState()))
             store.incrementRewardCodesUsedToday()
             store.addMinutes(mins)
             pinBuf.clear()
@@ -485,12 +517,13 @@ class LockActivity : Activity() {
                 Toast.makeText(this, "Đã cộng $mins phút (vẫn đang trong giờ khóa)", Toast.LENGTH_SHORT).show()
             }
         } else {
-            store.rewardCodeFails = store.rewardCodeFails + 1
+            // Sai mã: đếm lỗi qua PinGuard dùng chung (đủ 5 lần thì khóa
+            // nhập mã 5 phút).
+            val st = PinGuard.recordFailure(store.rewardGuardState(), System.currentTimeMillis())
+            store.saveRewardGuardState(st)
             pinBuf.clear()
             updatePinDisplay()
-            if (store.rewardCodeFails >= 5) {
-                store.rewardCodeFails = 0
-                store.rewardCodeLockedUntilMs = System.currentTimeMillis() + 5 * 60 * 1000L
+            if (PinGuard.isLocked(st, System.currentTimeMillis())) {
                 Toast.makeText(this, "Sai quá nhiều lần, thử lại sau 5 phút", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Mã thưởng không đúng, thử lại nhé", Toast.LENGTH_SHORT).show()

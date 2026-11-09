@@ -38,13 +38,13 @@ class Store(private val ctx: Context) {
     // between startMin and endMin. startMin == endMin means "locked all day"
     // on those days; startMin > endMin means overnight (e.g. 19:00 -> 10:00
     // next day). Multiple schedules combine by union: any match locks.
-    data class LockSchedule(val id: String, val days: List<Int>, val startMin: Int, val endMin: Int)
+    // (2026-11-09) Logic lịch sống trong SchedulePolicy thuần (test được);
+    // Store chỉ đọc/ghi JSON và ủy quyền.
 
-    fun dayNames(): List<String> =
-        listOf("Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
+    fun dayNames(): List<String> = SchedulePolicy.dayNames()
 
     /** Calendar.DAY_OF_WEEK (1=Sunday..7=Saturday) -> 0=Mon..6=Sun. */
-    fun dayIndexOf(cal: Calendar): Int = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
+    fun dayIndexOf(cal: Calendar): Int = SchedulePolicy.dayIndexOf(cal)
 
     private fun lockSchedulesJson(): JSONArray {
         // One-time migration from the old single lock window (v3): keep the
@@ -67,20 +67,20 @@ class Store(private val ctx: Context) {
         catch (_: Exception) { JSONArray() }
     }
 
-    fun lockSchedules(): List<LockSchedule> {
-        val out = mutableListOf<LockSchedule>()
+    fun lockSchedules(): List<SchedulePolicy.Schedule> {
+        val out = mutableListOf<SchedulePolicy.Schedule>()
         val arr = lockSchedulesJson()
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
             val days = mutableListOf<Int>()
             val dj = o.optJSONArray("days")
             if (dj != null) for (j in 0 until dj.length()) days.add(dj.optInt(j))
-            out.add(LockSchedule(o.optString("id", "s$i"), days, o.optInt("startMin", 1260), o.optInt("endMin", 420)))
+            out.add(SchedulePolicy.Schedule(o.optString("id", "s$i"), days, o.optInt("startMin", 1260), o.optInt("endMin", 420)))
         }
         return out
     }
 
-    fun saveLockSchedules(list: List<LockSchedule>) {
+    fun saveLockSchedules(list: List<SchedulePolicy.Schedule>) {
         val arr = JSONArray()
         for (s in list) {
             val o = JSONObject()
@@ -93,7 +93,7 @@ class Store(private val ctx: Context) {
         prefs.edit().putString("lockSchedules", arr.toString()).apply()
     }
 
-    fun upsertLockSchedule(s: LockSchedule) {
+    fun upsertLockSchedule(s: SchedulePolicy.Schedule) {
         val list = lockSchedules().toMutableList()
         val i = list.indexOfFirst { it.id == s.id }
         if (i >= 0) list[i] = s else list.add(s)
@@ -104,19 +104,11 @@ class Store(private val ctx: Context) {
 
     fun newScheduleId(): String = "s" + System.currentTimeMillis()
 
-    fun scheduleTimeText(s: LockSchedule): String {
-        return if (s.startMin == s.endMin) "khóa cả ngày"
-        else if (s.startMin == 0 && s.endMin == 1439) "khóa cả ngày"
-        else fmt(s.startMin) + "–" + fmt(s.endMin) + if (s.startMin > s.endMin) " (qua đêm)" else ""
-    }
+    fun scheduleTimeText(s: SchedulePolicy.Schedule): String = SchedulePolicy.scheduleTimeText(s)
 
-    fun scheduleSummary(s: LockSchedule): String {
-        val daysTxt = if (s.days.size == 7) "Hằng ngày"
-            else s.days.sorted().joinToString(", ") { dayNames()[it] }
-        return "$daysTxt: ${scheduleTimeText(s)}"
-    }
+    fun scheduleSummary(s: SchedulePolicy.Schedule): String = SchedulePolicy.scheduleSummary(s)
 
-    fun schedulesForDay(day: Int): List<LockSchedule> = lockSchedules().filter { day in it.days }
+    fun schedulesForDay(day: Int): List<SchedulePolicy.Schedule> = lockSchedules().filter { day in it.days }
 
     fun todayScheduleSummaries(nowMs: Long): List<String> {
         val c = Calendar.getInstance()
@@ -125,68 +117,20 @@ class Store(private val ctx: Context) {
     }
 
     /** Schedules matching right now (union: any match locks the TV). */
-    fun matchingSchedules(nowMs: Long): List<LockSchedule> {
-        val c = Calendar.getInstance()
-        c.timeInMillis = nowMs
-        val today = dayIndexOf(c)
-        val yesterday = (today + 6) % 7
-        val nowMin = minutesOfDay(nowMs)
-        return lockSchedules().filter { s ->
-            if (s.days.isEmpty()) return@filter false
-            when {
-                s.startMin == s.endMin -> today in s.days // all-day convention
-                s.startMin < s.endMin -> today in s.days && nowMin in s.startMin until s.endMin
-                else -> (today in s.days && nowMin >= s.startMin) ||
-                    (yesterday in s.days && nowMin < s.endMin)
-            }
-        }
-    }
+    fun matchingSchedules(nowMs: Long): List<SchedulePolicy.Schedule> =
+        SchedulePolicy.matchingSchedules(lockSchedules(), nowMs)
 
-    fun isLockedBySchedule(nowMs: Long): Boolean = matchingSchedules(nowMs).isNotEmpty()
+    fun isLockedBySchedule(nowMs: Long): Boolean =
+        SchedulePolicy.isLockedBySchedule(lockSchedules(), nowMs)
 
     /** Minutes until the next schedule starts (0 when inside one, MAX when none). */
-    fun minutesUntilNextLock(nowMs: Long): Int {
-        val c = Calendar.getInstance()
-        c.timeInMillis = nowMs
-        val today = dayIndexOf(c)
-        val nowMin = minutesOfDay(nowMs)
-        if (isLockedBySchedule(nowMs)) return 0
-        var best = Int.MAX_VALUE
-        for (s in lockSchedules()) {
-            if (s.days.isEmpty()) continue
-            for (d in 0..7) {
-                val day = (today + d) % 7
-                if (day !in s.days) continue
-                val delta = d * 1440 + s.startMin - nowMin
-                if (delta <= 0) continue
-                if (delta < best) best = delta
-            }
-        }
-        return best
-    }
+    fun minutesUntilNextLock(nowMs: Long): Int =
+        SchedulePolicy.minutesUntilNextLock(lockSchedules(), nowMs)
 
     /** v1.7: seconds until the next schedule starts — same logic as
      * [minutesUntilNextLock] but exact to the second, for the 60s countdown. */
-    fun secondsUntilNextLock(nowMs: Long): Int {
-        val c = Calendar.getInstance()
-        c.timeInMillis = nowMs
-        val today = dayIndexOf(c)
-        val secOfDay = c.get(Calendar.HOUR_OF_DAY) * 3600 +
-            c.get(Calendar.MINUTE) * 60 + c.get(Calendar.SECOND)
-        if (isLockedBySchedule(nowMs)) return 0
-        var best = Int.MAX_VALUE
-        for (s in lockSchedules()) {
-            if (s.days.isEmpty()) continue
-            for (d in 0..7) {
-                val day = (today + d) % 7
-                if (day !in s.days) continue
-                val delta = d * 86400 + s.startMin * 60 - secOfDay
-                if (delta <= 0) continue
-                if (delta < best) best = delta
-            }
-        }
-        return best
-    }
+    fun secondsUntilNextLock(nowMs: Long): Int =
+        SchedulePolicy.secondsUntilNextLock(lockSchedules(), nowMs)
 
     // ---------- v4: daily limit per weekday (0=Mon..6=Sun; <=0 = unlimited) ----------
     private fun dailyLimitsJson(): JSONObject {
@@ -284,7 +228,17 @@ class Store(private val ctx: Context) {
 
     var manualLocked: Boolean
         get() = prefs.getBoolean("manualLocked", false)
-        set(v) = prefs.edit().putBoolean("manualLocked", v).apply()
+        set(v) {
+            val e = prefs.edit().putBoolean("manualLocked", v)
+            // Khóa tay chỉ có tác dụng trong ngày bật nó (2026-11-09):
+            // ghi lại ngày bật; sang hôm sau LockPolicy tự coi như mở.
+            if (v) e.putString("manualLockedDate", todayStr()) else e.putString("manualLockedDate", "")
+            e.apply()
+        }
+
+    /** Ngày khóa tay được bật ("yyyy-MM-dd", "" nếu chưa từng bật). */
+    val manualLockedDate: String
+        get() = prefs.getString("manualLockedDate", "") ?: ""
 
     // ---------- v2.0: chống tắt Trợ năng (như CleanTV) ----------
     // Quyền WRITE_SECURE_SETTINGS (cấp một lần qua ADB bằng
@@ -423,7 +377,7 @@ class Store(private val ctx: Context) {
     fun generateRewardCode(minutes: Int): RewardCode {
         val min = if (minutes == 5) 5 else 10
         val existing = activeRewardCodes().map { it.code }.toSet()
-        val rnd = java.util.Random()
+        val rnd = java.security.SecureRandom()
         var code = ""
         var tries = 0
         do {
@@ -451,8 +405,10 @@ class Store(private val ctx: Context) {
 
     // ---------- v2.8: chống đoán mò mã thưởng ----------
     // Mã thưởng đưa cho trẻ nên trẻ biết định dạng và có thể ngồi đoán —
-    // sai 5 lần liên tiếp thì khóa nhập mã 5 phút. Chỉ áp cho mã thưởng
-    // (mã PIN khóa TV không có cơ chế này từ trước).
+    // sai 5 lần liên tiếp thì khóa nhập mã 5 phút. (2026-11-09) Cơ chế
+    // này giờ dùng chung qua PinGuard cho cả 3 loại mã (PIN khóa TV,
+    // PIN web, mã thưởng) — xem pinGuardState()/rewardGuardState().
+    // Giữ nguyên tên key prefs cũ để không mất trạng thái đang khóa dở.
     var rewardCodeFails: Int
         get() = prefs.getInt("rewardCodeFails", 0)
         set(v) = prefs.edit().putInt("rewardCodeFails", v).apply()
@@ -460,6 +416,34 @@ class Store(private val ctx: Context) {
     var rewardCodeLockedUntilMs: Long
         get() = prefs.getLong("rewardCodeLockedUntilMs", 0L)
         set(v) = prefs.edit().putLong("rewardCodeLockedUntilMs", v).apply()
+
+    /** PinGuard state cho mã thưởng (đọc/ghi qua key prefs cũ). */
+    fun rewardGuardState(): PinGuard.State =
+        PinGuard.State(rewardCodeFails, rewardCodeLockedUntilMs)
+
+    fun saveRewardGuardState(s: PinGuard.State) {
+        rewardCodeFails = s.fails
+        rewardCodeLockedUntilMs = s.lockedUntilMs
+    }
+
+    // ---------- 2026-11-09: chống đoán mò mã PIN khóa TV ----------
+    // PIN mở khóa vô hạn nên cũng cần khóa tạm như mã thưởng (trước đây
+    // không có gì chặn — dò hết 4 số chỉ là vấn đề thời gian).
+    var pinFails: Int
+        get() = prefs.getInt("pinFails", 0)
+        set(v) = prefs.edit().putInt("pinFails", v).apply()
+
+    var pinLockedUntilMs: Long
+        get() = prefs.getLong("pinLockedUntilMs", 0L)
+        set(v) = prefs.edit().putLong("pinLockedUntilMs", v).apply()
+
+    /** PinGuard state cho mã PIN khóa TV. */
+    fun pinGuardState(): PinGuard.State = PinGuard.State(pinFails, pinLockedUntilMs)
+
+    fun savePinGuardState(s: PinGuard.State) {
+        pinFails = s.fails
+        pinLockedUntilMs = s.lockedUntilMs
+    }
 
     // ---------- v2.9: số mã thưởng được nhập mỗi ngày ----------
     // 0 = không giới hạn. Đếm reset khi sang ngày mới — cùng cơ chế
@@ -713,7 +697,9 @@ class Store(private val ctx: Context) {
             lockedBySchedule = match.isNotEmpty(),
             scheduleReason = match.joinToString("; ") { scheduleSummary(it) },
             appRule = LockPolicy.AppRule(rule.mode, rule.minutes),
-            perAppUsedMin = perAppMin(pkg)
+            perAppUsedMin = perAppMin(pkg),
+            manualLockedDate = manualLockedDate,
+            todayDate = todayStr()
         )
     }
 
@@ -721,12 +707,6 @@ class Store(private val ctx: Context) {
     fun isLockedNow(nowMs: Long): Boolean {
         resetUsedIfNewDay()
         return LockPolicy.isLockedNow(lockInput(nowMs))
-    }
-
-    /** lockPoll guard — delegate to the tested LockPolicy (2026-11-08). */
-    fun shouldShowLock(nowMs: Long): Boolean {
-        resetUsedIfNewDay()
-        return LockPolicy.shouldShowLock(lockInput(nowMs))
     }
 
     /** Minutes of daily limit left (excluding bonus). */
@@ -805,6 +785,30 @@ class Store(private val ctx: Context) {
 
     fun isExcluded(pkg: String): Boolean = LockPolicy.isExcluded(pkg)
 
+    // ---------- Foreground tracking (single source of truth) ----------
+    // (2026-11-09) Mọi chỗ ghi lastPkg/lastPkgStartMs đều đi qua
+    // ForegroundTracker — xem ForegroundTracker.kt. Store chỉ đọc/ghi
+    // state xuống SharedPreferences.
+
+    /** Current foreground state as the tracker sees it. */
+    fun trackerState(): ForegroundTracker.State =
+        ForegroundTracker.State(lastPkg, lastPkgStartMs)
+
+    private fun applyTrackerState(s: ForegroundTracker.State) {
+        lastPkg = s.lastPkg
+        lastPkgStartMs = s.lastPkgStartMs
+    }
+
+    /** Record a newly-foregrounded package (excluded apps don't overwrite). */
+    fun noteForeground(pkg: String, nowMs: Long) {
+        applyTrackerState(ForegroundTracker.noteForeground(trackerState(), pkg, ctx.packageName, nowMs))
+    }
+
+    /** Clear a lastPkg stuck at an excluded app (written by older versions). */
+    fun repairStuckForeground(nowMs: Long) {
+        applyTrackerState(ForegroundTracker.clearIfExcluded(trackerState(), ctx.packageName, nowMs))
+    }
+
     /** Is this package exempt from counting right now (news app inside the news slot)? */
     fun isNewsExempt(pkg: String, nowMs: Long): Boolean =
         LockPolicy.isNewsExempt(pkg, newsPkg, nowMs, newsStartMin, newsEndMin)
@@ -878,35 +882,11 @@ class Store(private val ctx: Context) {
         clearWarnings()
     }
 
-    /** Unlock until the end of the current lock schedule (or +60 min if not in one). */
+    /** Unlock until the end of the current lock schedule (or +60 min if not in one).
+     *  Overlapping schedules unlock until the LATEST-ending one. */
     fun unlockUntilEndOfLockWindow(nowMs: Long) {
-        val c = Calendar.getInstance()
-        c.timeInMillis = nowMs
-        val nowMin = minutesOfDay(nowMs)
-        val match = matchingSchedules(nowMs)
-        if (match.isNotEmpty()) {
-            val s = match.first()
-            when {
-                s.startMin == s.endMin -> { // all-day: unlock until the end of today
-                    c.set(Calendar.HOUR_OF_DAY, 23)
-                    c.set(Calendar.MINUTE, 59)
-                }
-                s.startMin < s.endMin -> {
-                    c.set(Calendar.HOUR_OF_DAY, s.endMin / 60)
-                    c.set(Calendar.MINUTE, s.endMin % 60)
-                }
-                else -> { // overnight: ends tomorrow if we are past the start
-                    if (nowMin >= s.startMin) c.add(Calendar.DAY_OF_YEAR, 1)
-                    c.set(Calendar.HOUR_OF_DAY, s.endMin / 60)
-                    c.set(Calendar.MINUTE, s.endMin % 60)
-                }
-            }
-            c.set(Calendar.SECOND, 0)
-            c.set(Calendar.MILLISECOND, 0)
-            unlockUntilMs = c.timeInMillis
-        } else {
-            unlockUntilMs = nowMs + 60 * 60000L
-        }
+        val endMs = SchedulePolicy.unlockUntilEndOfLockWindowMs(lockSchedules(), nowMs)
+        unlockUntilMs = endMs ?: (nowMs + 60 * 60000L)
         manualLocked = false
         clearWarnings()
     }

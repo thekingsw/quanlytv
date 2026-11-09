@@ -25,10 +25,17 @@ class WebServer(private val ctx: Context, private val port: Int) {
 
     companion object {
         private const val SESSION_MS = 30L * 24 * 3600 * 1000 // 30 ngày
-        private const val LOCK_MS = 5L * 60 * 1000 // khóa 5 phút sau 5 lần sai
-        private const val MAX_FAILED = 5
         private const val SESSION_COOKIE = "tvlock_session"
+        /** Max request body (8MB — ảnh nền lớn nhất cho phép). Vượt quá thì
+         *  413, không cấp phát CharArray theo Content-Length kẻo OOM. */
+        private const val MAX_BODY_BYTES = 8 * 1024 * 1024
     }
+
+    /** Bounded thread pool for HTTP handlers (max 8 concurrent). */
+    private val pool: java.util.concurrent.ExecutorService =
+        java.util.concurrent.Executors.newFixedThreadPool(8) { r ->
+            Thread(r, "tvlock-http").also { it.isDaemon = true }
+        }
 
     fun start() {
         server = ServerSocket(port)
@@ -37,7 +44,9 @@ class WebServer(private val ctx: Context, private val port: Int) {
             while (running) {
                 try {
                     val s = server?.accept() ?: break
-                    Thread({ handle(s) }, "tvlock-http").also { it.isDaemon = true; it.start() }
+                    // Bounded pool (2026-11-09): trước đây mỗi kết nối sinh
+                    // 1 thread mới — tấn công mở nhiều kết nối là cạn thread.
+                    pool.execute { handle(s) }
                 } catch (_: Exception) { if (!running) break }
             }
         }, "tvlock-accept").also { it.isDaemon = true; it.start() }
@@ -46,6 +55,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
     fun stop() {
         running = false
         try { server?.close() } catch (_: Exception) { }
+        pool.shutdownNow()
     }
 
     private fun handle(sock: Socket) {
@@ -74,7 +84,15 @@ class WebServer(private val ctx: Context, private val port: Int) {
                     }
                 }
             }
+            val out = sock.getOutputStream()
             var body = ""
+            if (contentLength > MAX_BODY_BYTES) {
+                // (2026-11-09) Kẹp Content-Length: trước đây cấp phát
+                // CharArray(contentLength) theo header kẻo OOM với
+                // Content-Length giả. Ảnh nền lớn nhất cho phép là 8MB.
+                sendJson(out, 413, """{"ok":false,"error":"Nội dung quá lớn"}""")
+                return
+            }
             if (contentLength > 0) {
                 val buf = CharArray(contentLength)
                 var read = 0
@@ -89,7 +107,6 @@ class WebServer(private val ctx: Context, private val port: Int) {
             val query = if (rawPath.contains("?")) rawPath.substringAfter("?") else ""
             val params = parseParams(query)
             if (method == "POST") params.putAll(parseParams(body))
-            val out = sock.getOutputStream()
             // v2.3: mã PIN web — mọi route đều cần phiên hợp lệ, trừ file
             // tĩnh giao diện (app.css/app.js, vô hại) và login/logout.
             // Trang chưa đăng nhập thì trả về trang chính để app.js tự
@@ -203,7 +220,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val remStr = if (rem == Int.MAX_VALUE) -1 else rem
         val news = store.isInNewsSlot(now)
         val perApp = store.perAppToday().entries.joinToString(",") { "\"${it.key}\":${it.value}" }
-        val todaySched = store.todayScheduleSummaries(now).joinToString(",") { "\"${esc(it)}\"" }
+        val todaySched = store.todayScheduleSummaries(now).joinToString(",") { "\"${jsonEsc(it)}\"" }
         // Giai đoạn 5: "Khóa đêm" cho web mới — trong lịch hôm nay ưu tiên
         // lịch qua đêm, không có thì lịch đầu tiên, không có lịch nào thì null.
         val cal = java.util.Calendar.getInstance()
@@ -284,8 +301,8 @@ class WebServer(private val ctx: Context, private val port: Int) {
             }
             else -> { msg = "Không rõ lệnh."; error = true }
         }
-        if (error) sendJson(out, 400, """{"ok":false,"error":"${esc(msg)}"}""")
-        else sendJson(out, 200, """{"ok":true,"message":"${esc(msg)}"}""")
+        if (error) sendJson(out, 400, """{"ok":false,"error":"${jsonEsc(msg)}"}""")
+        else sendJson(out, 200, """{"ok":true,"message":"${jsonEsc(msg)}"}""")
     }
 
     /** v2.8: mã thưởng dùng một lần. GET /api/reward-codes — danh sách mã
@@ -296,7 +313,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
     private fun rewardCodes(out: OutputStream) {
         val store = Store(ctx)
         val items = store.activeRewardCodes().joinToString(",") {
-            """{"code":"${esc(it.code)}","minutes":${it.minutes},"createdAt":${it.createdAt}}"""
+            """{"code":"${jsonEsc(it.code)}","minutes":${it.minutes},"createdAt":${it.createdAt}}"""
         }
         sendJson(out, 200, """{"codes":[$items],"limit":${store.dailyRewardCodeLimit},"usedToday":${store.rewardCodesUsedToday()}}""")
     }
@@ -319,7 +336,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
             return
         }
         val rc = store.generateRewardCode(minutes)
-        sendJson(out, 200, """{"ok":true,"code":"${esc(rc.code)}","minutes":${rc.minutes}}""")
+        sendJson(out, 200, """{"ok":true,"code":"${jsonEsc(rc.code)}","minutes":${rc.minutes}}""")
     }
 
     /** v2.8: POST /api/reward-code-delete {code} — thu hồi một mã. */
@@ -422,7 +439,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
             return
         }
         val id = params["id"]?.trim().orEmpty().ifEmpty { store.newScheduleId() }
-        store.upsertLockSchedule(Store.LockSchedule(id, days, start, end))
+        store.upsertLockSchedule(SchedulePolicy.Schedule(id, days, start, end))
         sendJson(out, 200, """{"ok":true}""")
     }
 
@@ -467,7 +484,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         // (TV có bộ giải mã HEIC, CleanTV chứng minh được — lỗi decode là do code).
         val (jpg, imgErr) = normalizeUploadImage(bytes)
         if (jpg == null) {
-            sendJson(out, 400, """{"ok":false,"error":"Không xử lý được ảnh này (${esc(imgErr ?: "không rõ")}), thử ảnh khác nhé."}""")
+            sendJson(out, 400, """{"ok":false,"error":"Không xử lý được ảnh này (${jsonEsc(imgErr ?: "không rõ")}), thử ảnh khác nhé."}""")
             return
         }
         if (!Store(ctx).saveLockBgBytes(jpg)) {
@@ -573,7 +590,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         // Ảnh trong máy anh toàn HEIC — decode rồi chuẩn hóa về JPEG.
         val (jpg, imgErr) = normalizeUploadImage(bytes)
         if (jpg == null) {
-            sendJson(out, 400, """{"ok":false,"error":"Không xử lý được ảnh này (${esc(imgErr ?: "không rõ")}), thử ảnh khác nhé."}""")
+            sendJson(out, 400, """{"ok":false,"error":"Không xử lý được ảnh này (${jsonEsc(imgErr ?: "không rõ")}), thử ảnh khác nhé."}""")
             return
         }
         val name = Store(ctx).saveWallpaperBytes(jpg)
@@ -585,9 +602,9 @@ class WebServer(private val ctx: Context, private val port: Int) {
     private fun homeBgList(out: OutputStream) {
         val store = Store(ctx)
         val items = store.wallpaperFiles().joinToString(",") {
-            """{"name":"${esc(it.name)}","size":${it.length()}}"""
+            """{"name":"${jsonEsc(it.name)}","size":${it.length()}}"""
         }
-        val defs = defaultWallpaperNames().joinToString(",") { """"${esc(it)}"""" }
+        val defs = defaultWallpaperNames().joinToString(",") { """"${jsonEsc(it)}"""" }
         sendJson(out, 200, """{"wallpapers":[$items],"interval":${store.wallpaperIntervalMin},"source":"${store.wallpaperSource}","defaults":[$defs]}""")
     }
 
@@ -694,7 +711,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
     private fun launcherJson(out: OutputStream) {
         val s = Store(ctx)
         sendJson(out, 200, """{"iconStyle":"${s.iconStyle}","weatherCity":"${s.weatherCity}",""" +
-            """"cdLabel":"${esc(s.countdownLabel)}","cdDate":"${s.countdownDate}",""" +
+            """"cdLabel":"${jsonEsc(s.countdownLabel)}","cdDate":"${s.countdownDate}",""" +
             """"pushStart":${s.pushStartHour},"pushEnd":${s.pushEndHour},"popupMode":"${s.popupMode}"}""")
     }
 
@@ -735,7 +752,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val store = Store(ctx)
         val hidden = store.homeHidden()
         val items = launcherApps().joinToString(",") { (pkg, label) ->
-            """{"pkg":"${esc(pkg)}","label":"${esc(label)}","hidden":${hidden.contains(pkg)}}"""
+            """{"pkg":"${jsonEsc(pkg)}","label":"${jsonEsc(label)}","hidden":${hidden.contains(pkg)}}"""
         }
         sendJson(out, 200, """{"apps":[$items]}""")
     }
@@ -827,25 +844,34 @@ class WebServer(private val ctx: Context, private val port: Int) {
     }
 
     /** POST /api/webpin-login {pin} — đúng mã thì tạo phiên 30 ngày
-     *  (cookie), sai 5 lần liên tiếp thì khóa 5 phút. */
+     *  (cookie), sai 5 lần liên tiếp thì khóa 5 phút. (2026-11-09) Dùng
+     *  PinGuard chung với PIN khóa TV và mã thưởng; khóa đọc/ghi bằng
+     *  synchronized vì nhiều luồng handler cùng chạm vào. */
     private fun webpinLogin(out: OutputStream, params: Map<String, String>) {
         val now = System.currentTimeMillis()
-        if (now < lockUntilMs) {
+        val st = synchronized(this) { PinGuard.State(failedLogins, lockUntilMs) }
+        if (PinGuard.isLocked(st, now)) {
             sendJson(out, 429, """{"ok":false,"error":"Sai quá 5 lần, thử lại sau 5 phút."}""")
             return
         }
         val pin = params["pin"]?.trim() ?: ""
         if (pin.isNotEmpty() && pin == Store(ctx).webPinOrDefault()) {
-            failedLogins = 0
+            synchronized(this) {
+                failedLogins = 0
+                lockUntilMs = 0L
+            }
             val token = newSession()
             sendJsonWithHeaders(out, 200, """{"ok":true}""",
-                listOf("Set-Cookie: $SESSION_COOKIE=$token; Path=/; Max-Age=${SESSION_MS / 1000}; HttpOnly"))
+                listOf("Set-Cookie: $SESSION_COOKIE=$token; Path=/; Max-Age=${SESSION_MS / 1000}; HttpOnly; SameSite=Lax"))
             return
         }
-        failedLogins++
-        if (failedLogins >= MAX_FAILED) {
-            failedLogins = 0
-            lockUntilMs = now + LOCK_MS
+        val next = synchronized(this) {
+            val s = PinGuard.recordFailure(PinGuard.State(failedLogins, lockUntilMs), now)
+            failedLogins = s.fails
+            lockUntilMs = s.lockedUntilMs
+            s
+        }
+        if (PinGuard.isLocked(next, now)) {
             sendJson(out, 429, """{"ok":false,"error":"Sai quá 5 lần, thử lại sau 5 phút."}""")
             return
         }
@@ -871,7 +897,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
             synchronized(sessions) { sessions.remove(token) }
         }
         sendJsonWithHeaders(out, 200, """{"ok":true}""",
-            listOf("Set-Cookie: $SESSION_COOKIE=; Path=/; Max-Age=0; HttpOnly"))
+            listOf("Set-Cookie: $SESSION_COOKIE=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"))
     }
 
     /** v2.9: GET /api/screenshot — chụp 1 khung hình TV mới nhất, trả
@@ -892,7 +918,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val store = Store(ctx)
         val items = store.lockSchedules().joinToString(",") { s ->
             val days = s.days.joinToString(",")
-            """{"id":"${esc(s.id)}","days":[$days],"startMin":${s.startMin},"endMin":${s.endMin},"summary":"${esc(store.scheduleSummary(s))}"}"""
+            """{"id":"${jsonEsc(s.id)}","days":[$days],"startMin":${s.startMin},"endMin":${s.endMin},"summary":"${jsonEsc(store.scheduleSummary(s))}"}"""
         }
         sendJson(out, 200, """{"schedules":[$items]}""")
     }
@@ -908,14 +934,14 @@ class WebServer(private val ctx: Context, private val port: Int) {
     private fun settingsJson(out: OutputStream) {
         val store = Store(ctx)
         val newsLabel = if (store.newsPkg.isEmpty()) "" else store.appLabel(store.newsPkg)
-        val json = """{"newsStartMin":${store.newsStartMin},"newsEndMin":${store.newsEndMin},"newsPkg":"${esc(store.newsPkg)}","newsLabel":"${esc(newsLabel)}","lockMessage":"${esc(store.lockMessage)}","hasLockBg":${store.hasLockBg()},"antiDisable":${store.antiDisable},"a11yEnabled":${store.isAccessEnabled()},"hasWss":${store.hasWriteSecureSettings()}}"""
+        val json = """{"newsStartMin":${store.newsStartMin},"newsEndMin":${store.newsEndMin},"newsPkg":"${jsonEsc(store.newsPkg)}","newsLabel":"${jsonEsc(newsLabel)}","lockMessage":"${jsonEsc(store.lockMessage)}","hasLockBg":${store.hasLockBg()},"antiDisable":${store.antiDisable},"a11yEnabled":${store.isAccessEnabled()},"hasWss":${store.hasWriteSecureSettings()}}"""
         sendJson(out, 200, json)
     }
 
     /** GET /api/newsapps — các app có launcher (để chọn app thời sự). */
     private fun newsApps(out: OutputStream) {
         val items = launcherApps().joinToString(",") { (pkg, label) ->
-            """{"pkg":"${esc(pkg)}","label":"${esc(label)}"}"""
+            """{"pkg":"${jsonEsc(pkg)}","label":"${jsonEsc(label)}"}"""
         }
         sendJson(out, 200, """{"apps":[$items]}""")
     }
@@ -926,7 +952,7 @@ class WebServer(private val ctx: Context, private val port: Int) {
         val perApp = store.perAppToday()
         val items = launcherApps().joinToString(",") { (pkg, label) ->
             val r = store.appRule(pkg)
-            """{"pkg":"${esc(pkg)}","label":"${esc(label)}","mode":"${r.mode}","minutes":${r.minutes},"todayMin":${perApp[pkg] ?: 0}}"""
+            """{"pkg":"${jsonEsc(pkg)}","label":"${jsonEsc(label)}","mode":"${r.mode}","minutes":${r.minutes},"todayMin":${perApp[pkg] ?: 0}}"""
         }
         sendJson(out, 200, """{"apps":[$items]}""")
     }
@@ -1023,15 +1049,34 @@ class WebServer(private val ctx: Context, private val port: Int) {
     }
 
 
-    private fun esc(s: String): String = s
-        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        .replace("\"", "&quot;")
+    /** Escape a string for use inside a JSON string value. (2026-11-09)
+     *  The old esc() was HTML-escaping (& -> &amp;) which is WRONG inside
+     *  JSON — the web UI received literal "&amp;" text. */
+    private fun jsonEsc(s: String): String {
+        val sb = StringBuilder(s.length + 8)
+        for (ch in s) {
+            when (ch) {
+                '\\' -> sb.append("\\\\")
+                '"' -> sb.append("\\\"")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                '\b' -> sb.append("\\b")
+                '\u000C' -> sb.append("\\f")
+                else -> if (ch.code < 0x20) sb.append(String.format("\\u%04x", ch.code))
+                else sb.append(ch)
+            }
+        }
+        return sb.toString()
+    }
 
 
     private fun reasonFor(code: Int): String = when (code) {
         200 -> "OK"
+        400 -> "Bad Request"
         401 -> "Unauthorized"
         404 -> "Not Found"
+        413 -> "Content Too Large"
         429 -> "Too Many Requests"
         500 -> "Internal Server Error"
         503 -> "Service Unavailable"

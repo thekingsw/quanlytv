@@ -18,7 +18,7 @@ import android.widget.TextView
 class SchedulesActivity : Activity() {
     private var settingsFrame: SettingsFrame.Handle? = null
     private lateinit var store: Store
-    private var schedules = listOf<Store.LockSchedule>()
+    private var schedules = listOf<SchedulePolicy.Schedule>()
     private lateinit var listContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {

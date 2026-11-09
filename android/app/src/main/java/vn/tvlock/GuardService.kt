@@ -41,6 +41,10 @@ class GuardService : Service() {
         try { web = WebServer(this, 8080).also { it.start() } } catch (_: Exception) { }
         running = true
         tickThread = Thread({
+            // Check khóa NGAY khi service vừa khởi động (bật TV / reboot)
+            // — không chờ 1 giây đầu. Lúc 15h bật TV lên là phải khóa
+            // liền. Sau đó tick mỗi 1 giây như cũ.
+            tick()
             while (running) {
                 try {
                     // v1.7: tick mỗi 1 giây (trước đây 15 giây) để đếm ngược
@@ -89,17 +93,14 @@ class GuardService : Service() {
             updateNotification()
             // v2.6: khóa qua web phải hiện màn hình khóa NGAY — trước đây
             // tick return sớm nên màn hình khóa chỉ hiện khi đổi app (qua
-            // Trợ năng). Chỉ hiện khi app khóa chưa ở foreground (tránh
-            // mở lại liên tục); đang mở tạm (unlockUntilMs) thì không hiện.
-            // v2.9: app thời sự trong khung giờ thời sự được miễn trừ
-            // tuyệt đối — đang xem thời sự trong khung thì KHÔNG hiện màn
-            // khóa dù đang khóa tay hay trong lịch khóa.
-            // v4.1: không hiện khóa khi đang ở app hệ thống được miễn trừ
-            // (vd popup cấp quyền MediaProjection của systemui) — tránh
-            // đá người dùng về màn khóa giữa chừng khi đang cài đặt.
-            if (store.isLockedNow(now) && store.lastPkg != packageName &&
-                !store.isExcluded(store.lastPkg) &&
-                !store.isNewsExempt(store.lastPkg, now)) {
+            // Trợ năng). v2.9: app thời sự trong khung giờ thời sự được miễn
+            // trừ tuyệt đối — đang xem thời sự trong khung thì KHÔNG hiện
+            // màn khóa dù đang khóa tay hay trong lịch khóa.
+            // (2026-11-09) Chỉ 1 hàm duy nhất quyết định khóa hay mở:
+            // LockPolicy.isLockedNow. Hiện màn khóa thì gọi thẳng
+            // showLock — nó tự chống hiện lại bằng cờ isShowing + kẹp
+            // 3 giây nên không lặp. Không còn shouldShowLock riêng lẻ.
+            run {
                 val i = Intent(this, LockActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 i.putExtra("reason", store.lockReason(now))

@@ -103,7 +103,7 @@ class ScheduleEditActivity : Activity() {
             return
         }
         val id = scheduleId ?: store.newScheduleId()
-        store.upsertLockSchedule(Store.LockSchedule(id, days, startMin, endMin))
+        store.upsertLockSchedule(SchedulePolicy.Schedule(id, days, startMin, endMin))
         Toast.makeText(this, "Đã lưu lịch khóa", Toast.LENGTH_SHORT).show()
         finish()
     }

@@ -28,7 +28,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="Khóa TV"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -217,10 +217,13 @@
         </receiver>
 
         <!-- v2.0: bật/tắt "chống tắt Trợ năng" từ xa qua ADB (app Cài TV).
-             Exported để shell (`am broadcast`) gọi được. -->
+             Exported để shell (`am broadcast`) gọi được. (2026-11-09)
+             android:permission DUMP: chỉ shell ADB (có quyền DUMP) mới
+             gửi được broadcast này — app thường trẻ tự cài thì không. -->
         <receiver
             android:name=".AntiDisableReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.DUMP">
             <intent-filter>
                 <action android:name="vn.tvlock.SET_ANTIDISABLE" />
             </intent-filter>
@@ -228,20 +231,24 @@
 
         <!-- v2.3: đặt lại mã PIN web từ xa qua ADB (app Cài TV) — quên
              mã PIN web thì đặt lại = mã PIN khóa TV. Exported để shell
-             (`am broadcast`) gọi được, như AntiDisableReceiver. -->
+             (`am broadcast`) gọi được, như AntiDisableReceiver.
+             (2026-11-09) DUMP: chỉ shell ADB mới gửi được. -->
         <receiver
             android:name=".WebPinResetReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.DUMP">
             <intent-filter>
                 <action android:name="vn.tvlock.RESET_WEBPIN" />
             </intent-filter>
         </receiver>
 
         <!-- v2.4: gỡ quyền Device Owner của chính app qua ADB (tab Lệnh ADB
-             của Cài TV) — xem DeviceOwnerRemoveReceiver.kt. -->
+             của Cài TV) — xem DeviceOwnerRemoveReceiver.kt.
+             (2026-11-09) DUMP: chỉ shell ADB mới gửi được. -->
         <receiver
             android:name=".DeviceOwnerRemoveReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.DUMP">
             <intent-filter>
                 <action android:name="vn.tvlock.REMOVE_DEVICE_OWNER" />
             </intent-filter>

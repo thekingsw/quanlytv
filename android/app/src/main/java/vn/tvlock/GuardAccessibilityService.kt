@@ -23,24 +23,39 @@ class GuardAccessibilityService : AccessibilityService() {
         override fun run() {
             try {
                 if (::store.isInitialized) {
-                    // lastPkg rỗng (vd vừa khởi động lại service giữa lúc
-                    // đang xem) thì đếm giờ đứng im và poll khóa không biết
-                    // app nào — nhận lại app foreground ngay.
+                    val now = System.currentTimeMillis()
+                    // Repair a lastPkg stuck at an excluded app (written by
+                    // older buggy versions), then re-read the foreground app
+                    // when we don't have a reliable one: empty (unknown),
+                    // or excluded (lock screen / system app — re-check
+                    // what's really in front).
                     // (2026-11-07 18:55: lastPkg kẹt ở vn.tvlock sau khi mở
                     // thời sự từ màn khóa — sự kiện cửa sổ của màn khóa tới
                     // sau, ghi đè lastPkg; web tưởng không phải thời sự nên
                     // báo khóa trong khi TV đang cho xem thời sự đúng khung.)
-                    if (store.lastPkg.isEmpty() || store.lastPkg == packageName) refreshForegroundApp()
-                    val now = System.currentTimeMillis()
-                    // Quyết định hiện màn khóa đi qua LockPolicy.shouldShowLock
-                    // (đã có unit test) thay vì điều kiện viết tay — tránh
-                    // gọi lại màn khóa khi nó đã hiện (refresh 88 lần, 2026-11-08).
-                    if (store.shouldShowLock(now)) {
+                    store.repairStuckForeground(now)
+                    if (store.lastPkg.isEmpty() || store.isExcluded(store.lastPkg)) refreshForegroundApp()
+                    // (2026-11-09) Chỉ 1 hàm duy nhất quyết định khóa hay
+                    // mở: LockPolicy.isLockedNow. Hiện màn khóa thì gọi
+                    // thẳng launchLock → showLock tự chống hiện lại bằng
+                    // cờ isShowing + kẹp 3 giây nên không lặp (refresh
+                    // 88 lần, 2026-11-08). Không còn shouldShowLock riêng lẻ.
+                    if (store.isLockedNow(now)) {
                         val reason = store.lockReason(now)
                         launchLock(reason)
                     }
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                // Fail-CLOSED (2026-11-09): lỗi trong lockPoll không được
+                // để TV mở khóa — thử hiện màn khóa nếu TV đang khóa.
+                // (Trước đây catch rỗng = fail-open: lỗi thì không khóa.)
+                android.util.Log.e("GuardA11y", "lockPoll failed", e)
+                try {
+                    if (::store.isInitialized && store.isLockedNow(System.currentTimeMillis())) {
+                        launchLock(store.lockReason(System.currentTimeMillis()))
+                    }
+                } catch (_: Exception) { }
+            }
             handler.postDelayed(this, 1000)
         }
     }
@@ -62,9 +77,10 @@ class GuardAccessibilityService : AccessibilityService() {
     }
 
     /** Đọc app foreground hiện tại qua cửa sổ đang focus. Chỉ nhận khi là
-     * app người dùng thật (không phải app hệ thống / màn khóa) — nhận bừa
-     * cửa sổ hệ thống sẽ làm lastPkg thành app miễn trừ, chặn cả đếm giờ
-     * lẫn hiện màn khóa (2026-11-06: web báo khóa mà TV vẫn chạy). */
+     * app người dùng thật — mọi lần ghi lastPkg đều đi qua
+     * ForegroundTracker (app hệ thống không ghi đè app đang theo dõi).
+     * (2026-11-06: nhận bừa cửa sổ hệ thống làm lastPkg thành app miễn trừ,
+     * chặn cả đếm giờ lẫn hiện màn khóa — web báo khóa mà TV vẫn chạy.) */
     private fun refreshForegroundApp() {
         try {
             val now = System.currentTimeMillis()
@@ -76,19 +92,17 @@ class GuardAccessibilityService : AccessibilityService() {
                 hasFocused = true
                 val pkg = w.root?.packageName?.toString() ?: continue
                 if (pkg.isEmpty()) continue
-                // Màn khóa đang focus thì lastPkg PHẢI là vn.tvlock — để
-                // lockPoll biết màn khóa đã hiện mà đừng gọi lại.
-                // (2026-11-08: bỏ qua nó làm lastPkg rỗng, shouldShowLock
-                // fail-safe gọi lại màn khóa liên tục sau khi cài bản mới.)
-                if (pkg == packageName) {
-                    store.lastPkg = pkg
-                    store.lastPkgStartMs = now
-                    return
-                }
-                if (store.isExcluded(pkg)) continue
-                store.lastPkg = pkg
-                store.lastPkgStartMs = now
-                return
+                // Mọi lần ghi đều qua ForegroundTracker: app hệ thống
+                // không ghi đè app đang theo dõi; màn khóa (vn.tvlock)
+                // thì ghi đè để lockPoll biết màn khóa đang hiện.
+                // (2026-11-08: bỏ qua màn khóa làm lastPkg rỗng,
+                // lockPoll fail-safe gọi lại màn khóa liên tục.)
+                store.noteForeground(pkg, now)
+                // Cửa sổ focus là app thật (hoặc màn khóa) thì foreground
+                // đã rõ — dừng lại. Cửa sổ focus là app hệ thống (vd
+                // popup cấp quyền của systemui) thì tìm tiếp — có thể
+                // còn cửa sổ focus khác là app thật.
+                if (!store.isExcluded(pkg) || pkg == packageName) return
             }
             // Có cửa sổ đang focus (vd chính màn khóa) thì foreground đã
             // rõ — đừng quét cửa sổ nền rồi nhận bừa app sau lưng làm
@@ -102,8 +116,7 @@ class GuardAccessibilityService : AccessibilityService() {
                 val pkg = w.root?.packageName?.toString() ?: continue
                 if (pkg.isEmpty() || pkg == packageName) continue
                 if (store.isExcluded(pkg)) continue
-                store.lastPkg = pkg
-                store.lastPkgStartMs = now
+                store.noteForeground(pkg, now)
                 return
             }
             // Không xác định được app thật thì giữ nguyên lastPkg cũ —
@@ -111,11 +124,10 @@ class GuardAccessibilityService : AccessibilityService() {
             // Ngoại lệ: nếu lastPkg đang kẹt ở app hệ thống (do bản lỗi
             // trước ghi vào) thì xóa nó — giá trị miễn trừ chặn cả đếm
             // giờ lẫn hiện màn khóa, để rỗng thì khóa vẫn hiện được.
-            if (store.lastPkg.isNotEmpty() && store.isExcluded(store.lastPkg)) {
-                store.lastPkg = ""
-                store.lastPkgStartMs = now
-            }
-        } catch (_: Exception) { }
+            store.repairStuckForeground(now)
+        } catch (e: Exception) {
+            android.util.Log.e("GuardA11y", "refreshForegroundApp failed", e)
+        }
     }
 
     override fun onDestroy() {
@@ -136,8 +148,11 @@ class GuardAccessibilityService : AccessibilityService() {
         if (prev.isNotEmpty() && prev != pkg) {
             store.addElapsed(prev, now)
         }
-        store.lastPkg = pkg
-        store.lastPkgStartMs = now
+        // Single rule via ForegroundTracker: excluded system apps do NOT
+        // overwrite the tracked app (old code assigned first, checked
+        // excluded after — lastPkg got stuck at systemui/settings,
+        // blocking both counting and the lock screen).
+        store.noteForeground(pkg, now)
         if (store.isExcluded(pkg) || pkg == packageName) return
         val reason = store.blockReason(pkg, now, store.appLabel(pkg))
         if (reason != null) launchLock(reason)
@@ -186,10 +201,13 @@ class GuardAccessibilityService : AccessibilityService() {
         return try {
             when (code) {
                 android.view.KeyEvent.KEYCODE_SETTINGS -> {
-                    val i = Intent(android.provider.Settings.ACTION_SETTINGS)
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(i)
-                    true
+                    // (2026-11-09) Mở Cài đặt hệ thống PHẢI qua PIN — trước
+                    // đây mở thẳng ACTION_SETTINGS, trẻ bấm nút bánh răng
+                    // là vào được, từ đó Clear data (reset PIN), tắt Trợ
+                    // năng, đổi giờ. Dùng luôn màn khóa mode "settings"
+                    // (đã có PIN từ 04/11), target "system" để mở Cài đặt
+                    // hệ thống sau khi nhập đúng PIN.
+                    openSystemSettingsWithPin()
                 }
                 android.view.KeyEvent.KEYCODE_TV_INPUT -> {
                     // Mở app Live TV (có chọn nguồn) nếu có, không thì vào Cài đặt.
@@ -198,12 +216,10 @@ class GuardAccessibilityService : AccessibilityService() {
                     if (li != null) {
                         li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         startActivity(li)
+                        true
                     } else {
-                        val i = Intent(android.provider.Settings.ACTION_SETTINGS)
-                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(i)
+                        openSystemSettingsWithPin()
                     }
-                    true
                 }
                 android.view.KeyEvent.KEYCODE_TV,
                 android.view.KeyEvent.KEYCODE_MEDIA_AUDIO_TRACK -> {
@@ -217,6 +233,20 @@ class GuardAccessibilityService : AccessibilityService() {
                 }
                 else -> false
             }
+        } catch (e: Exception) {
+            android.util.Log.e("GuardA11y", "handleSystemKey failed", e)
+            false
+        }
+    }
+
+    /** Mở Cài đặt hệ thống sau khi nhập đúng mã PIN khóa TV. */
+    private fun openSystemSettingsWithPin(): Boolean {
+        val i = Intent(this, LockActivity::class.java)
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        i.putExtra("mode", "settings")
+        i.putExtra("target", "system")
+        return try {
+            LockActivity.showLock(this, i)
         } catch (_: Exception) { false }
     }
 
