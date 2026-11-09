@@ -17,9 +17,6 @@
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="" style="@style/TvBodyV2" android:textSize="16sp"
                     android:textColor="@color/accent" android:layout_marginTop="8dp" />
-                <Button android:id="@+id/btnAccessSettings" style="@style/TvButton"
-                    android:layout_width="match_parent" android:text="Mở cài đặt Trợ năng của TV"
-                    android:layout_marginTop="8dp" />
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="Chống tắt" style="@style/TvTitleV2" android:layout_marginTop="12dp" />

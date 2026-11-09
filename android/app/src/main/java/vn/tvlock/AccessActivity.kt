@@ -35,9 +35,6 @@ class AccessActivity : Activity() {
         btnAntiDisableToggle = findViewById(R.id.btnAntiDisableToggle)
         btnIconToggle = findViewById(R.id.btnIconToggle)
 
-        findViewById<Button>(R.id.btnAccessSettings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
         btnAntiDisableToggle.setOnClickListener {
             store.antiDisable = !store.antiDisable
             if (store.antiDisable) store.ensureAccessEnabled()

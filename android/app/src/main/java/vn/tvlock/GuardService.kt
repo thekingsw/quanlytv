@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -21,11 +22,12 @@ class GuardService : Service() {
         store = Store(this)
         // v2.6: lastPkg được lưu bền (SharedPreferences) và chỉ cập nhật
         // khi đổi app (qua Trợ năng). Sau khi service khởi động lại (cập
-        // nhật app), lastPkg có thể còn là "vn.tvlock" từ trước dù màn hình
-        // thực tế đã là launcher — tick sẽ tưởng màn hình khóa đang hiện
-        // và không mở lại. Xóa để tick nhận đúng và hiện màn hình khóa
-        // ngay khi bị khóa.
-        store.lastPkg = ""
+        // nhật app), KHÔNG xóa lastPkg — xóa là đếm giờ đứng im vì không
+        // có sự kiện đổi app nào để nhận lại app đang xem (vd đang ở
+        // YouTube sẵn lúc cài bản mới, 2026-11-06: đã xem kẹt ở 89 phút).
+        // Chỉ reset mốc thời gian về "bây giờ" để elapsed không phình to
+        // từ phiên trước. Trợ năng tự nhận lại app foreground lúc kết nối.
+        store.lastPkgStartMs = System.currentTimeMillis()
         // v2.4: nếu app đã là Device Owner (đặt từ bản cũ, hoặc vừa cập nhật
         // đè lên bản đã đặt), đảm bảo chặn gỡ được bật — onEnabled của
         // DeviceOwnerReceiver chỉ chạy lúc mới đặt, không chạy khi cập nhật.
@@ -57,13 +59,30 @@ class GuardService : Service() {
             pollTickCounter = 0
             pollInbox()
         }
+        // v4.1: watchdog Tailscale — mỗi 60s kiểm tra 1 lần, chết thì
+        // dựng dậy. BootReceiver chỉ chạy khi reboot thật; còn ngủ/thức
+        // hay app tự chết giữa chừng thì cần lớp này.
+        if (++tailscaleTickCounter >= 60) {
+            tailscaleTickCounter = 0
+            ensureTailscaleRunning()
+        }
         // v2.0: chống tắt Trợ năng — ai tắt Trợ năng trong Cài đặt TV
         // thì bật lại ngay trong tích tắc này. Chỉ làm được khi app đã
         // được cấp quyền WRITE_SECURE_SETTINGS (Cài TV cấp sau khi cài).
         if (store.antiDisable) store.ensureAccessEnabled()
         store.tick(now)
-        if (now < store.unlockUntilMs || store.isLockedNow(now)) {
-            // Đang khóa / đang mở tạm: không nhắc nữa, gỡ banner nếu còn.
+        if (now < store.unlockUntilMs) {
+            // Đang mở tạm bằng mã thưởng / nút +giờ: không hiện màn khóa,
+            // nhưng PHẢI nhắc 5'/1' trước khi hết hạn — hết là khóa luôn.
+            // (Fix 2026-11-02 chỉ sửa warnIfNeeded mà quên tick() return
+            // sớm ở đây nên cảnh báo không bao giờ chạy.)
+            warnIfNeeded(now)
+            updateCountdown(now)
+            updateNotification()
+            return
+        }
+        if (store.isLockedNow(now)) {
+            // Đang khóa: không nhắc nữa, gỡ banner nếu còn.
             WarningBus.hide()
             countdownActive = false
             bannerShown = false
@@ -116,10 +135,58 @@ class GuardService : Service() {
     private var countdownActive = false
     private var bannerShown = false
     private var bannerShownAtMs = 0L
+    // Số tick liên tiếp mà deadline nằm trong 1..10s — chống nhá 1 tick
+    // sai lúc TV vừa bật (trạng thái chưa ổn định).
+    private var countdownConfirm = 0
     private var lastNotifText = ""
 
     // ============ v4.0: poll hộp thư Tinker ============
     private var pollTickCounter = 590 // poll lần đầu sau ~10s chạy service
+
+    // ============ v4.1: watchdog Tailscale ============
+    private var tailscaleTickCounter = 55 // check lần đầu sau ~5s chạy service
+    private var lastTailscaleLaunch = 0L // chống spam mở liên tục
+
+    /** Kiểm tra Tailscale còn sống không; chết thì mở lại.
+     *  v4.1.2: check interface tailscale0 trực tiếp (chính xác hơn
+     *  ConnectivityManager — có lúc VPN đã lên nhưng capabilities chưa
+     *  cập nhật kịp). Mở ngầm bằng service thay vì activity (không hiện
+     *  màn hình Tailscale); chỉ mở activity khi service không chạy được.
+     *  Cooldown 15 phút. */
+    private fun ensureTailscaleRunning() {
+        try {
+            // Tailscale chạy hay không: kiểm tra IP CGNAT 100.64.0.0/10 trên
+            // BẤT KỲ interface nào đang up. Trước đây kiểm tên "tailscale0"
+            // nhưng TV này Tailscale dùng "tun1" (100.71.81.69) nên chó canh
+            // cứ tưởng chết, 60s lại gọi mở service 1 lần và lôi UI lên.
+            val hasTs = try {
+                java.net.NetworkInterface.getNetworkInterfaces()?.toList()?.any { ni ->
+                    ni.isUp && ni.inetAddresses.toList().any { addr ->
+                        val b = addr.address
+                        b.size == 4 && (b[0].toInt() and 0xFF) == 100 &&
+                            ((b[1].toInt() and 0xFF) and 0xC0) == 0x40
+                    }
+                } == true
+            } catch (_: Exception) { false }
+            if (hasTs) return
+            val now = System.currentTimeMillis()
+            if (now - lastTailscaleLaunch < 15 * 60 * 1000) return
+            lastTailscaleLaunch = now
+            // Mở ngầm: start service IPNService (không hiện UI).
+            val svcStarted = try {
+                val svc = Intent()
+                svc.setClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNService")
+                if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(svc)
+                else startService(svc)
+                true
+            } catch (_: Exception) { false }
+            if (!svcStarted) {
+                val ts = packageManager.getLaunchIntentForPackage("com.tailscale.ipn")
+                ts?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (ts != null) startActivity(ts)
+            }
+        } catch (_: Exception) { }
+    }
 
     private fun pollInbox() {
         // Không poll khi đang khóa (tin nhắn chờ trong chuông).
@@ -186,12 +253,19 @@ class GuardService : Service() {
         val deadline = nearestDeadline(now)
         // v2.6: đếm ngược từng giây chỉ 10 giây cuối (trước đây 60 giây).
         if (deadline != null && deadline.first in 1..10) {
-            val (sec, label) = deadline
-            countdownActive = true
-            val s = if (sec == 1) "1 giây" else "$sec giây"
-            showBanner("Còn $s nữa là $label", "Nhớ lưu lại việc đang xem nhé!")
+            // Debounce: chỉ hiện đếm ngược khi deadline đã ổn định 2 tick
+            // liên tiếp — 1 tick sai lúc TV vừa bật (vd "5s nữa khóa" lúc
+            // 19:30 trong khung thời sự) không làm banner nhá lên rồi mất.
+            countdownConfirm++
+            if (countdownConfirm >= 2) {
+                val (sec, label) = deadline
+                countdownActive = true
+                val s = if (sec == 1) "1 giây" else "$sec giây"
+                showBanner("Còn $s nữa là $label", "Nhớ lưu lại việc đang xem nhé!")
+            }
             return
         }
+        countdownConfirm = 0
         if (countdownActive) {
             countdownActive = false
             bannerShown = false

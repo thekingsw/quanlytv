@@ -48,6 +48,7 @@ var SETTING_GROUPS = [
     { id: "pin",        title: "Mã PIN TV",          desc: "Đổi mã PIN mở khóa TV" },
     { id: "webpin",     title: "Mã PIN web",         desc: "Đổi mã PIN vào web trên điện thoại" },
     { id: "reward_codes", title: "Mã thưởng",        desc: "Tạo mã thưởng cho con" },
+    { id: "keymap",      title: "Nút remote",        desc: "Gán nút remote thừa cho hành động" },
     { id: "access",     title: "Trợ năng & chống tắt", desc: "Trạng thái trợ năng trên TV" },
     { id: "screenshot", title: "Chụp màn hình TV",   desc: "Chụp khung hình TV đang hiện" }
   ]}
@@ -60,8 +61,7 @@ var RULE_DEFS = [
   { id: "daily_limits", title: "Giới hạn ngày",     desc: "Giới hạn xem từng ngày trong tuần" },
   { id: "app_rules",    title: "Giới hạn từng app", desc: "Chặn / giới hạn riêng từng app" },
   { id: "bonus",        title: "Phút thưởng",       desc: "Quỹ phút thưởng cho con" },
-  { id: "lock_screen",  title: "Màn hình khóa",     desc: "Lời nhắc + ảnh nền" },
-  { id: "rewards",      title: "Mã thưởng",         desc: "Mã 6 số cộng phút cho con" }
+  { id: "lock_screen",  title: "Màn hình khóa",     desc: "Lời nhắc + ảnh nền" }
 ];
 
 var LIMIT_OPTIONS = [[5, "5 phút"], [10, "10 phút"], [15, "15 phút"], [30, "30 phút"],
@@ -303,7 +303,7 @@ function loadReport() {
 }
 function renderReport(d) {
   var today = d.today || {};
-  $("reportSummary").textContent = "Báo cáo hôm nay: " + (today.total || 0) + " phút";
+  $("reportHead").textContent = "Báo cáo hôm nay: " + (today.total || 0) + " phút";
   var el = $("reportBody");
   var html = "";
   html += '<div class="info-row"><span class="muted">Hôm nay</span><b>' +
@@ -532,9 +532,6 @@ function loadRuleValues() {
     var n = apps.filter(function (a) { return a.mode && a.mode !== "normal"; }).length;
     setRuleValue("app_rules", n ? n + " app có quy tắc" : "Chưa đặt");
   });
-  getJson("/api/reward-codes").then(function (d) {
-    setRuleValue("rewards", ((d && d.codes) || []).length + " mã");
-  });
   if (statusData) setRuleValue("bonus", (statusData.bonusMin || 0) + " phút");
   else getJson("/api/status").then(function (s) {
     if (s) { statusData = s; setRuleValue("bonus", (s.bonusMin || 0) + " phút"); }
@@ -575,7 +572,6 @@ function closeRuleDetail() {
 function buildRuleDetail(id, card) {
   if (id === "schedules") return buildScheduleDetail(card);
   if (id === "daily_limits") return buildLimitsDetail(card);
-  if (id === "rewards") { buildRewardsUI(card, "list"); return; }
   dispatchPanel(id, card);
 }
 window.addEventListener("hashchange", function () {
@@ -794,6 +790,7 @@ function dispatchPanel(id, card) {
   else if (id === "reward_codes") buildRewardsUI(card, "full");
   else if (id === "access") panelAccess(card);
   else if (id === "screenshot") panelScreenshot(card);
+  else if (id === "keymap") panelKeymap(card);
 }
 function renderHomeTab() {
   renderSettingGroup($("homeSettingsList"), $("homeSettingsPanel"), SETTING_GROUPS[1], "Màn hình chính");
@@ -856,8 +853,166 @@ function panelScreenshot(card) {
   again.addEventListener("click", doShot);
 }
 
-function panelTitle(card, title, sub) {
-  var h = document.createElement("h3");
+/* --- v4.3: Gán nút remote (keycode -> hành động) --- */
+function panelKeymap(card) {
+  panelTitle(card, "Nút remote",
+    "Tận dụng các nút thừa trên remote (Netflix, Prime...) sau khi đã ẩn app: bấm \"Học nút mới\", rồi bấm nút cần gán trên remote, sau đó chọn hành động.");
+  var list = document.createElement("div");
+  var learnBtn = document.createElement("button");
+  learnBtn.className = "btn accent wide";
+  learnBtn.textContent = "Học nút mới";
+  var hint = document.createElement("p");
+  hint.className = "muted small";
+  card.appendChild(list);
+  card.appendChild(learnBtn);
+  card.appendChild(hint);
+
+  var actionLabel = function (a) {
+    if (a === "lock") return "Khóa TV ngay";
+    if (a.indexOf("app:") === 0) return "Mở app " + a.slice(4);
+    if (a.indexOf("msg:") === 0) return "Nhắn \"" + a.slice(4) + "\"";
+    return a;
+  };
+
+  var refresh = function () {
+    getJson("/api/keymap").then(function (d) {
+      list.innerHTML = "";
+      var items = (d && d.items) || [];
+      if (!items.length) {
+        var p = document.createElement("p");
+        p.className = "muted small";
+        p.textContent = "Chưa gán nút nào.";
+        list.appendChild(p);
+        return;
+      }
+      items.forEach(function (it) {
+        var row = document.createElement("div");
+        row.className = "rowline";
+        var name = document.createElement("span");
+        name.textContent = it.label + " → " + actionLabel(it.action);
+        var del = document.createElement("button");
+        del.className = "btn ghost small";
+        del.textContent = "Xóa";
+        del.addEventListener("click", function () {
+          postForm("/api/keymap-delete", { keycode: it.keycode }).then(function () {
+            toast("Đã xóa.", true);
+            refresh();
+          });
+        });
+        row.appendChild(name);
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    });
+  };
+
+  var learnTimer = null;
+  learnBtn.addEventListener("click", function () {
+    learnBtn.disabled = true;
+    hint.textContent = "Đang chờ... bấm 1 nút trên remote TV trong 15 giây.";
+    postForm("/api/keymap-learn", {}).then(function () {
+      var tries = 0;
+      learnTimer = setInterval(function () {
+        tries++;
+        getJson("/api/keymap-learn").then(function (d) {
+          if (d && d.keycode) {
+            clearInterval(learnTimer);
+            learnBtn.disabled = false;
+            hint.textContent = "";
+            pickAction(d.keycode);
+          } else if (tries >= 16) {
+            clearInterval(learnTimer);
+            learnBtn.disabled = false;
+            hint.textContent = "Hết giờ, chưa thấy nút nào được bấm. Thử lại nhé.";
+          }
+        });
+      }, 1000);
+    });
+  });
+
+  var pickAction = function (keycode) {
+    var wrap = document.createElement("div");
+    wrap.className = "card";
+    var h = document.createElement("h3");
+    h.textContent = "Đã bắt được nút (mã " + keycode + ") — chọn hành động:";
+    wrap.appendChild(h);
+
+    var labelInput = document.createElement("input");
+    labelInput.placeholder = "Tên gợi nhớ (VD: Netflix)";
+    labelInput.className = "input wide";
+    wrap.appendChild(labelInput);
+
+    var mkBtn = function (text, fn) {
+      var b = document.createElement("button");
+      b.className = "btn wide";
+      b.textContent = text;
+      b.addEventListener("click", fn);
+      wrap.appendChild(b);
+      return b;
+    };
+
+    mkBtn("Mở một app...", function () {
+      wrap.innerHTML = "";
+      var h2 = document.createElement("h3");
+      h2.textContent = "Chọn app để mở:";
+      wrap.appendChild(h2);
+      getJson("/api/apprules").then(function (d) {
+        var apps = (d && d.apps) || [];
+        apps.forEach(function (a) {
+          var b = document.createElement("button");
+          b.className = "btn ghost wide";
+          b.textContent = a.label || a.pkg;
+          b.addEventListener("click", function () {
+            save(keycode, "app:" + a.pkg, labelInput.value || a.label || a.pkg);
+            card.removeChild(wrap);
+          });
+          wrap.appendChild(b);
+        });
+      });
+    });
+
+    mkBtn("Khóa TV ngay", function () {
+      save(keycode, "lock", labelInput.value || "Khóa nhanh");
+      card.removeChild(wrap);
+    });
+
+    mkBtn("Gửi tin nhắn về điện thoại...", function () {
+      var inp = document.createElement("input");
+      inp.placeholder = "VD: Gọi bố mẹ";
+      inp.className = "input wide";
+      wrap.appendChild(inp);
+      var ok = document.createElement("button");
+      ok.className = "btn accent wide";
+      ok.textContent = "Lưu";
+      ok.addEventListener("click", function () {
+        var t = inp.value.trim();
+        if (!t) { toast("Nhập nội dung tin nhắn.", false); return; }
+        save(keycode, "msg:" + t, labelInput.value || t);
+        card.removeChild(wrap);
+      });
+      wrap.appendChild(ok);
+    });
+
+    var cancel = document.createElement("button");
+    cancel.className = "btn ghost wide";
+    cancel.textContent = "Hủy";
+    cancel.addEventListener("click", function () { card.removeChild(wrap); });
+    wrap.appendChild(cancel);
+    card.appendChild(wrap);
+  };
+
+  var save = function (keycode, action, label) {
+    postFormJson("/api/keymap", { keycode: keycode, action: action, label: label })
+      .then(function (r) {
+        if (r && r.ok) { toast("Đã gán nút.", true); refresh(); }
+        else toast((r && r.error) || "Lưu thất bại.", false);
+      });
+  };
+
+  refresh();
+}
+
+function panelTitle(card, title, sub) {  var h = document.createElement("h3");
   h.textContent = title;
   card.appendChild(h);
   if (sub) {

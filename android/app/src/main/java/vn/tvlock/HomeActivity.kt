@@ -503,8 +503,12 @@ class HomeActivity : Activity() {
             tvTimeChip.visibility = View.GONE
             return
         }
-        val h = secs / 3600
-        val m = (secs % 3600) / 60
+        // Làm tròn LÊN theo phút (vd còn 6 giây → "Còn 1 phút") cho khớp
+        // với web (remainingMin). Trước đây chia nguyên nên còn dưới 1
+        // phút thì hiện "Còn 0 phút" gây hiểu lầm là hết giờ.
+        val totalMin = (secs + 59) / 60
+        val h = totalMin / 60
+        val m = totalMin % 60
         tvTimeChip.text = if (h > 0) "Còn $h giờ $m phút" else "Còn $m phút"
         bg.setColor(getColor(R.color.open))
         tvTimeChip.setTextColor(getColor(R.color.on_open))

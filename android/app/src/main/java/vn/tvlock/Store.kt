@@ -683,29 +683,50 @@ class Store(private val ctx: Context) {
         clearWarnings()
     }
 
-    fun minutesOfDay(nowMs: Long): Int {
-        val c = Calendar.getInstance()
-        c.timeInMillis = nowMs
-        return c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE)
-    }
+    fun minutesOfDay(nowMs: Long): Int = LockPolicy.minutesOfDay(nowMs)
 
-    fun isInWindow(nowMin: Int, start: Int, end: Int): Boolean {
-        if (start == end) return false
-        return if (start < end) nowMin in start until end else nowMin >= start || nowMin < end
-    }
+    fun isInWindow(nowMin: Int, start: Int, end: Int): Boolean =
+        LockPolicy.isInWindow(nowMin, start, end)
 
     fun isInNewsSlot(nowMs: Long): Boolean = isInWindow(minutesOfDay(nowMs), newsStartMin, newsEndMin)
+
+    /**
+     * Snapshot current state into the pure LockPolicy input. Only reads;
+     * callers that mutate (resetUsedIfNewDay) do so before building it.
+     * (2026-11-08: loose coupling — quyết định khóa sống trong LockPolicy,
+     * Store chỉ đọc prefs thành Input rồi áp kết quả.)
+     */
+    private fun lockInput(nowMs: Long, pkg: String = lastPkg): LockPolicy.Input {
+        val rule = appRule(pkg)
+        val match = matchingSchedules(nowMs)
+        return LockPolicy.Input(
+            nowMs = nowMs,
+            lastPkg = lastPkg,
+            newsPkg = newsPkg,
+            newsStartMin = newsStartMin,
+            newsEndMin = newsEndMin,
+            manualLocked = manualLocked,
+            unlockUntilMs = unlockUntilMs,
+            usedTodayMin = usedTodayMin,
+            dailyLimitMin = limitForToday(),
+            bonusMin = bonusMin,
+            lockedBySchedule = match.isNotEmpty(),
+            scheduleReason = match.joinToString("; ") { scheduleSummary(it) },
+            appRule = LockPolicy.AppRule(rule.mode, rule.minutes),
+            perAppUsedMin = perAppMin(pkg)
+        )
+    }
 
     /** True when the TV should be locked right now (whole-TV rules; per-app rules are separate). */
     fun isLockedNow(nowMs: Long): Boolean {
         resetUsedIfNewDay()
-        if (nowMs < unlockUntilMs) return false
-        if (manualLocked) return true
-        if (isLockedBySchedule(nowMs)) return true
-        // Daily limit only locks when the bonus pool is also exhausted.
-        val limit = limitForToday()
-        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0) return true
-        return false
+        return LockPolicy.isLockedNow(lockInput(nowMs))
+    }
+
+    /** lockPoll guard — delegate to the tested LockPolicy (2026-11-08). */
+    fun shouldShowLock(nowMs: Long): Boolean {
+        resetUsedIfNewDay()
+        return LockPolicy.shouldShowLock(lockInput(nowMs))
     }
 
     /** Minutes of daily limit left (excluding bonus). */
@@ -758,15 +779,7 @@ class Store(private val ctx: Context) {
 
     fun lockReason(nowMs: Long): String {
         resetUsedIfNewDay()
-        if (manualLocked && nowMs >= unlockUntilMs) return "Đã khóa"
-        val match = matchingSchedules(nowMs)
-        if (match.isNotEmpty())
-            return "Đến giờ khóa (${match.joinToString("; ") { scheduleSummary(it) }})"
-        val limit = limitForToday()
-        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0)
-            return "Hết giờ xem — đã hết cả phút thưởng"
-        if (limit > 0 && usedTodayMin >= limit) return "Hết giờ xem"
-        return "Đã khóa"
+        return LockPolicy.lockReason(lockInput(nowMs))
     }
 
     /**
@@ -787,33 +800,14 @@ class Store(private val ctx: Context) {
      */
     fun blockReason(pkg: String, nowMs: Long, label: String): String? {
         resetUsedIfNewDay()
-        // v2.9: app thời sự trong khung giờ thời sự — miễn trừ tuyệt đối.
-        if (isNewsExempt(pkg, nowMs)) return null
-        if (nowMs < unlockUntilMs) return null
-        val rule = appRule(pkg)
-        if (rule.mode == "blocked") return "App $label đã bị chặn"
-        if (rule.mode == "limit" && perAppMin(pkg) >= rule.minutes)
-            return "Hết giờ cho app $label"
-        if (manualLocked) return "Đã khóa"
-        val match = matchingSchedules(nowMs)
-        if (match.isNotEmpty())
-            return "Đến giờ khóa (${match.joinToString("; ") { scheduleSummary(it) }})"
-        val limit = limitForToday()
-        if (limit > 0 && usedTodayMin >= limit && bonusMin <= 0)
-            return "Hết giờ xem — đã hết cả phút thưởng"
-        return null
+        return LockPolicy.blockReason(pkg, label, lockInput(nowMs, pkg))
     }
 
-    fun isExcluded(pkg: String): Boolean {
-        return pkg == "vn.tvlock" || pkg == "com.google.android.tvlauncher" ||
-            pkg == "com.android.systemui" || pkg == "com.android.settings" ||
-            pkg == "com.google.android.apps.tv.launcherx" || pkg == "com.google.android.tvlauncher"
-    }
+    fun isExcluded(pkg: String): Boolean = LockPolicy.isExcluded(pkg)
 
     /** Is this package exempt from counting right now (news app inside the news slot)? */
-    fun isNewsExempt(pkg: String, nowMs: Long): Boolean {
-        return newsPkg.isNotEmpty() && pkg == newsPkg && isInNewsSlot(nowMs)
-    }
+    fun isNewsExempt(pkg: String, nowMs: Long): Boolean =
+        LockPolicy.isNewsExempt(pkg, newsPkg, nowMs, newsStartMin, newsEndMin)
 
     /** Display label for a package (fallback: the package name). */
     fun appLabel(pkg: String): String {
@@ -830,36 +824,21 @@ class Store(private val ctx: Context) {
      * past the limit and the lock engage.
      */
     fun addElapsed(pkg: String, nowMs: Long) {
-        if (pkg.isEmpty() || isExcluded(pkg)) return
+        if (pkg.isEmpty() || LockPolicy.isExcluded(pkg)) return
         resetUsedIfNewDay()
-        val start = lastPkgStartMs
-        if (start <= 0L || nowMs <= start) return
-        if (isNewsExempt(pkg, nowMs)) return
-        val total = remainderMs + (nowMs - start)
-        val mins = (total / 60000L).toInt()
-        remainderMs = total % 60000L
-        if (mins <= 0) return
-        addPerAppMin(pkg, mins)
-        val rule = appRule(pkg)
-        if (rule.mode == "free") return
-        val limit = limitForToday()
-        if (limit <= 0) {
-            usedTodayMin = usedTodayMin + mins
-            return
-        }
-        val room = (limit - usedTodayMin).coerceAtLeast(0)
-        val toDaily = minOf(mins, room)
-        val overflow = mins - toDaily
-        usedTodayMin = usedTodayMin + toDaily
-        if (overflow > 0) {
-            if (bonusMin > 0) {
-                val spend = minOf(overflow, bonusMin)
-                bonusMin = bonusMin - spend
-                usedTodayMin = usedTodayMin + (overflow - spend)
-            } else {
-                usedTodayMin = usedTodayMin + overflow
-            }
-        }
+        val r = LockPolicy.addElapsed(
+            LockPolicy.CountInput(
+                pkg = pkg, nowMs = nowMs, lastPkgStartMs = lastPkgStartMs,
+                remainderMs = remainderMs, usedTodayMin = usedTodayMin,
+                bonusMin = bonusMin, dailyLimitMin = limitForToday(),
+                appRuleMode = appRule(pkg).mode,
+                newsPkg = newsPkg, newsStartMin = newsStartMin, newsEndMin = newsEndMin
+            )
+        )
+        remainderMs = r.remainderMs
+        if (r.perAppAddMin > 0) addPerAppMin(pkg, r.perAppAddMin)
+        usedTodayMin = r.usedTodayMin
+        bonusMin = r.bonusMin
     }
 
     /** Accumulate time for the currently-tracked package up to now (called on a tick). */
@@ -880,18 +859,22 @@ class Store(private val ctx: Context) {
      * đứng yên như lỗi "còn 9s" lúc 18:58 ngày 29/10).
      */
     fun isCountingNow(nowMs: Long): Boolean {
-        val pkg = lastPkg
-        if (pkg.isEmpty() || isExcluded(pkg)) return false
-        if (isNewsExempt(pkg, nowMs)) return false
-        if (appRule(pkg).mode == "free") return false
-        return true
+        return LockPolicy.isCountingNow(lockInput(nowMs, lastPkg))
     }
 
     fun fmt(min: Int): String = String.format(Locale.US, "%02d:%02d", min / 60, min % 60)
 
     fun addMinutes(minutes: Int) {
-        unlockUntilMs = System.currentTimeMillis() + minutes * 60000L
-        manualLocked = false
+        // Cộng thêm vào mở tạm đang chạy (nếu còn) thay vì ghi đè —
+        // nút "CỘNG THÊM GIỜ" phải cộng, không được rút ngắn giờ đang có
+        // (vd con còn 7' mã 10', bấm +5 phải thành 12', không phải 5').
+        // KHÔNG xóa manualLocked: mở tạm chỉ đè lên khóa tay (isLockedNow
+        // đã ưu tiên unlockUntilMs), hết hạn thì khóa tay quay lại —
+        // trước đây xóa luôn nên bấm "Khóa ngay" rồi con nhập mã xong
+        // hết giờ TV cứ mở (2026-11-06). Nút "Mở khóa" trên web tự xóa
+        // cờ khóa tay riêng, không dùng hàm này.
+        val now = System.currentTimeMillis()
+        unlockUntilMs = maxOf(now, unlockUntilMs) + minutes * 60000L
         clearWarnings()
     }
 
@@ -1150,4 +1133,39 @@ class Store(private val ctx: Context) {
              f.name.endsWith(".png", true) || f.name.endsWith(".webp", true)) }
             ?.sortedBy { it.name } ?: emptyList()
     }
+
+    // ---------- v4.3: gán nút remote (keycode -> hành động) ----------
+    // Hành động: "app:<package>" mở app, "lock" khóa ngay,
+    // "msg:<nội dung>" gửi tin nhắn về điện thoại qua inbox.
+    // Lưu dạng JSON: {"123":{"action":"app:...","label":"Netflix"}, ...}
+    private fun keyMapJson(): JSONObject = try {
+        JSONObject(prefs.getString("keymap", "{}") ?: "{}")
+    } catch (_: Exception) { JSONObject() }
+
+    fun keyMap(): Map<Int, JSONObject> {
+        val out = mutableMapOf<Int, JSONObject>()
+        val j = keyMapJson()
+        val keys = j.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val code = k.toIntOrNull() ?: continue
+            val o = j.optJSONObject(k) ?: continue
+            out[code] = o
+        }
+        return out
+    }
+
+    fun setKeyMapEntry(keycode: Int, action: String, label: String) {
+        val j = keyMapJson()
+        j.put(keycode.toString(), JSONObject().put("action", action).put("label", label))
+        prefs.edit().putString("keymap", j.toString()).apply()
+    }
+
+    fun removeKeyMapEntry(keycode: Int) {
+        val j = keyMapJson()
+        j.remove(keycode.toString())
+        prefs.edit().putString("keymap", j.toString()).apply()
+    }
+
+    fun keyMapAction(keycode: Int): JSONObject? = keyMap()[keycode]
 }

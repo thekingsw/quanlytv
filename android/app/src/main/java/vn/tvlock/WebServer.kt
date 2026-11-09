@@ -164,6 +164,12 @@ class WebServer(private val ctx: Context, private val port: Int) {
                 method == "POST" && path == "/api/settings-antidisable" -> settingsAntiDisable(out, params)
                 method == "POST" && path == "/api/device-owner-remove" -> deviceOwnerRemove(out)
                 method == "POST" && path == "/api/settings-apprule" -> settingsAppRule(out, params)
+                // v4.3: gán nút remote (keycode -> hành động)
+                method == "GET" && path == "/api/keymap" -> keyMapJson(out)
+                method == "POST" && path == "/api/keymap" -> keyMapSave(out, params)
+                method == "POST" && path == "/api/keymap-delete" -> keyMapDelete(out, params)
+                method == "POST" && path == "/api/keymap-learn" -> keyMapLearn(out)
+                method == "GET" && path == "/api/keymap-learn" -> keyMapLearnPoll(out)
                 else -> sendJson(out, 404, """{"ok":false,"error":"<h1>Không tìm thấy</h1><a href='/'>Về trang chính</a>"}""")
             }
         } catch (_: Exception) {
@@ -943,6 +949,66 @@ class WebServer(private val ctx: Context, private val port: Int) {
         }
         store.setAppRule(pkg, mode, min)
         sendJson(out, 200, """{"ok":true}""")
+    }
+
+    // ---------- v4.3: gán nút remote ----------
+    private fun keyMapJson(out: OutputStream) {
+        val store = Store(ctx)
+        val arr = org.json.JSONArray()
+        for ((code, o) in store.keyMap()) {
+            arr.put(org.json.JSONObject()
+                .put("keycode", code)
+                .put("action", o.optString("action", ""))
+                .put("label", o.optString("label", "")))
+        }
+        sendJson(out, 200, org.json.JSONObject().put("ok", true).put("items", arr).toString())
+    }
+
+    private fun keyMapSave(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val code = params["keycode"]?.toIntOrNull()
+        val action = params["action"]?.trim() ?: ""
+        val label = params["label"]?.trim() ?: ""
+        if (code == null || code <= 0 || action.isEmpty()) {
+            sendJson(out, 200, """{"ok":false,"error":"Thiếu keycode hoặc hành động."}""")
+            return
+        }
+        // Không cho gán phím hệ thống (HOME/BACK/DPAD) — tránh kẹt TV.
+        if (code in KeyRemap.SYSTEM_KEYS) {
+            sendJson(out, 200, """{"ok":false,"error":"Không gán được phím điều hướng hệ thống."}""")
+            return
+        }
+        // Chỉ cho phép: app:<pkg>, lock, msg:<text>
+        val valid = action == "lock" || action.startsWith("app:") || action.startsWith("msg:")
+        if (!valid) {
+            sendJson(out, 200, """{"ok":false,"error":"Hành động không hợp lệ."}""")
+            return
+        }
+        store.setKeyMapEntry(code, action, label.ifEmpty { "Nút $code" })
+        sendJson(out, 200, """{"ok":true}""")
+    }
+
+    private fun keyMapDelete(out: OutputStream, params: Map<String, String>) {
+        val store = Store(ctx)
+        val code = params["keycode"]?.toIntOrNull()
+        if (code == null) {
+            sendJson(out, 200, """{"ok":false,"error":"Thiếu keycode."}""")
+            return
+        }
+        store.removeKeyMapEntry(code)
+        sendJson(out, 200, """{"ok":true}""")
+    }
+
+    private fun keyMapLearn(out: OutputStream) {
+        KeyRemap.startLearn(15)
+        sendJson(out, 200, """{"ok":true,"timeout":15}""")
+    }
+
+    private fun keyMapLearnPoll(out: OutputStream) {
+        val code = KeyRemap.pollLearn()
+        val o = org.json.JSONObject().put("ok", true)
+        if (code > 0) o.put("keycode", code) else o.put("keycode", org.json.JSONObject.NULL)
+        sendJson(out, 200, o.toString())
     }
 
 
