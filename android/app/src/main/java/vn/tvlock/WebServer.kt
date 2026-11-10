@@ -29,6 +29,8 @@ class WebServer(private val ctx: Context, private val port: Int) {
         /** Max request body (8MB — ảnh nền lớn nhất cho phép). Vượt quá thì
          *  413, không cấp phát CharArray theo Content-Length kẻo OOM. */
         private const val MAX_BODY_BYTES = 8 * 1024 * 1024
+        /** Body tối đa khi CHƯA đăng nhập (chỉ cần form PIN). */
+        private const val MAX_ANON_BODY_BYTES = 4 * 1024
     }
 
     /** Bounded thread pool for HTTP handlers (max 8 concurrent). */
@@ -86,7 +88,11 @@ class WebServer(private val ctx: Context, private val port: Int) {
             }
             val out = sock.getOutputStream()
             var body = ""
-            if (contentLength > MAX_BODY_BYTES) {
+            // Chưa đăng nhập thì chỉ cho body vài KB (form PIN): nếu không, ai trong LAN
+            // cũng ép TV cấp phát tới 8MB x 8 luồng chỉ bằng Content-Length giả.
+            val authed = isAuthed(cookieHeader)
+            val bodyLimit = if (authed) MAX_BODY_BYTES else MAX_ANON_BODY_BYTES
+            if (contentLength > bodyLimit) {
                 // (2026-11-09) Kẹp Content-Length: trước đây cấp phát
                 // CharArray(contentLength) theo header kẻo OOM với
                 // Content-Length giả. Ảnh nền lớn nhất cho phép là 8MB.
@@ -111,7 +117,6 @@ class WebServer(private val ctx: Context, private val port: Int) {
             // tĩnh giao diện (app.css/app.js, vô hại) và login/logout.
             // Trang chưa đăng nhập thì trả về trang chính để app.js tự
             // hiện màn hình nhập PIN; /api/* chưa đăng nhập thì 401.
-            val authed = isAuthed(cookieHeader)
             val publicStatic = method == "GET" && (path == "/app.css" || path == "/app.js")
             val publicAuth = method == "POST" &&
                 (path == "/api/webpin-login" || path == "/api/webpin-logout")

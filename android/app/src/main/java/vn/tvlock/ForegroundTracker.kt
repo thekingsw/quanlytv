@@ -1,59 +1,67 @@
 package vn.tvlock
 
 /**
- * Single source of truth for "which app is in the foreground".
+ * Luật "app nào đang ở foreground" — HÀM THUẦN, KHÔNG import android.*.
  *
- * (2026-11-09) Trước đây lastPkg/lastPkgStartMs bị ghi từ 4+ chỗ
- * (onAccessibilityEvent, refreshForegroundApp, Store.tick,
- * GuardService.onCreate), mỗi chỗ một quy tắc "app nào hợp lệ" — nên
- * lastPkg kẹt ở systemui/settings (ghi trước khi kiểm tra excluded),
- * làm đếm giờ dừng và màn khóa không hiện. Giờ mọi chỗ ghi đều đi qua
- * đây, với MỘT quy tắc duy nhất.
+ * Trước đây các luật này rải ở nhiều chỗ (onAccessibilityEvent, refreshForegroundApp,
+ * GuardService.onCreate, Store.tick), mỗi chỗ một kiểu nên lastPkg bị kẹt ở app hệ thống
+ * (06–08/11). Giờ chỉ còn một nơi định nghĩa luật; LockEngine là nơi duy nhất áp kết
+ * quả vào Store (Store.lastPkg có `private set`, trình biên dịch chặn ghi tắt).
  *
- * Quy tắc:
- *  - App hệ thống được miễn trừ (systemui, settings, launcher) KHÔNG ghi
- *    đè app đang theo dõi — giá trị miễn trừ chặn cả đếm giờ lẫn hiện
- *    màn khóa.
- *  - App của chính mình (vn.tvlock — màn khóa) CÓ ghi đè, để lockPoll
- *    biết màn khóa đang hiện mà đừng gọi lại.
- *  - Ghi lại cùng một app thì giữ nguyên mốc bắt đầu (không reset) —
- *    reset bừa làm mất thời gian đã xem.
- *  - Khoảng cách thời gian được kẹp ở LockPolicy.addElapsed
- *    (MAX_COUNT_GAP_MS): tick là 1 giây nên khoảng cách lớn nghĩa là hệ
- *    thống bị treo/ngủ — không tính cả đêm ngủ thành giờ xem.
+ * Phân loại gói:
+ *  - Cửa sổ THOÁNG QUA ([TRANSIENT_OVERLAYS]: thanh âm lượng, bảng thông báo...) nằm
+ *    trên app đang xem. Sự kiện của chúng KHÔNG đổi foreground; nếu đổi thì lastPkg
+ *    thành app hệ thống -> dừng đếm giờ dù trẻ vẫn xem video bên dưới.
+ *  - Mọi gói khác — kể cả Cài đặt / launcher hệ thống / chính app mình — là màn hình
+ *    THẬT: ghi đè lastPkg. Vào Cài đặt hay launcher là KHÔNG còn xem YouTube nữa nên
+ *    phải dừng đếm giờ (isCountingNow false vì gói đó nằm trong LockPolicy.isExcluded).
+ *    Việc khóa không phụ thuộc điều này: LockPolicy.evaluate vẫn khóa đè lên chúng.
  */
 object ForegroundTracker {
 
-    data class State(val lastPkg: String = "", val lastPkgStartMs: Long = 0L)
+    private val TRANSIENT_OVERLAYS = setOf("com.android.systemui")
 
-    /**
-     * Record a newly-foregrounded package. Returns the (possibly unchanged)
-     * state — callers must use the returned value.
-     */
-    fun noteForeground(state: State, pkg: String, ownPkg: String, nowMs: Long): State {
-        if (pkg.isEmpty()) return state
-        // The lock screen itself: record it so the lock poll knows the
-        // lock is up and does not re-show it.
-        if (pkg == ownPkg) {
-            if (pkg == state.lastPkg) return state
-            return State(pkg, nowMs)
-        }
-        // Excluded system apps never overwrite the tracked app.
-        if (LockPolicy.isExcluded(pkg)) return state
-        if (pkg == state.lastPkg) return state
-        return State(pkg, nowMs)
+    /** Sự kiện cửa sổ của [pkg] có nên bỏ qua (không đổi foreground) không? */
+    fun shouldIgnoreEvent(pkg: String): Boolean =
+        pkg.isEmpty() || pkg in TRANSIENT_OVERLAYS
+
+    /** Một cửa sổ trên màn hình (đã rút gọn từ AccessibilityWindowInfo). */
+    data class Win(val pkg: String, val focused: Boolean)
+
+    sealed class Detected {
+        /** Foreground là [pkg] (có thể là chính app mình = màn khóa/màn hình chính). */
+        data class App(val pkg: String) : Detected()
+        /** Không xác định được — giữ nguyên giá trị cũ. */
+        object Unknown : Detected()
     }
 
     /**
-     * Repair a state stuck at an excluded app (written by older buggy
-     * versions): empty it so the lock can show and counting can resume.
-     * Returns the (possibly unchanged) state.
+     * Chọn foreground từ danh sách cửa sổ (dùng khi nhận lại app lúc service khởi động
+     * lại, hoặc khi lastPkg đang rỗng / ở màn hình hệ thống).
+     *  1. Ưu tiên cửa sổ đang focus: của chính mình -> [ownPkg] (để biết màn khóa đã
+     *     hiện, đừng gọi lại); cửa sổ thoáng qua -> bỏ qua, xét cửa sổ focus kế;
+     *     còn lại -> chính nó.
+     *  2. Đã có cửa sổ focus mà không chọn được -> Unknown (KHÔNG quét cửa sổ nền:
+     *     quét bừa làm lockPoll tưởng đang ở app khác, màn khóa nhấp nháy 88 lần).
+     *  3. Không có cửa sổ focus nào -> lấy app thật đầu tiên (không phải mình, không
+     *     phải app hệ thống) — vẫn hơn để lastPkg rỗng.
      */
-    fun clearIfExcluded(state: State, ownPkg: String, nowMs: Long): State {
-        if (state.lastPkg.isNotEmpty() && state.lastPkg != ownPkg &&
-            LockPolicy.isExcluded(state.lastPkg)) {
-            return State("", nowMs)
+    fun detect(wins: List<Win>, ownPkg: String): Detected {
+        var hasFocused = false
+        for (w in wins) {
+            if (!w.focused) continue
+            hasFocused = true
+            if (w.pkg.isEmpty()) continue
+            if (w.pkg == ownPkg) return Detected.App(ownPkg)
+            if (w.pkg in TRANSIENT_OVERLAYS) continue
+            return Detected.App(w.pkg)
         }
-        return state
+        if (hasFocused) return Detected.Unknown
+        for (w in wins) {
+            if (w.pkg.isEmpty() || w.pkg == ownPkg) continue
+            if (LockPolicy.isExcluded(w.pkg)) continue
+            return Detected.App(w.pkg)
+        }
+        return Detected.Unknown
     }
 }

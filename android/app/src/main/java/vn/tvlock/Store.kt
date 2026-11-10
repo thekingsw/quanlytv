@@ -226,8 +226,22 @@ class Store(private val ctx: Context) {
         } catch (_: Exception) { false }
     }
 
+    /**
+     * Khóa tay HIỆU LỰC hôm nay. Trả đúng cái LockPolicy dùng để khóa, nên màn PIN
+     * và web không còn hiện "ĐANG KHÓA" ở hôm sau khi TV đã tự mở (lỗi UI lệch engine).
+     * Dữ liệu cũ (bật trước bản có ngày, chưa ghi ngày): coi là bật HÔM NAY — không
+     * nhả khóa đang bật lúc cập nhật; sang hôm sau tự hết như mọi khóa tay khác.
+     */
     var manualLocked: Boolean
-        get() = prefs.getBoolean("manualLocked", false)
+        get() {
+            if (!prefs.getBoolean("manualLocked", false)) return false
+            var d = prefs.getString("manualLockedDate", "") ?: ""
+            if (d.isEmpty()) {
+                d = todayStr()
+                prefs.edit().putString("manualLockedDate", d).apply()
+            }
+            return d == todayStr()
+        }
         set(v) {
             val e = prefs.edit().putBoolean("manualLocked", v)
             // Khóa tay chỉ có tác dụng trong ngày bật nó (2026-11-09):
@@ -299,13 +313,27 @@ class Store(private val ctx: Context) {
         get() = prefs.getString("usedDate", "") ?: ""
         set(v) = prefs.edit().putString("usedDate", v).apply()
 
+    // ---------- Foreground app: CHỈ LockEngine được ghi (qua markForeground) ----------
+    // `private set` để trình biên dịch chặn mọi chỗ khác ghi tắt — lỗi "lastPkg kẹt ở
+    // app hệ thống" (06–08/11) sinh ra vì nhiều nơi cùng ghi với luật khác nhau.
     var lastPkg: String
         get() = prefs.getString("lastPkg", "") ?: ""
-        set(v) = prefs.edit().putString("lastPkg", v).apply()
+        private set(v) = prefs.edit().putString("lastPkg", v).apply()
 
     var lastPkgStartMs: Long
         get() = prefs.getLong("lastPkgStartMs", 0L)
-        set(v) = prefs.edit().putLong("lastPkgStartMs", v).apply()
+        private set(v) = prefs.edit().putLong("lastPkgStartMs", v).apply()
+
+    /** Ghi app foreground mới và mốc bắt đầu. Chỉ LockEngine gọi. */
+    fun markForeground(pkg: String, nowMs: Long) {
+        lastPkg = pkg
+        lastPkgStartMs = nowMs
+    }
+
+    /** Đặt lại mốc thời gian về [nowMs] mà giữ nguyên lastPkg (service khởi động lại). */
+    fun restartClock(nowMs: Long) {
+        lastPkgStartMs = nowMs
+    }
 
     private var remainderMs: Long
         get() = prefs.getLong("usedRemainderMs", 0L)
@@ -703,6 +731,15 @@ class Store(private val ctx: Context) {
         )
     }
 
+    /**
+     * QUYẾT ĐỊNH DUY NHẤT cho app foreground hiện tại — LockEngine gọi hàm này.
+     * Đừng ghép điều kiện khóa ở nơi khác (xem LockPolicy.evaluate).
+     */
+    fun evaluateLock(nowMs: Long): LockPolicy.Decision {
+        resetUsedIfNewDay()
+        return LockPolicy.evaluate(lockInput(nowMs)) { appLabel(it) }
+    }
+
     /** True when the TV should be locked right now (whole-TV rules; per-app rules are separate). */
     fun isLockedNow(nowMs: Long): Boolean {
         resetUsedIfNewDay()
@@ -754,6 +791,7 @@ class Store(private val ctx: Context) {
         if (appRule(pkg).mode == "free") return 0
         val start = lastPkgStartMs
         if (start <= 0L || nowMs <= start) return 0
+        if (LockPolicy.isSuspendGap(start, nowMs)) return 0 // hệ thống vừa treo, đừng hiện số khổng lồ
         return ((nowMs - start) / 1000).toInt()
     }
 
@@ -785,29 +823,8 @@ class Store(private val ctx: Context) {
 
     fun isExcluded(pkg: String): Boolean = LockPolicy.isExcluded(pkg)
 
-    // ---------- Foreground tracking (single source of truth) ----------
-    // (2026-11-09) Mọi chỗ ghi lastPkg/lastPkgStartMs đều đi qua
-    // ForegroundTracker — xem ForegroundTracker.kt. Store chỉ đọc/ghi
-    // state xuống SharedPreferences.
-
-    /** Current foreground state as the tracker sees it. */
-    fun trackerState(): ForegroundTracker.State =
-        ForegroundTracker.State(lastPkg, lastPkgStartMs)
-
-    private fun applyTrackerState(s: ForegroundTracker.State) {
-        lastPkg = s.lastPkg
-        lastPkgStartMs = s.lastPkgStartMs
-    }
-
-    /** Record a newly-foregrounded package (excluded apps don't overwrite). */
-    fun noteForeground(pkg: String, nowMs: Long) {
-        applyTrackerState(ForegroundTracker.noteForeground(trackerState(), pkg, ctx.packageName, nowMs))
-    }
-
-    /** Clear a lastPkg stuck at an excluded app (written by older versions). */
-    fun repairStuckForeground(nowMs: Long) {
-        applyTrackerState(ForegroundTracker.clearIfExcluded(trackerState(), ctx.packageName, nowMs))
-    }
+    // Luật foreground nằm ở ForegroundTracker (thuần); LockEngine áp vào Store qua
+    // markForeground. Store không còn tự quyết "app nào hợp lệ".
 
     /** Is this package exempt from counting right now (news app inside the news slot)? */
     fun isNewsExempt(pkg: String, nowMs: Long): Boolean =
@@ -830,7 +847,7 @@ class Store(private val ctx: Context) {
     fun addElapsed(pkg: String, nowMs: Long) {
         if (pkg.isEmpty() || LockPolicy.isExcluded(pkg)) return
         resetUsedIfNewDay()
-        val r = LockPolicy.addElapsed(
+        val r = LockPolicy.addElapsedGuarded(
             LockPolicy.CountInput(
                 pkg = pkg, nowMs = nowMs, lastPkgStartMs = lastPkgStartMs,
                 remainderMs = remainderMs, usedTodayMin = usedTodayMin,

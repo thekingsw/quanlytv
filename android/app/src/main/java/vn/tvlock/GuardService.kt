@@ -27,7 +27,7 @@ class GuardService : Service() {
         // YouTube sẵn lúc cài bản mới, 2026-11-06: đã xem kẹt ở 89 phút).
         // Chỉ reset mốc thời gian về "bây giờ" để elapsed không phình to
         // từ phiên trước. Trợ năng tự nhận lại app foreground lúc kết nối.
-        store.lastPkgStartMs = System.currentTimeMillis()
+        LockEngine.onServiceRestart(store, System.currentTimeMillis())
         // v2.4: nếu app đã là Device Owner (đặt từ bản cũ, hoặc vừa cập nhật
         // đè lên bản đã đặt), đảm bảo chặn gỡ được bật — onEnabled của
         // DeviceOwnerReceiver chỉ chạy lúc mới đặt, không chạy khi cập nhật.
@@ -74,7 +74,10 @@ class GuardService : Service() {
         // thì bật lại ngay trong tích tắc này. Chỉ làm được khi app đã
         // được cấp quyền WRITE_SECURE_SETTINGS (Cài TV cấp sau khi cài).
         if (store.antiDisable) store.ensureAccessEnabled()
-        store.tick(now)
+        // Cộng giờ + quyết định khóa + hiện màn khóa: TẤT CẢ nằm trong LockEngine (cùng
+        // một cửa với lockPoll của Trợ năng — hết cảnh hai nơi tự quyết định lệch nhau).
+        // Ở đây chỉ xử lý banner nhắc / thông báo.
+        val r = LockEngine.tick(this, store, now)
         if (now < store.unlockUntilMs) {
             // Đang mở tạm bằng mã thưởng / nút +giờ: không hiện màn khóa,
             // nhưng PHẢI nhắc 5'/1' trước khi hết hạn — hết là khóa luôn.
@@ -85,47 +88,19 @@ class GuardService : Service() {
             updateNotification()
             return
         }
-        if (store.isLockedNow(now)) {
+        if (r.wholeLocked) {
             // Đang khóa: không nhắc nữa, gỡ banner nếu còn.
             WarningBus.hide()
             countdownActive = false
             bannerShown = false
             updateNotification()
-            // v2.6: khóa qua web phải hiện màn hình khóa NGAY — trước đây
-            // tick return sớm nên màn hình khóa chỉ hiện khi đổi app (qua
-            // Trợ năng). v2.9: app thời sự trong khung giờ thời sự được miễn
-            // trừ tuyệt đối — đang xem thời sự trong khung thì KHÔNG hiện
-            // màn khóa dù đang khóa tay hay trong lịch khóa.
-            // (2026-11-09) Chỉ 1 hàm duy nhất quyết định khóa hay mở:
-            // LockPolicy.isLockedNow. Hiện màn khóa thì gọi thẳng
-            // showLock — nó tự chống hiện lại bằng cờ isShowing + kẹp
-            // 3 giây nên không lặp. Không còn shouldShowLock riêng lẻ.
-            run {
-                val i = Intent(this, LockActivity::class.java)
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                i.putExtra("reason", store.lockReason(now))
-                i.putExtra("mode", "lock")
-                // v2.9: màn khóa này là khóa toàn TV (không phải chặn
-                // riêng 1 app) — để LockActivity tự tắt về Home khi TV
-                // hết khóa (vd hết khung khóa, mở khóa trên web).
-                i.putExtra("wholeLock", true)
-                LockActivity.showLock(this, i)
-            }
             return
         }
-        val pkg = store.lastPkg
-        if (pkg.isNotEmpty() && !store.isExcluded(pkg) && pkg != packageName) {
-            val reason = store.blockReason(pkg, now, store.appLabel(pkg))
-            if (reason != null) {
-                WarningBus.hide()
-                countdownActive = false
-                bannerShown = false
-                val i = Intent(this, LockActivity::class.java)
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                i.putExtra("reason", reason)
-                i.putExtra("mode", "lock")
-                LockActivity.showLock(this, i)
-            }
+        if (r.verdict is LockPolicy.Verdict.Lock) {
+            // Vừa chặn riêng 1 app: gỡ banner nhắc cũ.
+            WarningBus.hide()
+            countdownActive = false
+            bannerShown = false
         }
         warnIfNeeded(now)
         updateCountdown(now)

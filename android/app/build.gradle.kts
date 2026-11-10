@@ -70,4 +70,8 @@ android {
 
 dependencies {
     // No AndroidX / Compose: plain Views + Kotlin stdlib only.
+    // Unit test chạy trên JVM (LockPolicy, SchedulePolicy, ForegroundTracker, PinGuard,
+    // LockDecisionTest, ArchitectureTest). Thiếu dòng này thì `gradle :app:testDebugUnitTest`
+    // (bước test trong CI) không biên dịch được test.
+    testImplementation("junit:junit:4.13.2")
 }

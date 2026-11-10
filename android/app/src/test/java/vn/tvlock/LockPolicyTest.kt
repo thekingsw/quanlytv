@@ -254,7 +254,7 @@ class LockPolicyTest {
         LockPolicy.CountInput(
             pkg = YT,
             nowMs = nowMs,
-            lastPkgStartMs = nowMs - 5 * 60 * 1000, // 5 minutes of viewing (at the gap cap)
+            lastPkgStartMs = nowMs - 5 * 60 * 1000, // 5 phút đã xem
             remainderMs = 0,
             usedTodayMin = 30,
             bonusMin = 0,
@@ -357,29 +357,64 @@ class LockPolicyTest {
         assertEquals(0L, r.remainderMs)
     }
 
-    // ---- gap clamp (2026-11-09) ----
+    // ---- chặn khoảng treo (TV ngủ / standby) ----
 
-    @Test fun countingClampsThreeHourGapToFiveMinutes() {
-        // TV asleep for 3h, then one tick: must count 5', not 180'.
+    @Test fun suspendedThreeHourGapCountsNothing() {
+        // TV ngủ 3 tiếng rồi tick: KHÔNG được tính phút nào (kẹp xuống 5' thì mỗi
+        // lần ngủ/thức vẫn bị tính oan 5 phút).
         val input = countBase().copy(
             lastPkgStartMs = msAt(19, 0) - 3 * 60 * 60 * 1000,
             usedTodayMin = 30
         )
-        val r = LockPolicy.addElapsed(input)
-        assertEquals(5, r.countedMin)
-        assertEquals(35, r.usedTodayMin)
+        val r = LockPolicy.addElapsedGuarded(input)
+        assertEquals(0, r.countedMin)
+        assertEquals(30, r.usedTodayMin)
     }
 
-    @Test fun countingClampsGapButKeepsRemainder() {
-        // 3h gap + 40s remainder -> 5' counted, 40s remainder kept.
+    @Test fun suspendedGapKeepsRemainder() {
         val input = countBase().copy(
             lastPkgStartMs = msAt(19, 0) - 3 * 60 * 60 * 1000,
             remainderMs = 40 * 1000,
             usedTodayMin = 30
         )
-        val r = LockPolicy.addElapsed(input)
-        assertEquals(5, r.countedMin)
+        val r = LockPolicy.addElapsedGuarded(input)
+        assertEquals(0, r.countedMin)
         assertEquals(40_000L, r.remainderMs)
+    }
+
+    @Test fun tenSleepWakeCyclesAddNothing() {
+        var used = 30; var rem = 0L; var t = msAt(14, 0)
+        repeat(10) {
+            val r = LockPolicy.addElapsedGuarded(LockPolicy.CountInput(
+                pkg = YT, nowMs = t + 3 * 3600_000L, lastPkgStartMs = t, remainderMs = rem,
+                usedTodayMin = used, bonusMin = 0, dailyLimitMin = 90, appRuleMode = ""))
+            used = r.usedTodayMin; rem = r.remainderMs; t += 3 * 3600_000L
+        }
+        assertEquals(30, used)
+    }
+
+    @Test fun normalOneSecondTickIsStillCounted() {
+        val start = msAt(19, 0)
+        var rem = 0L; var used = 0
+        repeat(120) { i -> // 2 phút xem thật, tick mỗi giây
+            val r = LockPolicy.addElapsedGuarded(LockPolicy.CountInput(
+                pkg = YT, nowMs = start + (i + 1) * 1000L, lastPkgStartMs = start + i * 1000L,
+                remainderMs = rem, usedTodayMin = used, bonusMin = 0, dailyLimitMin = 90, appRuleMode = ""))
+            used = r.usedTodayMin; rem = r.remainderMs
+        }
+        assertEquals(2, used)
+    }
+
+    @Test fun gapExactlyAtThresholdIsCountedButJustOverIsNot() {
+        val now = msAt(19, 0)
+        val at = countBase().copy(lastPkgStartMs = now - LockPolicy.MAX_TICK_GAP_MS)
+        assertEquals(1, LockPolicy.addElapsedGuarded(at).countedMin)
+        val over = countBase().copy(lastPkgStartMs = now - LockPolicy.MAX_TICK_GAP_MS - 1)
+        assertEquals(0, LockPolicy.addElapsedGuarded(over).countedMin)
+    }
+
+    @Test fun isSuspendGapIgnoresUnsetStart() {
+        assertFalse(LockPolicy.isSuspendGap(0L, msAt(19, 0)))
     }
 
 }

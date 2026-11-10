@@ -1,36 +1,50 @@
 # Kế hoạch sửa Khóa TV — chống hồi quy
 
-## TRẠNG THÁI: ĐÃ LÀM XONG 1 LƯỢT (2026-11-09, commit 3513dc4)
+## TRẠNG THÁI (cập nhật 2026-11-09, sau đợt review lại — ĐÃ KIỂM CHỨNG BẰNG BIÊN DỊCH + TEST)
 
-Anh đổi hướng lúc 11:05 ngày 09/11: "sửa hết đi, cứ thế mà sửa. Đây là
-refactor chứ k phải implement chức năng mới. K cần test từng bước làm gì.
-Xong thì báo a, lúc nào a bật tivi thì cài lên." → Em làm gộp 1 lần theo
-đúng review của Claude, test 75 test xanh hết trên máy, build APK
-(versionCode 27, ký đúng khóa local fa79727b18f1f21f). Chưa đẩy GitHub
-(chờ anh duyệt như mọi lần). Chưa cài lên TV — chờ anh bật TV.
+Đã xong và kiểm chứng (biên dịch toàn project với android.jar thật, 0 lỗi; 110 test
+JVM xanh, gồm test "phá thử" để chắc test thật sự bắt được hồi quy):
 
-Việc đã làm (chi tiết trong commit 3513dc4):
-- SchedulePolicy thuần + test (sửa lỗi 23:59; lịch chồng nhau mở đến
-  lịch kết thúc muộn nhất).
-- ForegroundTracker + test (1 chỗ duy nhất ghi lastPkg; systemui/
-  settings/launcher không ghi đè; lockPoll sửa lastPkg kẹt + fail-closed).
-- PinGuard dùng chung (PIN khóa TV, PIN web, mã thưởng — sai 5 lần khóa
-  5 phút; trước đây PIN khóa TV không có chống dò).
-- isLockExempt tách khỏi isExcluded (Settings/launcher không miễn khóa
-  nữa); nút bánh răng mở Cài đặt hệ thống phải qua PIN.
-- 3 receiver thêm android:permission DUMP; allowBackup=false;
-  SecureRandom sinh mã thưởng; versionCode 1 nguồn (manifest 27/4.0).
-- WebServer: kẹp Content-Length 8MB (413), jsonEsc đúng cho JSON,
-  reasonFor 400/413, thread pool 8, cookie SameSite=Lax.
-- CI: sinh InboxConfig.kt từ Secrets, khôi phục debug keystore từ Secret,
-  chạy ./gradlew test. Thêm InboxConfig.kt.example.
-- Test: 75 test xanh (36 cũ + 39 mới: SchedulePolicy 13, ForegroundTracker
-  12, PinGuard 7, LockPolicy thêm 7). 5 test cũ giả lập gap 6/65 phút trong
-  1 lần gọi phải sửa lại cho đúng cách dùng thật (tick mỗi giây) — kẹp gap
-  5 phút là đúng theo review.
-- Chưa làm (để sau, không phải lỗi): chẻ Store/WebServer thành module nhỏ;
-  tách integrations (watchdog, inbox, IP cứng, widget Đà Nẵng) ra module
-  riêng; test cho WebServer/Store/service (cần Android, không chạy JVM).
+- `SchedulePolicy` thuần + test (lỗi 23:59 sửa; lịch chồng nhau lấy kết thúc muộn nhất;
+  "khóa cả ngày" chỉ định nghĩa ở `SchedulePolicy.isAllDay`).
+- `PinGuard` dùng chung cho PIN khóa TV, PIN web, mã thưởng (sai 5 lần khóa 5 phút).
+- `ForegroundTracker` (thuần): chỉ BỎ QUA cửa sổ thoáng qua (`systemui`). Settings /
+  launcher / chính app mình là màn hình thật nên GHI ĐÈ lastPkg (dừng đếm giờ; việc khóa
+  vẫn đè lên chúng nhờ `LockPolicy.evaluate`).
+- **`LockPolicy.evaluate` = quyết định khóa DUY NHẤT** (Verdict.Allow / Verdict.Lock) và
+  **`LockEngine` = cửa duy nhất** (có `synchronized`) cho GuardService, Trợ năng, HomeActivity.
+  `putExtra("mode","lock")` chỉ còn trong LockEngine. Chốt "đang ở app mình thì không mở
+  màn khóa đè" nằm trong `evaluate` (thiếu nó thì phụ huynh không dùng được Cài đặt của app
+  trong giờ khóa).
+- `Store.lastPkg` / `lastPkgStartMs` có `private set`; chỉ `Store.markForeground` /
+  `restartClock` ghi (LockEngine gọi). Trình biên dịch chặn ghi tắt.
+- Khoảng treo (TV ngủ) > 60 giây giữa 2 lần cộng giờ thì BỎ QUA hẳn
+  (`LockPolicy.addElapsedGuarded`) — không kẹp 5 phút nữa vì kẹp vẫn tính oan 5 phút mỗi lần.
+- Khóa tay theo ngày (anh yêu cầu thêm 09/11): giữ. `Store.manualLocked` trả giá trị HIỆU
+  LỰC (khớp quyết định của LockPolicy) nên UI/web không còn hiện "ĐANG KHÓA" ở hôm sau;
+  khóa tay cũ chưa có ngày được coi là bật HÔM NAY (không nhả khóa lúc cập nhật).
+- 3 receiver có `permission=DUMP`; `allowBackup=false`; `SecureRandom`; versionCode 1 nguồn.
+- WebServer: 413 theo Content-Length (8MB khi đã đăng nhập, 4KB khi CHƯA đăng nhập),
+  `jsonEsc`, thread pool 8, cookie `SameSite=Lax`, login dùng PinGuard.
+- Nút bánh răng remote mở Cài đặt hệ thống phải qua PIN.
+- `lockPoll` fail-closed (lỗi thì khóa nếu TV đang khóa).
+- CI: sinh `InboxConfig.kt` từ Secrets, khôi phục keystore từ Secret, chạy test.
+  `build.gradle.kts` đã có `testImplementation("junit:junit:4.13.2")` (trước đó THIẾU nên
+  bước test trong CI không biên dịch được).
+- `ArchitectureTest` (đọc mã nguồn) giữ kiến trúc một cửa — xem ARCHITECTURE.md.
+
+CHƯA kiểm chứng trên TV thật (không chạy được trong JVM) — cần checklist 4 mục trước khi cài:
+- popup âm lượng / thanh thông báo khi đang xem có làm dừng đếm giờ không (kỳ vọng: không);
+- trong giờ khóa: nhập PIN vào Cài đặt của app, màn khóa KHÔNG đè lên;
+- trong giờ khóa: vào Cài đặt hệ thống / launcher Google TV, màn khóa đè lên;
+- TV ngủ rồi bật lại: số phút đã xem không nhảy.
+
+CHƯA làm (biết rõ, để sau):
+- Cài đặt hệ thống mới được chặn bằng PIN ở nút bánh răng; các đường khác (menu launcher
+  Google TV) chưa chặn bằng PIN khi TV đang MỞ khóa. Hướng sửa: chặn theo sự kiện cửa sổ
+  `com.android.settings` khi chưa có phiên PIN.
+- Chẻ Store / WebServer thành module nhỏ; tách integrations (watchdog, inbox, IP cứng,
+  widget Đà Nẵng); test cho Store / WebServer / service (cần Android).
 
 Mục tiêu: sửa hết các lỗi trong 2 comment review (09/11) mà không lặp lại kiểu
 "sửa A lòi B" của đợt 05–08/11 (046f12c → màn khóa refresh 88 lần;
@@ -91,9 +105,10 @@ test xanh → cài TV → kiểm tra đúng kịch bản → mới sang fix sau.
   (nếu anh chốt như đề xuất).
 
 ### 1b. Tách "miễn trừ đếm giờ" khỏi "miễn trừ khóa"
-- `com.android.settings` hiện nằm trong `isExcluded()`, nên vừa không tính
-  giờ vừa không hiện khóa. Tách ra: Settings vẫn không tính giờ (đúng), nhưng
-  không còn miễn khóa — TV khóa mà đang ở Settings thì màn khóa vẫn hiện.
+- `com.android.settings` nằm trong `isExcluded()` nên không tính giờ (đúng). Việc KHÔNG
+  còn miễn khóa được làm bằng cách `LockPolicy.evaluate` kiểm tra "TV đang khóa" TRƯỚC
+  `isExcluded` (không có hàm `isLockExempt` riêng) — TV khóa mà đang ở Settings thì màn
+  khóa vẫn hiện.
 - Test: đặt TV vào trạng thái khóa rồi mở Settings → màn khóa hiện.
 
 ### 1c. Khóa dò PIN khóa TV
@@ -135,17 +150,18 @@ giống hệt → mới sang bước sau. Chỉ đổi hành vi sau khi tách xo
 - Gom mọi chỗ ghi lastPkg/lastPkgStartMs (onAccessibilityEvent,
   refreshForegroundApp, Store.tick, GuardService.onCreate) vào một class
   duy nhất, chạy trên một thread/handler duy nhất.
-- Quy tắc trong Tracker: app excluded (systemui, settings, launcher) không
-  ghi đè lastPkg; kẹp khoảng cách thời gian — mỗi lần cộng tối đa 5 phút
-  (tick là 1 giây nên khoảng cách lớn nghĩa là hệ thống bị treo/ngủ);
-  lastPkg rỗng thì tự nhận lại app foreground.
+- Quy tắc ĐÃ CHỐT (thay bản đầu của kế hoạch): chỉ cửa sổ thoáng qua (systemui) không
+  ghi đè lastPkg; settings / launcher / app mình là màn hình thật nên ghi đè (nếu không,
+  vào Cài đặt vẫn bị tính giờ YouTube). Khoảng treo > 60 giây thì BỎ QUA, không kẹp 5
+  phút; lastPkg rỗng thì tự nhận lại app foreground.
 - Test mới: lastPkg=systemui (không ghi đè, đếm giờ không dừng, khóa vẫn
   hiện); gap 3 tiếng giữa 2 tick (chỉ cộng tối đa 5'); đổi app liên tục
   (không đếm đôi, không mất phút).
 - Đây là bước khó nhất — làm sau 2a, làm một mình, không gộp với bước khác.
 
 ### 2c. Gom "có hiện màn khóa không" vào một chỗ duy nhất
-- Một hàm duy nhất (vd `LockDecider.shouldShowLock(...)`); cả
+- ĐÃ LÀM: `LockPolicy.evaluate` + `LockEngine` (tên `LockDecider` trong kế hoạch ban đầu
+  không dùng). Mô tả gốc: một hàm duy nhất; cả
   GuardService.tick() và lockPoll cùng gọi nó. Xóa các bản copy điều kiện
   ở GuardService.tick() (2 chỗ), onAccessibilityEvent, handleRemapAction.
 - Test: các ca đã gặp — khóa tay, hết giờ ngày, tới lịch khóa, mở tạm,

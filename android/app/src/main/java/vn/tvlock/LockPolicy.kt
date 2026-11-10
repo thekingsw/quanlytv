@@ -149,13 +149,6 @@ object LockPolicy {
 
     // ---- Counting (pure arithmetic; mirrors Store.addElapsed) ----
 
-    /**
-     * Max elapsed time counted in one step (5 min). The tick is 1s, so a
-     * bigger gap means the system was suspended (TV asleep) — don't count
-     * a whole night of sleep as viewing time (2026-11-09).
-     */
-    const val MAX_COUNT_GAP_MS = 5 * 60 * 1000L
-
     data class CountInput(
         val pkg: String,
         val nowMs: Long,
@@ -193,10 +186,7 @@ object LockPolicy {
         if (start <= 0L || input.nowMs <= start) return noChange
         if (isNewsExempt(input.pkg, input.newsPkg, input.nowMs, input.newsStartMin, input.newsEndMin))
             return noChange
-        // Clamp the gap: a suspended system (TV asleep) must not turn
-        // hours of sleep into viewing minutes.
-        val elapsed = minOf(input.nowMs - start, MAX_COUNT_GAP_MS)
-        val total = input.remainderMs + elapsed
+        val total = input.remainderMs + (input.nowMs - start)
         val mins = (total / 60000L).toInt()
         val newRemainder = total % 60000L
         if (mins <= 0) return CountResult(0, input.usedTodayMin, input.bonusMin, newRemainder, 0)
@@ -225,4 +215,81 @@ object LockPolicy {
         }
         return CountResult(mins, used, bonus, newRemainder, mins)
     }
+
+    // ====================================================================
+    // QUYẾT ĐỊNH DUY NHẤT: có hiện màn khóa không, và khóa kiểu nào.
+    //
+    // Trước đây câu hỏi này được trả lời ở ~8 chỗ (GuardService x2, Trợ năng x3,
+    // HomeActivity x3), mỗi chỗ tự ghép điều kiện nên lệch nhau: có chỗ có chốt
+    // "đang ở app mình thì đừng mở khóa", có chỗ không.
+    // QUY TẮC: muốn đổi luật khóa -> sửa [evaluate] + thêm test ở LockDecisionTest.
+    // Đừng thêm điều kiện khóa ở nơi khác (ArchitectureTest sẽ báo đỏ).
+    // ====================================================================
+
+    sealed class Verdict {
+        /** Không cần hiện màn khóa. */
+        object Allow : Verdict()
+        /**
+         * Hiện màn khóa. [wholeTv] = true khi khóa TOÀN TV (khóa tay / lịch / hết
+         * giờ ngày) -> màn khóa tự đóng khi hết khóa; false khi chỉ chặn riêng
+         * 1 app (app bị chặn / hết giờ app).
+         */
+        data class Lock(val reason: String, val wholeTv: Boolean) : Verdict()
+    }
+
+    /** [wholeLocked] = TV đang khóa toàn bộ (kể cả khi verdict là Allow vì đang ở app mình). */
+    data class Decision(val wholeLocked: Boolean, val verdict: Verdict)
+
+    /**
+     * Quyết định cho app foreground hiện tại ([Input.lastPkg]). Thứ tự (đừng đổi
+     * nếu không có test mới):
+     *  1. đang mở tạm (PIN / mã thưởng / +phút)   -> Allow
+     *  2. chính app mình (màn khóa, màn hình chính, Cài đặt của app sau khi nhập PIN)
+     *     -> Allow. Chốt này BẮT BUỘC: thiếu nó thì trong giờ khóa, màn khóa đè lên
+     *     cả Cài đặt của app mỗi 3 giây và phụ huynh không chỉnh được gì.
+     *  3. TV đang khóa toàn bộ                    -> Lock(whole), KỂ CẢ khi đang ở
+     *     Cài đặt / launcher hệ thống (nếu không đó là đường bypass). Lastpkg rỗng
+     *     cũng khóa (fail-safe: không biết app nào mà TV đang khóa thì vẫn khóa).
+     *     App thời sự trong khung thời sự đã được [isLockedNow] miễn trừ từ trước.
+     *  4. app hệ thống (không bị tính giờ)        -> Allow
+     *  5. app thời sự trong khung thời sự         -> Allow
+     *  6. quy tắc riêng của app / hết giờ app     -> Lock(per-app)
+     *  7. còn lại                                 -> Allow
+     */
+    fun evaluate(input: Input, labelOf: (String) -> String): Decision {
+        val whole = isLockedNow(input)
+        val pkg = input.lastPkg
+        val verdict: Verdict = when {
+            input.nowMs < input.unlockUntilMs -> Verdict.Allow
+            pkg == input.ownPkg -> Verdict.Allow
+            whole -> Verdict.Lock(lockReason(input), true)
+            isExcluded(pkg) -> Verdict.Allow
+            isNewsExempt(pkg, input) -> Verdict.Allow
+            else -> {
+                val r = blockReason(pkg, labelOf(pkg), input)
+                if (r != null) Verdict.Lock(r, false) else Verdict.Allow
+            }
+        }
+        return Decision(whole, verdict)
+    }
+
+    // ---- Chống đếm nhầm khi hệ thống bị treo (TV ngủ / standby) ----
+
+    /**
+     * Tick chạy mỗi 1 giây. Khoảng cách giữa 2 lần cộng giờ dài hơn ngưỡng này
+     * nghĩa là hệ thống đã bị treo (TV ngủ, tiến trình bị đóng băng), KHÔNG phải trẻ
+     * xem liên tục -> bỏ qua hẳn khoảng đó. (Kẹp xuống 5 phút thay vì bỏ qua thì mỗi
+     * lần TV ngủ/thức vẫn bị tính oan 5 phút giờ xem.)
+     */
+    const val MAX_TICK_GAP_MS = 60_000L
+
+    /** true nếu khoảng [startMs, nowMs] là do hệ thống treo, không được tính giờ. */
+    fun isSuspendGap(startMs: Long, nowMs: Long): Boolean =
+        startMs > 0L && nowMs - startMs > MAX_TICK_GAP_MS
+
+    /** [addElapsed] có chặn khoảng treo. Store dùng hàm này, không gọi [addElapsed] trực tiếp. */
+    fun addElapsedGuarded(input: CountInput): CountResult =
+        if (isSuspendGap(input.lastPkgStartMs, input.nowMs))
+            CountResult(0, input.usedTodayMin, input.bonusMin, input.remainderMs, 0)
+        else addElapsed(input)
 }

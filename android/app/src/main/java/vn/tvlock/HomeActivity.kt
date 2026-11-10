@@ -110,13 +110,7 @@ class HomeActivity : Activity() {
         // v4.1: đang khóa thì hiện màn khóa ngay, không vẽ UI home —
         // bấm HOME khi khóa không được thấy trang chính dù chỉ 1 giây.
         val now = System.currentTimeMillis()
-        if (store.isLockedNow(now)) {
-            val i = Intent(this, LockActivity::class.java)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            i.putExtra("reason", store.lockReason(now))
-            i.putExtra("mode", "lock")
-            i.putExtra("wholeLock", true)
-            LockActivity.showLock(this, i)
+        if (LockEngine.lockIfLockedAtHome(this, store, now)) {
             finish()
             return
         }
@@ -396,13 +390,7 @@ class HomeActivity : Activity() {
         // v4.1: bấm HOME liên tục khi đang khóa — system gọi onNewIntent
         // thay vì onCreate, phải check khóa ở đây nữa.
         val now = System.currentTimeMillis()
-        if (store.isLockedNow(now)) {
-            val i = Intent(this, LockActivity::class.java)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            i.putExtra("reason", store.lockReason(now))
-            i.putExtra("mode", "lock")
-            i.putExtra("wholeLock", true)
-            LockActivity.showLock(this, i)
+        if (LockEngine.lockIfLockedAtHome(this, store, now)) {
             finish()
             return
         }
@@ -442,14 +430,7 @@ class HomeActivity : Activity() {
 
     private fun checkLocked() {
         val now = System.currentTimeMillis()
-        if (store.isLockedNow(now)) {
-            val i = Intent(this, LockActivity::class.java)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            i.putExtra("reason", store.lockReason(now))
-            i.putExtra("mode", "lock")
-            i.putExtra("wholeLock", true)
-            LockActivity.showLock(this, i)
-        }
+        LockEngine.lockIfLockedAtHome(this, store, now)
     }
 
     private fun refreshDate() {
