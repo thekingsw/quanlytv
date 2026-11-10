@@ -33,6 +33,17 @@ JVM xanh, gồm test "phá thử" để chắc test thật sự bắt được h
   bước test trong CI không biên dịch được).
 - `ArchitectureTest` (đọc mã nguồn) giữ kiến trúc một cửa — xem ARCHITECTURE.md.
 
+Đã sửa thêm 2026-11-10 (kết quả review chéo, có test hồi quy):
+- Nút "Hủy" trên màn khóa: ẩn ở mode "lock" (trước đây đóng được màn khóa); focus remote
+  không rơi vào nút bị ẩn. Cần thử tay trên TV (UI không test được trên JVM).
+- Phần dư thời gian (remainder): tách phần dư của giới hạn NGÀY (chỉ app tính giờ góp, app
+  `free` không) khỏi phần dư riêng TỪNG APP (lưu theo gói trong prefs `appRemainders`).
+  Trước đây dùng chung nên 59s app free bị tính vào giới hạn ngày, đổi app đúng nhịp
+  (59s tính giờ + 1s free) né được giới hạn ngày, và phút bị gán sai app. KHÔNG được "xóa
+  phần dư khi đổi app" (đổi app mỗi 59s sẽ không bao giờ đếm được). Test: RemainderScenarioTest.
+- "Mở khóa đến hết khung" với lịch cả ngày: hết lúc 00:00 hôm sau (trước là 23:59:00 nên khóa
+  lại sớm 1 phút).
+
 CHƯA kiểm chứng trên TV thật (không chạy được trong JVM) — cần checklist 4 mục trước khi cài:
 - popup âm lượng / thanh thông báo khi đang xem có làm dừng đếm giờ không (kỳ vọng: không);
 - trong giờ khóa: nhập PIN vào Cài đặt của app, màn khóa KHÔNG đè lên;

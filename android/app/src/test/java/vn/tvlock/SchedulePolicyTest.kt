@@ -118,15 +118,34 @@ class SchedulePolicyTest {
         assertNull(SchedulePolicy.unlockUntilEndOfLockWindowMs(listOf(a), sunday(13, 0)))
     }
 
-    @Test fun unlockUntilAllDayEndsAt2359Today() {
+    @Test fun unlockUntilAllDayEndsAtNextMidnight() {
         val s = sched("a", ALL, 0, 1439)
         val end = SchedulePolicy.unlockUntilEndOfLockWindowMs(listOf(s), sunday(15, 30))
         assertNotNull(end)
         val c = Calendar.getInstance()
         c.timeInMillis = end!!
-        assertEquals(23, c.get(Calendar.HOUR_OF_DAY))
-        assertEquals(59, c.get(Calendar.MINUTE))
-        assertEquals(8, c.get(Calendar.DAY_OF_MONTH))
+        assertEquals(0, c.get(Calendar.HOUR_OF_DAY))
+        assertEquals(0, c.get(Calendar.MINUTE))
+        assertEquals(9, c.get(Calendar.DAY_OF_MONTH))
+    }
+
+    @Test fun sundayOnlyAllDayUnlockEndsAtNextMidnight() {
+        val s = sched("sun", listOf(6), 0, 1439)
+        val end = SchedulePolicy.unlockUntilEndOfLockWindowMs(listOf(s), sunday(15, 30))
+        assertNotNull(end)
+        assertTrue(end!! > sunday(23, 59) + 30_000L)
+        assertFalse(SchedulePolicy.isLockedBySchedule(listOf(s), end))
+    }
+
+    @Test fun allDayWithStartEqualsEndAlsoEndsAtNextMidnight() {
+        val s = sched("a", ALL, 600, 600)
+        val end = SchedulePolicy.unlockUntilEndOfLockWindowMs(listOf(s), sunday(15, 30))
+        assertNotNull(end)
+        val c = Calendar.getInstance()
+        c.timeInMillis = end!!
+        assertEquals(0, c.get(Calendar.HOUR_OF_DAY))
+        assertEquals(0, c.get(Calendar.MINUTE))
+        assertEquals(9, c.get(Calendar.DAY_OF_MONTH))
     }
 
     // ---- minutesUntilNextLock ----

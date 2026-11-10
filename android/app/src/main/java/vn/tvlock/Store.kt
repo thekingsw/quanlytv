@@ -339,6 +339,25 @@ class Store(private val ctx: Context) {
         get() = prefs.getLong("usedRemainderMs", 0L)
         set(v) = prefs.edit().putLong("usedRemainderMs", v).apply()
 
+    // Sub-minute usage retained independently for each package.
+    private fun appRemaindersJson(): JSONObject =
+        try { JSONObject(prefs.getString("appRemainders", "{}") ?: "{}") }
+        catch (_: Exception) { JSONObject() }
+
+    private fun appRemainder(pkg: String): Long =
+        appRemaindersJson().optLong(pkg, 0L)
+
+    private fun setAppRemainder(pkg: String, ms: Long) {
+        val json = appRemaindersJson()
+        val value = ms.coerceIn(0L, 59_999L)
+        if (value == 0L) json.remove(pkg) else json.put(pkg, value)
+        prefs.edit().putString("appRemainders", json.toString()).apply()
+    }
+
+    private fun resetAppRemainders() {
+        prefs.edit().putString("appRemainders", "{}").apply()
+    }
+
     // ---------- v3: bonus minutes (reward pool, never expires at midnight) ----------
     var bonusMin: Int
         get() = prefs.getInt("bonusMin", 0)
@@ -682,6 +701,7 @@ class Store(private val ctx: Context) {
             usedDate = t
             usedTodayMin = 0
             remainderMs = 0L
+            resetAppRemainders()
             prefs.edit().putString("perAppToday", "{}").apply()
             clearWarnings()
         }
@@ -691,6 +711,7 @@ class Store(private val ctx: Context) {
     fun resetTodayUsage() {
         usedTodayMin = 0
         remainderMs = 0L
+        resetAppRemainders()
         prefs.edit().putString("perAppToday", "{}").apply()
         clearWarnings()
     }
@@ -777,7 +798,7 @@ class Store(private val ctx: Context) {
     fun secondsUntilAppLimit(pkg: String, nowMs: Long): Int {
         val r = appRule(pkg)
         if (r.mode != "limit") return Int.MAX_VALUE
-        val watchedSec = perAppMin(pkg) * 60 + (remainderMs / 1000).toInt() +
+        val watchedSec = perAppMin(pkg) * 60 + (appRemainder(pkg) / 1000).toInt() +
             if (pkg == lastPkg) elapsedSec(nowMs) else 0
         return r.minutes * 60 - watchedSec
     }
@@ -850,13 +871,15 @@ class Store(private val ctx: Context) {
         val r = LockPolicy.addElapsedGuarded(
             LockPolicy.CountInput(
                 pkg = pkg, nowMs = nowMs, lastPkgStartMs = lastPkgStartMs,
-                remainderMs = remainderMs, usedTodayMin = usedTodayMin,
+                remainderMs = remainderMs, appRemainderMs = appRemainder(pkg),
+                usedTodayMin = usedTodayMin,
                 bonusMin = bonusMin, dailyLimitMin = limitForToday(),
                 appRuleMode = appRule(pkg).mode,
                 newsPkg = newsPkg, newsStartMin = newsStartMin, newsEndMin = newsEndMin
             )
         )
         remainderMs = r.remainderMs
+        setAppRemainder(pkg, r.appRemainderMs)
         if (r.perAppAddMin > 0) addPerAppMin(pkg, r.perAppAddMin)
         usedTodayMin = r.usedTodayMin
         bonusMin = r.bonusMin

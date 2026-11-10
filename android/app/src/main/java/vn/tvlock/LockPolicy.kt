@@ -160,15 +160,17 @@ object LockPolicy {
         val appRuleMode: String,  // "blocked"/"limit"/"free"/""
         val newsPkg: String = "",
         val newsStartMin: Int = 0,
-        val newsEndMin: Int = 0
+        val newsEndMin: Int = 0,
+        val appRemainderMs: Long = 0L
     )
 
     data class CountResult(
-        val countedMin: Int,    // minutes added to the per-app total
+        val countedMin: Int,
         val usedTodayMin: Int,
         val bonusMin: Int,
         val remainderMs: Long,
-        val perAppAddMin: Int
+        val perAppAddMin: Int,
+        val appRemainderMs: Long = 0L
     )
 
     /**
@@ -180,25 +182,44 @@ object LockPolicy {
      * remainder is carried over even when no full minute elapsed.
      */
     fun addElapsed(input: CountInput): CountResult {
-        val noChange = CountResult(0, input.usedTodayMin, input.bonusMin, input.remainderMs, 0)
+        val noChange = CountResult(
+            0, input.usedTodayMin, input.bonusMin, input.remainderMs, 0, input.appRemainderMs
+        )
         if (input.pkg.isEmpty() || isExcluded(input.pkg)) return noChange
         val start = input.lastPkgStartMs
         if (start <= 0L || input.nowMs <= start) return noChange
         if (isNewsExempt(input.pkg, input.newsPkg, input.nowMs, input.newsStartMin, input.newsEndMin))
             return noChange
-        val total = input.remainderMs + (input.nowMs - start)
-        val mins = (total / 60000L).toInt()
-        val newRemainder = total % 60000L
-        if (mins <= 0) return CountResult(0, input.usedTodayMin, input.bonusMin, newRemainder, 0)
+
+        val elapsed = input.nowMs - start
+        val appTotal = input.appRemainderMs + elapsed
+        val perAppAddMin = (appTotal / 60000L).toInt()
+        val newAppRemainder = appTotal % 60000L
+
+        // A free app contributes to its own counter, but never to the shared
+        // daily counter or its fractional remainder.
+        if (input.appRuleMode == "free") {
+            return CountResult(
+                perAppAddMin, input.usedTodayMin, input.bonusMin,
+                input.remainderMs, perAppAddMin, newAppRemainder
+            )
+        }
+
+        val dailyTotal = input.remainderMs + elapsed
+        val mins = (dailyTotal / 60000L).toInt()
+        val newRemainder = dailyTotal % 60000L
+        if (mins <= 0) {
+            return CountResult(
+                0, input.usedTodayMin, input.bonusMin, newRemainder,
+                perAppAddMin, newAppRemainder
+            )
+        }
         var used = input.usedTodayMin
         var bonus = input.bonusMin
-        if (input.appRuleMode == "free") {
-            return CountResult(mins, used, bonus, newRemainder, mins)
-        }
         val limit = input.dailyLimitMin
         if (limit <= 0) {
             used += mins
-            return CountResult(mins, used, bonus, newRemainder, mins)
+            return CountResult(mins, used, bonus, newRemainder, perAppAddMin, newAppRemainder)
         }
         val room = (limit - used).coerceAtLeast(0)
         val toDaily = minOf(mins, room)
@@ -213,7 +234,7 @@ object LockPolicy {
                 used += overflow
             }
         }
-        return CountResult(mins, used, bonus, newRemainder, mins)
+        return CountResult(mins, used, bonus, newRemainder, perAppAddMin, newAppRemainder)
     }
 
     // ====================================================================
@@ -290,6 +311,7 @@ object LockPolicy {
     /** [addElapsed] có chặn khoảng treo. Store dùng hàm này, không gọi [addElapsed] trực tiếp. */
     fun addElapsedGuarded(input: CountInput): CountResult =
         if (isSuspendGap(input.lastPkgStartMs, input.nowMs))
-            CountResult(0, input.usedTodayMin, input.bonusMin, input.remainderMs, 0)
+            CountResult(0, input.usedTodayMin, input.bonusMin, input.remainderMs, 0,
+                input.appRemainderMs)
         else addElapsed(input)
 }

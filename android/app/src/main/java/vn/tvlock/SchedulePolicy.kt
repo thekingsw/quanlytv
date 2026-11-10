@@ -121,7 +121,7 @@ object SchedulePolicy {
      * End timestamp (ms) of the current lock window, or null when not inside
      * any schedule. When several schedules overlap, use the one ending
      * LATEST — taking the first match (old behavior) could re-lock early.
-     * All-day schedules end at 23:59 today.
+     * All-day schedules end at 00:00:00.000 tomorrow.
      */
     fun unlockUntilEndOfLockWindowMs(schedules: List<Schedule>, nowMs: Long): Long? {
         val match = matchingSchedules(schedules, nowMs)
@@ -134,9 +134,10 @@ object SchedulePolicy {
             val end = Calendar.getInstance().apply { timeInMillis = nowMs }
             when {
                 s.startMin == s.endMin || (s.startMin == 0 && s.endMin == 1439) -> {
-                    // All-day: unlock until the end of today.
-                    end.set(Calendar.HOUR_OF_DAY, 23)
-                    end.set(Calendar.MINUTE, 59)
+                    // Include the entire 23:59 minute; boundary is midnight.
+                    end.add(Calendar.DAY_OF_YEAR, 1)
+                    end.set(Calendar.HOUR_OF_DAY, 0)
+                    end.set(Calendar.MINUTE, 0)
                 }
                 s.startMin < s.endMin -> {
                     end.set(Calendar.HOUR_OF_DAY, s.endMin / 60)

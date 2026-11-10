@@ -58,6 +58,7 @@ class LockActivity : Activity() {
     private lateinit var tvPin: TextView
     private lateinit var tvClock: TextView
     private lateinit var btnRewardCode: Button
+    private lateinit var btnCancel: Button
     private var defaultClockText = "Nhập mã PIN để mở khóa"
     // v2.8: chế độ nhập mã thưởng (chỉ ở mode "lock") — bàn phím số dùng
     // để nhập mã thưởng 6 số thay vì mã PIN; hai luồng tách biệt.
@@ -133,6 +134,7 @@ class LockActivity : Activity() {
         lockBgBar = findViewById(R.id.lockBgBar)
         lockNoBg = findViewById(R.id.lockNoBg)
         tvLockMessageNoBg = findViewById(R.id.tvLockMessageNoBg)
+        btnCancel = findViewById(R.id.btnCancel)
         // v1.8: nút Mở thời sự — chỉ ở chế độ khóa và đang trong khung thời sự,
         // không cần PIN (trẻ được xem thời sự, app khác vẫn khóa).
         btnNews.setOnClickListener { openNewsApp() }
@@ -146,11 +148,15 @@ class LockActivity : Activity() {
         for ((id, d) in digits) findViewById<Button>(id).setOnClickListener { appendDigit(d) }
         findViewById<Button>(R.id.keyDel).setOnClickListener { deleteDigit() }
         findViewById<Button>(R.id.keyOk).setOnClickListener { submitPin() }
-        findViewById<Button>(R.id.btnCancel).setOnClickListener { finish() }
+        btnCancel.visibility = if (mode == "lock") View.GONE else View.VISIBLE
+        btnCancel.setOnClickListener { if (mode != "lock") finish() }
         // v2.8: nút nhập mã thưởng — chỉ ở màn hình khóa (mode "lock").
         // ĐỔI 2026-10-31: hiện cả trong giờ thời sự (xem refreshRewardButton).
         btnRewardCode = findViewById(R.id.btnRewardCode)
         refreshRewardButton()
+        // The cancel button is hidden in lock mode; keep D-pad focus on a
+        // visible key instead of navigating to the hidden cancel button.
+        if (mode == "lock") btnRewardCode.nextFocusDownId = R.id.key1
         btnRewardCode.setOnClickListener { setRewardMode(!rewardMode) }
         // Option buttons (shown after correct PIN, except in direct-add mode).
         val opts = listOf(R.id.optAdd5 to 5, R.id.optAdd10 to 10, R.id.optAdd15 to 15, R.id.optAdd20 to 20, R.id.optAdd30 to 30)
