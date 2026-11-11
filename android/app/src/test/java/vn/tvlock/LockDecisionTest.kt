@@ -69,14 +69,72 @@ class LockDecisionTest {
         assertEquals(Verdict.Allow, eval(i).verdict)
     }
 
-    // ---- chốt "đang ở app mình" (lỗi hồi quy của agent bản trước) ----
+    // ---- SỰ CỐ 10/11: lastPkg kẹt ở vn.tvlock thì TV mở khóa vĩnh viễn ----
+    //
+    // lastPkg do Trợ năng cập nhật qua sự kiện đổi cửa sổ. Nếu lỡ một sự kiện (vd quay lại
+    // TVMate từ màn PIN Cài đặt) thì lastPkg kẹt ở vn.tvlock. Bản trước có chốt
+    // "lastPkg == ownPkg thì Allow" nên TV không bao giờ khóa lại, trong khi web
+    // (isLockedNow) vẫn báo "đóng". Khóa toàn TV KHÔNG được phụ thuộc lastPkg.
 
-    @Test fun ownPackageNeverGetsLockLaunchedEvenWhenTvLocked() {
-        // Trong giờ khóa, phụ huynh vào Cài đặt của app (sau khi nhập PIN) hoặc màn khóa
-        // đang hiện: KHÔNG được mở màn khóa đè lên (GuardService từng làm vậy, mỗi 3 giây).
+    @Test fun stuckForegroundAtOwnPackageStillLocksWhenTvLocked() {
         val d = eval(locked(OWN))
-        assertTrue("TV vẫn đang khóa toàn bộ", d.wholeLocked)
+        assertTrue("TV đang khóa toàn bộ", d.wholeLocked)
+        val v = d.verdict as Verdict.Lock
+        assertTrue(v.wholeTv)
+    }
+
+    @Test fun incidentReplayUnlockExpiredWhileStuckAtOwn() {
+        // 21:02, khung thời sự 18:30–20:00 đã hết, lịch khóa 20:00–07:00, giờ cộng tạm vừa
+        // hết, lastPkg kẹt ở vn.tvlock (lỡ sự kiện quay lại TVMate).
+        val i = LockPolicy.Input(
+            nowMs = msAt(21, 2), lastPkg = OWN, newsPkg = NEWS,
+            newsStartMin = 18 * 60 + 30, newsEndMin = 20 * 60,
+            lockedBySchedule = true, scheduleReason = "20:00–07:00",
+            unlockUntilMs = msAt(21, 0)
+        )
+        assertTrue("web báo đóng", LockPolicy.isLockedNow(i))
+        assertTrue("TV phải khóa, không được lệch web", eval(i).verdict is Verdict.Lock)
+    }
+
+    @Test fun webAndTvNeverDisagreeOnWholeLock() {
+        // isLockedNow (web) và evaluate (TV) phải khớp với MỌI lastPkg — lệch đúng 1 điều
+        // kiện (own) là nguyên nhân sự cố.
+        for (p in listOf(YT, OWN, "", SETTINGS, LAUNCHER, SYSUI, NEWS)) {
+            val i = locked(p)
+            if (LockPolicy.isLockedNow(i)) {
+                assertTrue("lastPkg='$p'", eval(i).verdict is Verdict.Lock)
+            }
+        }
+    }
+
+    // ---- phiên PIN của phụ huynh (có hạn) ----
+
+    @Test fun adminSessionLetsParentUseOwnSettingsWhileLocked() {
+        val i = locked(OWN).copy(adminSessionUntilMs = msAt(20, 10))
+        val d = eval(i)
+        assertTrue("TV vẫn đang khóa (web vẫn báo đóng)", d.wholeLocked)
         assertEquals(Verdict.Allow, d.verdict)
+    }
+
+    @Test fun adminSessionAlsoCoversSystemSettings() {
+        val i = locked(SETTINGS).copy(adminSessionUntilMs = msAt(20, 10))
+        assertEquals(Verdict.Allow, eval(i).verdict)
+    }
+
+    @Test fun adminSessionExpiresEvenIfParentStaysInSettings() {
+        // Quên ở lại Cài đặt: hết hạn là khóa lại, không phụ thuộc đang ở app nào.
+        val i = locked(OWN).copy(adminSessionUntilMs = msAt(19, 59))
+        assertTrue(eval(i).verdict is Verdict.Lock)
+    }
+
+    @Test fun adminSessionDoesNotChangeWhatTheWebReports() {
+        val i = locked(OWN).copy(adminSessionUntilMs = msAt(20, 10))
+        assertTrue(LockPolicy.isLockedNow(i))
+    }
+
+    @Test fun adminSessionDoesNotAffectPerAppBlocksWhenTvNotLocked() {
+        val i = base().copy(appRule = LockPolicy.AppRule("blocked", 0), adminSessionUntilMs = msAt(20, 10))
+        assertFalse((eval(i).verdict as Verdict.Lock).wholeTv)
     }
 
     // ---- Cài đặt / launcher hệ thống không phải đường bypass ----
@@ -159,9 +217,10 @@ class LockDecisionTest {
     private fun oldBehaviour(i: LockPolicy.Input): Verdict {
         if (i.nowMs < i.unlockUntilMs) return Verdict.Allow
         val pkg = i.lastPkg
-        if (pkg == i.ownPkg) return Verdict.Allow
-        if (LockPolicy.isLockedNow(i)) return Verdict.Lock(LockPolicy.lockReason(i), true)
-        if (pkg.isNotEmpty() && !LockPolicy.isExcluded(pkg)) {
+        val whole = LockPolicy.isLockedNow(i)
+        if (whole && i.nowMs < i.adminSessionUntilMs) return Verdict.Allow
+        if (whole) return Verdict.Lock(LockPolicy.lockReason(i), true)
+        if (pkg.isNotEmpty() && pkg != i.ownPkg && !LockPolicy.isExcluded(pkg)) {
             val r = LockPolicy.blockReason(pkg, pkg, i)
             if (r != null) return Verdict.Lock(r, false)
         }
@@ -190,7 +249,8 @@ class LockDecisionTest {
                 usedTodayMin = rnd.nextInt(150), dailyLimitMin = if (rnd.nextInt(5) == 0) 0 else rnd.nextInt(120) + 1,
                 bonusMin = if (rnd.nextBoolean()) 0 else rnd.nextInt(20),
                 lockedBySchedule = rnd.nextInt(6) == 0, scheduleReason = "x",
-                appRule = rule, perAppUsedMin = rnd.nextInt(90))
+                appRule = rule, perAppUsedMin = rnd.nextInt(90),
+                adminSessionUntilMs = if (rnd.nextInt(5) == 0) now + rnd.nextInt(600_000) - 100_000 else 0L)
             if (eval(input).verdict != oldBehaviour(input)) mismatches++
         }
         assertEquals("evaluate lệch hành vi cũ", 0, mismatches)
@@ -205,5 +265,33 @@ class LockDecisionTest {
                 lockedBySchedule = rnd.nextInt(5) == 0, usedTodayMin = rnd.nextInt(100), dailyLimitMin = rnd.nextInt(90))
             assertEquals(LockPolicy.isLockedNow(input), eval(input).wholeLocked)
         }
+    }
+
+    @Test fun wholeLockNeverDependsOnForegroundPackage() {
+        // BẤT BIẾN chặn đúng loại lỗi 10/11: với mọi đầu vào mà TV đang khóa toàn bộ (và
+        // không có mở tạm / phiên PIN), kết quả là Lock(whole) cho MỌI lastPkg.
+        val rnd = Random(10)
+        val pkgs = listOf(YT, NEWS, "com.netflix.ninja", SETTINGS, LAUNCHER, SYSUI, OWN, "")
+        var checked = 0
+        repeat(30_000) {
+            val now = msAt(rnd.nextInt(24), rnd.nextInt(60))
+            val base = LockPolicy.Input(
+                nowMs = now, lastPkg = "", newsPkg = NEWS, newsStartMin = 19 * 60, newsEndMin = 20 * 60,
+                manualLocked = rnd.nextInt(4) == 0, manualLockedDate = "2026-11-09", todayDate = "2026-11-09",
+                unlockUntilMs = if (rnd.nextInt(4) == 0) now + rnd.nextInt(600_000) - 300_000 else 0L,
+                usedTodayMin = rnd.nextInt(150), dailyLimitMin = rnd.nextInt(120),
+                bonusMin = if (rnd.nextBoolean()) 0 else rnd.nextInt(20),
+                lockedBySchedule = rnd.nextInt(4) == 0, scheduleReason = "x",
+                adminSessionUntilMs = if (rnd.nextInt(5) == 0) now + rnd.nextInt(600_000) - 300_000 else 0L)
+            for (p in pkgs) {
+                val i = base.copy(lastPkg = p)
+                if (LockPolicy.isLockedNow(i) && now >= i.unlockUntilMs && now >= i.adminSessionUntilMs) {
+                    checked++
+                    val v = eval(i).verdict
+                    assertTrue("lastPkg='$p' đang khóa mà verdict=$v", v is Verdict.Lock && v.wholeTv)
+                }
+            }
+        }
+        assertTrue("fuzz phải chạm đủ ca", checked > 1000)
     }
 }

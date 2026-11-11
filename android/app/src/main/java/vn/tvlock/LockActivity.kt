@@ -38,7 +38,10 @@ class LockActivity : Activity() {
                     i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
                     ctx.startActivity(i)
                     true
-                } catch (_: Exception) { false }
+                } catch (e: Exception) {
+                    android.util.Log.e("LockActivity", "showLock(reorder) failed", e)
+                    false
+                }
             }
             if (now - lastLaunchMs < 3000) return false
             lastLaunchMs = now
@@ -46,7 +49,8 @@ class LockActivity : Activity() {
             return try {
                 ctx.startActivity(i)
                 true
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.e("LockActivity", "showLock(start) failed", e)
                 isShowing = false
                 false
             }
@@ -406,6 +410,7 @@ class LockActivity : Activity() {
                 // v2.3: đã nhập đúng mã PIN khóa TV thì mở màn hình
                 // quản lý mã PIN web (xem/đổi/đặt lại).
                 "webpin" -> {
+                    store.startAdminSession(System.currentTimeMillis())
                     startActivity(Intent(this, WebPinActivity::class.java))
                     finish()
                 }
@@ -417,6 +422,9 @@ class LockActivity : Activity() {
                 // Android sau khi nhập PIN (nút bánh răng trên remote) —
                 // trước đây mở thẳng không cần PIN.
                 "settings" -> {
+                    // Phiên PIN có hạn: trong giờ khóa, khóa tạm nhường để chỉnh cài đặt
+                    // (thay cho chốt "lastPkg == vn.tvlock" cũ — xem LockPolicy.evaluate).
+                    store.startAdminSession(System.currentTimeMillis())
                     val target = intent.getStringExtra("target")
                     if (target == "system") {
                         val i = Intent(android.provider.Settings.ACTION_SETTINGS)

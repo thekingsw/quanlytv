@@ -748,9 +748,27 @@ class Store(private val ctx: Context) {
             appRule = LockPolicy.AppRule(rule.mode, rule.minutes),
             perAppUsedMin = perAppMin(pkg),
             manualLockedDate = manualLockedDate,
-            todayDate = todayStr()
+            todayDate = todayStr(),
+            adminSessionUntilMs = adminSessionUntilMs
         )
     }
+
+    // ---------- Phiên PIN của phụ huynh (xem LockPolicy.Input.adminSessionUntilMs) ----------
+    companion object {
+        /** Hạn một phiên PIN của phụ huynh: 10 phút. */
+        const val ADMIN_SESSION_MS = 10 * 60_000L
+    }
+
+    var adminSessionUntilMs: Long
+        get() = prefs.getLong("adminSessionUntilMs", 0L)
+        private set(v) = prefs.edit().putLong("adminSessionUntilMs", v).apply()
+
+    /** Gọi ngay sau khi nhập ĐÚNG PIN để vào Cài đặt / quản lý PIN web. Tự hết hạn. */
+    fun startAdminSession(nowMs: Long) {
+        adminSessionUntilMs = nowMs + ADMIN_SESSION_MS
+    }
+
+    fun isAdminSession(nowMs: Long): Boolean = nowMs < adminSessionUntilMs
 
     /**
      * QUYẾT ĐỊNH DUY NHẤT cho app foreground hiện tại — LockEngine gọi hàm này.

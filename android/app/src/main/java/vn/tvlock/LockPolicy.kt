@@ -42,7 +42,14 @@ object LockPolicy {
          * dụng trong ngày — sang hôm sau tự reset về mở (2026-11-09). */
         val manualLockedDate: String = "",
         /** Ngày hôm nay ("yyyy-MM-dd") để so với manualLockedDate. */
-        val todayDate: String = ""
+        val todayDate: String = "",
+        /**
+         * Phiên PIN của phụ huynh (có hạn): vừa nhập ĐÚNG PIN để vào Cài đặt thì khóa
+         * toàn TV tạm nhường tới mốc này để chỉnh cài đặt. Thay cho cách cũ "lastPkg ==
+         * vn.tvlock thì không khóa" — lastPkg do Trợ năng cập nhật nên có thể CŨ (kẹt ở
+         * vn.tvlock) và biến thành lỗ hổng: TV mở khóa vĩnh viễn (sự cố tối 10/11).
+         */
+        val adminSessionUntilMs: Long = 0L
     )
 
     fun minutesOfDay(nowMs: Long): Int {
@@ -265,14 +272,17 @@ object LockPolicy {
      * Quyết định cho app foreground hiện tại ([Input.lastPkg]). Thứ tự (đừng đổi
      * nếu không có test mới):
      *  1. đang mở tạm (PIN / mã thưởng / +phút)   -> Allow
-     *  2. chính app mình (màn khóa, màn hình chính, Cài đặt của app sau khi nhập PIN)
-     *     -> Allow. Chốt này BẮT BUỘC: thiếu nó thì trong giờ khóa, màn khóa đè lên
-     *     cả Cài đặt của app mỗi 3 giây và phụ huynh không chỉnh được gì.
-     *  3. TV đang khóa toàn bộ                    -> Lock(whole), KỂ CẢ khi đang ở
-     *     Cài đặt / launcher hệ thống (nếu không đó là đường bypass). Lastpkg rỗng
-     *     cũng khóa (fail-safe: không biết app nào mà TV đang khóa thì vẫn khóa).
+     *  2. TV khóa toàn bộ + phụ huynh đang trong phiên PIN (có hạn) -> Allow, để chỉnh
+     *     Cài đặt của app / hệ thống mà không bị màn khóa đè lên.
+     *  3. TV đang khóa toàn bộ                    -> Lock(whole), BẤT KỂ lastPkg là gì:
+     *     YouTube, Cài đặt, launcher, RỖNG, hay chính vn.tvlock. Lý do: lastPkg do Trợ
+     *     năng cập nhật (sự kiện đổi cửa sổ) nên có thể CŨ; nếu khóa phụ thuộc nó thì chỉ
+     *     cần một sự kiện bị lỡ (vd quay lại TVMate từ màn PIN Cài đặt) là TV mở vĩnh viễn
+     *     dù web báo "đóng" (sự cố 10/11). KHÔNG được thêm lại chốt "lastPkg == ownPkg
+     *     thì Allow" ở bước này — phiên PIN ở bước 2 mới là cách đúng, vì nó có hạn.
      *     App thời sự trong khung thời sự đã được [isLockedNow] miễn trừ từ trước.
-     *  4. app hệ thống (không bị tính giờ)        -> Allow
+     *  4. chính app mình / app hệ thống (không bị tính giờ) -> Allow (chỉ cho quy tắc
+     *     riêng từng app; khóa toàn TV đã xử lý ở trên)
      *  5. app thời sự trong khung thời sự         -> Allow
      *  6. quy tắc riêng của app / hết giờ app     -> Lock(per-app)
      *  7. còn lại                                 -> Allow
@@ -282,9 +292,9 @@ object LockPolicy {
         val pkg = input.lastPkg
         val verdict: Verdict = when {
             input.nowMs < input.unlockUntilMs -> Verdict.Allow
-            pkg == input.ownPkg -> Verdict.Allow
+            whole && input.nowMs < input.adminSessionUntilMs -> Verdict.Allow
             whole -> Verdict.Lock(lockReason(input), true)
-            isExcluded(pkg) -> Verdict.Allow
+            pkg == input.ownPkg || isExcluded(pkg) -> Verdict.Allow
             isNewsExempt(pkg, input) -> Verdict.Allow
             else -> {
                 val r = blockReason(pkg, labelOf(pkg), input)

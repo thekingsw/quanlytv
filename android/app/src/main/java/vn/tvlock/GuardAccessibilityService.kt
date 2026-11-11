@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityEvent
 
 class GuardAccessibilityService : AccessibilityService() {
     private lateinit var store: Store
+    private var lastEmptyWindowsLogMs = 0L
 
     private val warningListener = object : WarningBus.Listener {
         override fun showWarning(title: String, sub: String) = WarningOverlay.show(title, sub)
@@ -38,7 +39,7 @@ class GuardAccessibilityService : AccessibilityService() {
                 try {
                     if (::store.isInitialized) {
                         val now = System.currentTimeMillis()
-                        if (store.lastPkg != packageName && store.isLockedNow(now)) {
+                        if (store.isLockedNow(now) && !store.isAdminSession(now)) {
                             LockEngine.showManualLock(this@GuardAccessibilityService, store.lockReason(now))
                         }
                     }
@@ -69,7 +70,18 @@ class GuardAccessibilityService : AccessibilityService() {
     private fun refreshForegroundApp() {
         try {
             val now = System.currentTimeMillis()
-            val wins = windows ?: return
+            val wins = windows
+            if (wins == null || wins.isEmpty()) {
+                // getWindows() chỉ có dữ liệu khi service khai báo canRetrieveWindowContent=true
+                // VÀ flagRetrieveInteractiveWindows. Cấu hình hiện tại khai báo false -> danh
+                // sách luôn rỗng -> lần quét này không bao giờ cập nhật được lastPkg.
+                // Ghi log (tối đa 1 lần/phút) để thấy rõ khi chạy trên TV: adb logcat -s GuardA11y
+                if (now - lastEmptyWindowsLogMs > 60_000L) {
+                    lastEmptyWindowsLogMs = now
+                    android.util.Log.w("GuardA11y", "windows rong -> khong quet duoc foreground (lastPkg=${store.lastPkg})")
+                }
+                return
+            }
             fun pkgOf(w: android.view.accessibility.AccessibilityWindowInfo): String =
                 w.root?.packageName?.toString() ?: ""
             // Chỉ đọc cửa sổ nền khi KHÔNG có cửa sổ focus nào (đỡ tốn).

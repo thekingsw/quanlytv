@@ -44,6 +44,29 @@ JVM xanh, gồm test "phá thử" để chắc test thật sự bắt được h
 - "Mở khóa đến hết khung" với lịch cả ngày: hết lúc 00:00 hôm sau (trước là 23:59:00 nên khóa
   lại sớm 1 phút).
 
+Sự cố 2026-11-10 ~21:02 (TV không khóa sau khi hết giờ cộng tạm; web báo "đóng"): nguyên nhân là
+chốt `lastPkg == ownPkg -> Allow` trong `LockPolicy.evaluate` (thêm ở lượt refactor "một cửa").
+Anh ấn Settings -> lastPkg = vn.tvlock; quay lại TVMate mà không có sự kiện đổi cửa sổ nào nên
+lastPkg kẹt; evaluate trả Allow mãi. Web dùng `isLockedNow` (không có chốt này) nên vẫn báo đóng.
+Đã sửa: bỏ chốt, thay bằng phiên PIN có hạn 10 phút (`Store.startAdminSession`, gọi sau khi nhập
+đúng PIN ở mode "settings"/"webpin"). Test: `LockDecisionTest.*` (replay sự cố + bất biến "khóa
+toàn TV không phụ thuộc lastPkg").
+Phát hiện kèm theo (CHƯA sửa — cần thử trên TV): `accessibility_service_config.xml` khai báo
+`canRetrieveWindowContent="false"` và không có `flagRetrieveInteractiveWindows` nên
+`AccessibilityService.windows` luôn rỗng -> `refreshForegroundApp()` không bao giờ cập nhật được
+lastPkg (đoạn "tự nhận lại foreground" là mã chết). Hậu quả còn lại: lastPkg có thể cũ -> đếm giờ /
+chặn từng app có thể sai, nhưng KHÓA TOÀN TV không còn phụ thuộc. Đã thêm log
+`adb logcat -s GuardA11y` ("windows rong ...") để xác nhận trên TV.
+
+ĐÃ SỬA 2026-11-11 (đếm giờ sai: xem TVMate 16' mà web báo 3'): bật `canRetrieveWindowContent="true"`
++ `flagRetrieveInteractiveWindows` trong `accessibility_service_config.xml` để `windows` có dữ liệu,
+`refreshForegroundApp()` quét được foreground thật và `lastPkg` cập nhật đúng -> đếm giờ chạy lại.
+Đổi capability của service nên sau khi cài phải bật lại Trợ năng 1 lần (qua ADB hoặc reboot).
+Đã xác nhận trên TV 11/11: log "windows rong" hết hẳn; TV khóa đúng khi hết giới hạn (web báo đã xem
+11'/5' lúc 12:34 — đếm khá đúng). Lưu ý nhỏ anh chấp nhận: số "còn X phút" trên web chỉ tính
+giới hạn ngày (limit - used), không cộng thêm giờ mở tạm (+30' qua web vẫn mở TV nhưng số còn lại
+vẫn hiện 0).
+
 CHƯA kiểm chứng trên TV thật (không chạy được trong JVM) — cần checklist 4 mục trước khi cài:
 - popup âm lượng / thanh thông báo khi đang xem có làm dừng đếm giờ không (kỳ vọng: không);
 - trong giờ khóa: nhập PIN vào Cài đặt của app, màn khóa KHÔNG đè lên;
